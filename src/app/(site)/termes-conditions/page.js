@@ -122,19 +122,19 @@ const page = () => {
         </p>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold">
           <span className="font-bold text-black md:text-base text-sm">
-            Données d’utilisation{" "}
+            Données d&quot;utilisation{" "}
           </span>
           fait référence aux données collectées automatiquement, générées soit
-          par l’utilisation du service, soit par l’infrastructure du service
-          elle-même (par exemple, la durée d’une visite de page).
+          par l&quot;utilisation du service, soit par l&quot;infrastructure du
+          service elle-même (par exemple, la durée d&quot;une visite de page).
         </p>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold">
           <span className="font-bold text-black md:text-base text-sm">
             Vous{" "}
           </span>
-          désigne l’individu accédant ou utilisant le service, ou l’entreprise
-          ou toute autre entité légale au nom de laquelle cet individu accède ou
-          utilise le service, le cas échéant.
+          désigne l&quot;individu accédant ou utilisant le service, ou
+          l&quot;entreprise ou toute autre entité légale au nom de laquelle cet
+          individu accède ou utilise le service, le cas échéant.
         </p>
         <h2 className="md:text-2xl text-lg font-bold mb-2 font-inter mt-2">
           Collecte et utilisation de vos données personnelles
@@ -156,26 +156,27 @@ const page = () => {
           postal, Ville <br />
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
-          Données d’utilisation
+          Données d&quot;utilisation
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
-          Les données d’utilisation sont collectées automatiquement lors de
-          l’utilisation du service. Les données d’utilisation peuvent inclure
-          des informations telles que l’adresse IP de votre appareil (par
-          exemple, adresse IP), le type de navigateur, la version du navigateur,
-          les pages de notre service que vous visitez, l’heure et la date de
-          votre visite, le temps passé sur ces pages, des identifiants uniques
-          d’appareils et d’autres données de diagnostic. Lorsque vous accédez au
-          service par le biais d’un appareil mobile, nous pouvons collecter
-          certaines informations automatiquement, notamment, mais sans s’y
-          limiter, le type d’appareil mobile que vous utilisez, l’ID unique de
-          votre appareil mobile, l’adresse IP de votre appareil mobile, votre
-          système d’exploitation mobile, le type de navigateur Internet mobile
-          que vous utilisez, des identifiants uniques d’appareils et d’autres
-          données de diagnostic. Nous pouvons également collecter des
-          informations que votre navigateur envoie chaque fois que vous visitez
-          notre service ou lorsque vous accédez au service par le biais d’un
-          appareil mobile.
+          Les données d&quot;utilisation sont collectées automatiquement lors de
+          l&quot;utilisation du service. Les données d&quot;utilisation peuvent
+          inclure des informations telles que l&quot;adresse IP de votre
+          appareil (par exemple, adresse IP), le type de navigateur, la version
+          du navigateur, les pages de notre service que vous visitez,
+          l&quot;heure et la date de votre visite, le temps passé sur ces pages,
+          des identifiants uniques d&quot;appareils et d&quot;autres données de
+          diagnostic. Lorsque vous accédez au service par le biais d&quot;un
+          appareil mobile, nous pouvons collecter certaines informations
+          automatiquement, notamment, mais sans s&quot;y limiter, le type
+          d&quot;appareil mobile que vous utilisez, l&quot;ID unique de votre
+          appareil mobile, l&quot;adresse IP de votre appareil mobile, votre
+          système d&quot;exploitation mobile, le type de navigateur Internet
+          mobile que vous utilisez, des identifiants uniques d&quot;appareils et
+          d&quot;autres données de diagnostic. Nous pouvons également collecter
+          des informations que votre navigateur envoie chaque fois que vous
+          visitez notre service ou lorsque vous accédez au service par le biais
+          d&quot;un appareil mobile.
         </p>
 
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
@@ -189,17 +190,17 @@ const page = () => {
           Twitter
           <br /> LinkedIn
           <br /> Si vous décidez de vous inscrire ou de nous accorder autrement
-          l’accès à un service de médias sociaux tiers, nous pouvons collecter
-          des données personnelles déjà associées à votre compte de service de
-          médias sociaux tiers, telles que votre nom, votre adresse e-mail, vos
-          activités ou votre liste de contacts associée à ce compte. Vous avez
-          également la possibilité de partager des informations supplémentaires
-          avec la Société via votre compte de service de médias sociaux tiers.
-          Si vous choisissez de fournir de telles informations et des données
-          personnelles lors de l’inscription ou autrement, vous donnez à la
-          Société l’autorisation de les utiliser, de les partager et de les
-          stocker de manière conforme à la présente Politique de
-          confidentialité.
+          l&quot;accès à un service de médias sociaux tiers, nous pouvons
+          collecter des données personnelles déjà associées à votre compte de
+          service de médias sociaux tiers, telles que votre nom, votre adresse
+          e-mail, vos activités ou votre liste de contacts associée à ce compte.
+          Vous avez également la possibilité de partager des informations
+          supplémentaires avec la Société via votre compte de service de médias
+          sociaux tiers. Si vous choisissez de fournir de telles informations et
+          des données personnelles lors de l&quot;inscription ou autrement, vous
+          donnez à la Société l&quot;autorisation de les utiliser, de les
+          partager et de les stocker de manière conforme à la présente Politique
+          de confidentialité.
         </p>
 
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
@@ -211,37 +212,38 @@ const page = () => {
           <span className="font-bold text-black md:text-base text-sm">
             Pour fournir et maintenir notre service
           </span>
-          , y compris pour surveiller l’utilisation de notre service.
+          , y compris pour surveiller l&quot;utilisation de notre service.
           <br />
           <span className="font-bold text-black md:text-base text-sm">
             {" "}
             Pour gérer votre compte :
           </span>{" "}
-          pour gérer votre inscription en tant qu’utilisateur du service. Les
-          données personnelles que vous fournissez peuvent vous donner accès à
-          différentes fonctionnalités du service qui sont disponibles pour vous
-          en tant qu’utilisateur enregistré. <br />
+          pour gérer votre inscription en tant qu&quot;utilisateur du service.
+          Les données personnelles que vous fournissez peuvent vous donner accès
+          à différentes fonctionnalités du service qui sont disponibles pour
+          vous en tant qu&quot;utilisateur enregistré. <br />
           <span className="font-bold text-black md:text-base text-sm">
-            Pour l’exécution d’un contrat :{" "}
+            Pour l&quot;exécution d&quot;un contrat :{" "}
           </span>
-          le développement, le respect et la réalisation du contrat d’achat des
-          produits, articles ou services que vous avez achetés ou de tout autre
-          contrat avec nous via le service. <br />
+          le développement, le respect et la réalisation du contrat d&quot;achat
+          des produits, articles ou services que vous avez achetés ou de tout
+          autre contrat avec nous via le service. <br />
           <span className="font-bold text-black md:text-base text-sm">
             Pour vous contacter :
           </span>{" "}
           Pour vous contacter par e-mail, appels téléphoniques, SMS ou autres
           formes équivalentes de communication électronique, telles que les
-          notifications push d’une application mobile concernant mises à jour ou
-          communications informatives liées aux fonctionnalités, produits ou
-          services contractés, y compris les mises à jour de sécurité, lorsque
-          cela est nécessaire ou raisonnable pour leur mise en œuvre. <br />
+          notifications push d&quot;une application mobile concernant mises à
+          jour ou communications informatives liées aux fonctionnalités,
+          produits ou services contractés, y compris les mises à jour de
+          sécurité, lorsque cela est nécessaire ou raisonnable pour leur mise en
+          œuvre. <br />
           <span className="font-bold text-black md:text-base text-sm">
             Pour vous fournir :
           </span>{" "}
           Pour vous fournir des actualités, des offres spéciales et des
-          informations générales sur d’autres biens, services et événements que
-          nous proposons et qui sont similaires à ceux que vous avez déjà
+          informations générales sur d&quot;autres biens, services et événements
+          que nous proposons et qui sont similaires à ceux que vous avez déjà
           achetés ou sur lesquels vous avez enquêté, sauf si vous avez choisi de
           ne pas recevoir de telles informations.
           <br />
@@ -250,43 +252,45 @@ const page = () => {
           </span>{" "}
           pour répondre à vos demandes et les gérer. <br />
           <span className="font-bold text-black md:text-base text-sm">
-            Pour les transferts d’entreprise :
+            Pour les transferts d&quot;entreprise :
           </span>{" "}
           nous pouvons utiliser vos informations pour évaluer ou mener une
           fusion, une cession, une restructuration, une réorganisation, une
           dissolution ou une autre vente ou transfert de tout ou partie de nos
-          actifs, que ce soit en tant qu’entreprise en activité ou dans le cadre
-          d’une procédure de faillite, de liquidation ou de procédure similaire,
-          dans laquelle des données personnelles détenues par nous à propos de
-          nos utilisateurs de services font partie des actifs transférés.
+          actifs, que ce soit en tant qu&quot;entreprise en activité ou dans le
+          cadre d&quot;une procédure de faillite, de liquidation ou de procédure
+          similaire, dans laquelle des données personnelles détenues par nous à
+          propos de nos utilisateurs de services font partie des actifs
+          transférés.
           <br />
           <span className="font-bold text-black md:text-base text-sm">
-            À d’autres fins :
+            À d&quot;autres fins :
           </span>{" "}
-          nous pouvons utiliser vos informations à d’autres fins, telles que
-          l’analyse de données, l’identification des tendances d’utilisation, la
-          détermination de l’efficacité de nos campagnes promotionnelles et
-          l’évaluation et l’amélioration de notre service, de nos produits, de
-          nos services, de notre marketing et de votre expérience. Nous pouvons
-          partager vos informations personnelles dans les situations suivantes :
+          nous pouvons utiliser vos informations à d&quot;autres fins, telles
+          que l&quot;analyse de données, l&quot;identification des tendances
+          d&quot;utilisation, la détermination de l&quot;efficacité de nos
+          campagnes promotionnelles et l&quot;évaluation et l&quot;amélioration
+          de notre service, de nos produits, de nos services, de notre marketing
+          et de votre expérience. Nous pouvons partager vos informations
+          personnelles dans les situations suivantes :
           <br />
           <span className="font-bold text-black md:text-base text-sm">
             {" "}
             Avec des prestataires de services :
           </span>{" "}
           nous pouvons partager vos informations personnelles avec des
-          prestataires de services pour surveiller et analyser l’utilisation de
-          notre service et pour vous contacter.
+          prestataires de services pour surveiller et analyser
+          l&quot;utilisation de notre service et pour vous contacter.
           <br />
           <span className="font-bold text-black md:text-base text-sm">
-            Pour les transferts d’entreprise :
+            Pour les transferts d&quot;entreprise :
           </span>{" "}
           nous pouvons partager ou transférer vos informations personnelles dans
           le cadre de, ou lors de négociations relatives à, toute fusion, vente
-          d’actifs de la société, financement, ou acquisition de tout ou partie
-          de notre entreprise par une autre entreprise. Avec des affiliés : nous
-          pouvons partager vos informations avec nos affiliés, auquel cas nous
-          exigerons que ces affiliés respectent cette politique de
+          d&quot;actifs de la société, financement, ou acquisition de tout ou
+          partie de notre entreprise par une autre entreprise. Avec des affiliés
+          : nous pouvons partager vos informations avec nos affiliés, auquel cas
+          nous exigerons que ces affiliés respectent cette politique de
           confidentialité. Les affiliés incluent notre société mère et toute
           autre filiale, partenaire de coentreprise ou autre société que nous
           contrôlons ou qui est sous notre contrôle commun.
@@ -301,18 +305,18 @@ const page = () => {
           <br />
           <span className="font-bold text-black md:text-base text-sm">
             {" "}
-            Avec d’autres utilisateurs :{" "}
+            Avec d&quot;autres utilisateurs :{" "}
           </span>
           lorsque vous partagez des informations personnelles ou interagissez
-          autrement dans les zones publiques avec d’autres utilisateurs, ces
-          informations peuvent être vues par tous les utilisateurs et peuvent
-          être diffusées publiquement. Si vous interagissez avec d’autres
-          utilisateurs ou vous inscrivez via un service de médias sociaux tiers,
-          vos contacts sur le service de médias sociaux tiers peuvent voir votre
-          nom, votre profil, vos images et la description de votre activité. De
-          même, d’autres utilisateurs pourront consulter les descriptions de
-          votre activité, communiquer avec vous et consulter votre profil.{" "}
-          <br />
+          autrement dans les zones publiques avec d&quot;autres utilisateurs,
+          ces informations peuvent être vues par tous les utilisateurs et
+          peuvent être diffusées publiquement. Si vous interagissez avec
+          d&quot;autres utilisateurs ou vous inscrivez via un service de médias
+          sociaux tiers, vos contacts sur le service de médias sociaux tiers
+          peuvent voir votre nom, votre profil, vos images et la description de
+          votre activité. De même, d&quot;autres utilisateurs pourront consulter
+          les descriptions de votre activité, communiquer avec vous et consulter
+          votre profil. <br />
           <span className="font-bold text-black md:text-base text-sm">
             {" "}
             Avec votre consentement :{" "}
@@ -331,20 +335,20 @@ const page = () => {
           légales (par exemple, si nous sommes tenus de conserver vos données
           pour respecter les lois applicables), résoudre les litiges et faire
           respecter nos accords et politiques juridiques. La société conservera
-          également les données d’utilisation à des fins d’analyse interne. Les
-          données d’utilisation sont généralement conservées pour une période
-          plus courte, sauf lorsque ces données sont utilisées pour renforcer la
-          sécurité ou améliorer la fonctionnalité de notre service, ou lorsque
-          nous sommes légalement obligés de conserver ces données pendant des
-          périodes plus longues.
+          également les données d&quot;utilisation à des fins d&quot;analyse
+          interne. Les données d&quot;utilisation sont généralement conservées
+          pour une période plus courte, sauf lorsque ces données sont utilisées
+          pour renforcer la sécurité ou améliorer la fonctionnalité de notre
+          service, ou lorsque nous sommes légalement obligés de conserver ces
+          données pendant des périodes plus longues.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
           Transfert de vos données personnelles
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           Vos informations, y compris les données personnelles, sont traitées
-          dans les bureaux d’exploitation de la société et dans tout autre lieu
-          où les parties impliquées dans le traitement sont situées. Cela
+          dans les bureaux d&quot;exploitation de la société et dans tout autre
+          lieu où les parties impliquées dans le traitement sont situées. Cela
           signifie que ces informations peuvent être transférées — et conservées
           — sur des ordinateurs situés en dehors de votre état, province, pays
           ou autre juridiction gouvernementale où les lois sur la protection des
@@ -354,10 +358,10 @@ const page = () => {
           transfert. La société prendra toutes les mesures raisonnablement
           nécessaires pour garantir que vos données sont traitées de manière
           sécurisée et conformément à la présente politique de confidentialité,
-          et aucun transfert de vos données personnelles n’aura lieu vers une
-          organisation ou un pays à moins que des contrôles adéquats ne soient
-          en place, y compris la sécurité de vos données et autres informations
-          personnelles.
+          et aucun transfert de vos données personnelles n&quot;aura lieu vers
+          une organisation ou un pays à moins que des contrôles adéquats ne
+          soient en place, y compris la sécurité de vos données et autres
+          informations personnelles.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
           Suppression de vos données personnelles
@@ -371,10 +375,11 @@ const page = () => {
           vous connectant à votre compte, le cas échéant, et en visitant la
           section des paramètres de compte qui vous permet de gérer vos
           informations personnelles. Vous pouvez également nous contacter pour
-          demander l’accès, la correction ou la suppression de toute information
-          personnelle que vous nous avez fournie. Veuillez noter, cependant, que
-          nous pouvons avoir besoin de conserver certaines informations lorsque
-          nous avons une obligation légale ou une base légale pour le faire.
+          demander l&quot;accès, la correction ou la suppression de toute
+          information personnelle que vous nous avez fournie. Veuillez noter,
+          cependant, que nous pouvons avoir besoin de conserver certaines
+          informations lorsque nous avons une obligation légale ou une base
+          légale pour le faire.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
           Divulgation de vos données personnelles
@@ -384,13 +389,13 @@ const page = () => {
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           Si la société est impliquée dans une fusion, une acquisition ou une
-          vente d’actifs, vos données personnelles peuvent être transférées.
-          Nous fournirons un avis avant que vos données personnelles soient
-          transférées et deviennent soumises à une politique de confidentialité
-          différente.
+          vente d&quot;actifs, vos données personnelles peuvent être
+          transférées. Nous fournirons un avis avant que vos données
+          personnelles soient transférées et deviennent soumises à une politique
+          de confidentialité différente.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
-          Forces de l’ordre
+          Forces de l&quot;ordre
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           Dans certaines circonstances, la société peut être tenue de divulguer
@@ -417,41 +422,42 @@ const page = () => {
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           La sécurité de vos données personnelles est importante pour nous, mais
-          n’oubliez pas qu’aucune méthode de transmission sur Internet ou
-          méthode de stockage électronique n’est totalement sécurisée. Bien que
-          nous nous efforcions d’utiliser des moyens commercialement acceptables
-          pour protéger vos données personnelles, nous ne pouvons garantir leur
-          sécurité absolue.
+          n&quot;oubliez pas qu&quot;aucune méthode de transmission sur Internet
+          ou méthode de stockage électronique n&quot;est totalement sécurisée.
+          Bien que nous nous efforcions d&quot;utiliser des moyens
+          commercialement acceptables pour protéger vos données personnelles,
+          nous ne pouvons garantir leur sécurité absolue.
         </p>
 
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
           Confidentialité des enfants
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
-          Notre service ne s’adresse à personne de moins de 13 ans. Nous ne
-          collectons sciemment aucune information d’identification personnelle
-          auprès de quiconque de moins de 13 ans. Si vous êtes un parent ou un
-          tuteur et que vous savez que votre enfant nous a fourni des données
-          personnelles, veuillez nous contacter. Si nous apprenons que nous
-          avons collecté des données personnelles auprès de quelqu’un de moins
-          de 13 ans sans vérification du consentement parental, nous prendrons
-          des mesures pour supprimer ces informations de nos serveurs. Si nous
-          devons nous appuyer sur le consentement en tant que base légale pour
-          le traitement de vos informations et que votre pays exige le
-          consentement d’un parent, nous pouvons exiger le consentement de vos
-          parents avant de collecter et d’utiliser ces informations.
+          Notre service ne s&quot;adresse à personne de moins de 13 ans. Nous ne
+          collectons sciemment aucune information d&quot;identification
+          personnelle auprès de quiconque de moins de 13 ans. Si vous êtes un
+          parent ou un tuteur et que vous savez que votre enfant nous a fourni
+          des données personnelles, veuillez nous contacter. Si nous apprenons
+          que nous avons collecté des données personnelles auprès de
+          quelqu&quot;un de moins de 13 ans sans vérification du consentement
+          parental, nous prendrons des mesures pour supprimer ces informations
+          de nos serveurs. Si nous devons nous appuyer sur le consentement en
+          tant que base légale pour le traitement de vos informations et que
+          votre pays exige le consentement d&quot;un parent, nous pouvons exiger
+          le consentement de vos parents avant de collecter et d&quot;utiliser
+          ces informations.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
-          Liens vers d’autres sites Web
+          Liens vers d&quot;autres sites Web
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
-          Notre service peut contenir des liens vers d’autres sites Web qui ne
-          sont pas exploités par nous. Si vous cliquez sur un lien tiers, vous
-          serez dirigé vers le site de ce tiers. Nous vous recommandons vivement
-          de consulter la politique de confidentialité de chaque site que vous
-          visitez. Nous n’avons aucun contrôle sur et n’assumons aucune
-          responsabilité pour le contenu, les politiques de confidentialité ou
-          les pratiques de tout site Web tiers ou service.
+          Notre service peut contenir des liens vers d&quot;autres sites Web qui
+          ne sont pas exploités par nous. Si vous cliquez sur un lien tiers,
+          vous serez dirigé vers le site de ce tiers. Nous vous recommandons
+          vivement de consulter la politique de confidentialité de chaque site
+          que vous visitez. Nous n&quot;avons aucun contrôle sur et
+          n&quot;assumons aucune responsabilité pour le contenu, les politiques
+          de confidentialité ou les pratiques de tout site Web tiers ou service.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
           Modification de cette politique de confidentialité
@@ -466,7 +472,8 @@ const page = () => {
           politique de confidentialité. Il est conseillé de consulter
           périodiquement cette politique de confidentialité pour tout
           changement. Les changements apportés à cette politique de
-          confidentialité sont effectifs lorsqu’ils sont publiés sur cette page.
+          confidentialité sont effectifs lorsqu&quot;ils sont publiés sur cette
+          page.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
           Nous contacter

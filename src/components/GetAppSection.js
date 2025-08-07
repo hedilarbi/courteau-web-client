@@ -1,7 +1,5 @@
 import React from "react";
 
-import { MdOutlineRestaurantMenu, MdDeliveryDining } from "react-icons/md";
-import { GiTrophyCup } from "react-icons/gi";
 import { FaApple, FaGooglePlay } from "react-icons/fa";
 import Link from "next/link";
 
