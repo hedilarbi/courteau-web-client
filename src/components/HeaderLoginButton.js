@@ -8,7 +8,7 @@ import BasketSlider from "./BasketSlider";
 import { logout } from "@/app/actions";
 
 const HeaderLoginButton = () => {
-  const { user, deleteUser } = useUser();
+  const { user, deleteUser, loading } = useUser();
   const count = useSelectBasketItemCount();
   const [showBasketSlider, setShowBasketSlider] = React.useState(false);
   const handleLogout = async () => {
@@ -21,7 +21,7 @@ const HeaderLoginButton = () => {
         showBasketSlider={showBasketSlider}
         setShowBasketSlider={setShowBasketSlider}
       />
-      {user ? (
+      {loading ? null : user ? (
         <div className="flex items-center">
           <button
             className="text-white border-2 border-pr rounded-md  font-bebas-neue px-8 py-1 text-xl cursor-pointer"

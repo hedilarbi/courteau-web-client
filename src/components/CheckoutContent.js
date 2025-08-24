@@ -9,8 +9,12 @@ import AddressesBlock from "./AddressesBlock";
 import PromoCodeBlock from "./PromoCodeBlock";
 import { useSelectBasketTotal } from "@/context/BasketContext";
 import TipsBlock from "./TipsBlock";
+import ResumeBlock from "./ResumeBlock";
+import Spinner from "./spinner/Spinner";
+import { useRouter } from "next/navigation";
 const CheckoutContent = ({ restaurantsSettings }) => {
   const { user, loading } = useUser();
+  const router = useRouter();
   const subTotal = useSelectBasketTotal();
   const [tips, setTips] = useState("");
   const [selectedTip, setSelectedTip] = useState(0);
@@ -21,6 +25,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const [promoCodeData, setPromoCodeData] = useState(null);
   const [promoCodeIsValid, setPromoCodeIsValid] = useState(false);
   const [total, setTotal] = useState(0);
+  const [tvq, setTvq] = useState(0);
+  const [tps, setTps] = useState(0);
   const [selectedRestaurant, setSelectedRestaurant] = useState(
     restaurantsSettings && restaurantsSettings.length > 0
       ? restaurantsSettings[0]
@@ -42,15 +48,89 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     }
   }, [loading]);
 
+  useEffect(() => {
+    let promoCodeDiscount = null;
+    if (promoCodeIsValid && promoCodeData) {
+      if (promoCodeData.type === "percent") {
+        promoCodeDiscount =
+          (subTotalWithDiscount * promoCodeData.percent) / 100;
+      }
+      if (promoCodeData.type === "amount") {
+        promoCodeDiscount = promoCodeData.amount;
+      }
+    }
+
+    let tipValue = 0;
+    if (selectedTip === "other") {
+      tipValue = parseFloat(tips);
+      if (parseFloat(tips) < 0 || isNaN(parseFloat(tips))) {
+        tipValue = 0;
+      }
+    } else if (!selectedTip) {
+      tipValue = 0;
+      setTips(0);
+    } else {
+      tipValue = (subTotalWithDiscount * parseFloat(selectedTip)) / 100;
+      setTips(tipValue);
+    }
+    if (deliveryMode === "delivery") {
+      const tvqValue =
+        ((subTotalWithDiscount + selectedRestaurant.settings.delivery_fee) *
+          9.975) /
+        100;
+      const tpsValue =
+        ((subTotalWithDiscount + selectedRestaurant.settings.delivery_fee) *
+          5) /
+        100;
+      setTvq(tvqValue);
+      setTps(tpsValue);
+
+      setTotal(
+        selectedRestaurant.settings.delivery_fee +
+          parseFloat(subTotalWithDiscount) +
+          tvqValue +
+          tpsValue +
+          tipValue -
+          promoCodeDiscount
+      );
+    } else {
+      const tvqValue = (subTotalWithDiscount * 9.975) / 100;
+      const tpsValue = (subTotalWithDiscount * 5) / 100;
+      setTvq(tvqValue);
+      setTps(tpsValue);
+
+      setTotal(
+        parseFloat(subTotalWithDiscount) +
+          tvqValue +
+          tipValue +
+          tpsValue -
+          promoCodeDiscount
+      );
+    }
+  }, [
+    deliveryMode,
+    tips,
+    selectedTip,
+    selectedRestaurant,
+    promoCodeData?.code,
+    user,
+  ]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/connexion");
+    }
+    if (!subTotal) {
+      router.replace("/menu");
+    }
+  }, [loading, user, router]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-lg font-medium text-gray-700">Loading...</p>
+        <Spinner />
       </div>
     );
-  }
-  if (!user) {
-    return null;
   }
 
   return (
@@ -91,6 +171,19 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             setSelectedTip={setSelectedTip}
             setTips={setTips}
             tips={tips}
+          />
+          <ResumeBlock
+            subTotal={subTotal}
+            total={total}
+            tvq={tvq}
+            tps={tps}
+            deliveryFee={selectedRestaurant.settings.delivery_fee}
+            tips={tips}
+            firstOrderDiscountApplied={user.firstOrderDiscountApplied}
+            promoCodeData={promoCodeData}
+            promoCodeIsValid={promoCodeIsValid}
+            deliveryMode={deliveryMode}
+            subTotalWithDiscount={subTotalWithDiscount}
           />
         </section>
       </div>
