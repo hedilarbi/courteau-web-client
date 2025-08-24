@@ -1,6 +1,15 @@
 "use client";
 
-import { createContext, useContext, useReducer } from "react";
+import { getToken } from "@/app/actions";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  useState,
+} from "react";
 
 const initialState = {
   user: null,
@@ -16,6 +25,8 @@ function userReducer(state, action) {
 
     case "DELETE_USER":
       return { ...state, user: null };
+    case "UPDATE_USER":
+      return { ...state, user: { ...state.user, ...action.payload } };
 
     default:
       return state;
@@ -25,11 +36,48 @@ function userReducer(state, action) {
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
+  const [loading, setLoading] = useState(true);
   const [state, dispatch] = useReducer(userReducer, initialState);
+  const router = useRouter();
   const createUser = (user) => dispatch({ type: "CREATE_USER", payload: user });
   const selectUser = (user) => dispatch({ type: "SELECT_USER", payload: user });
+  const updateUser = (user) => dispatch({ type: "UPDATE_USER", payload: user });
   const deleteUser = () => dispatch({ type: "DELETE_USER" });
+  const getUserToken = async () => {
+    try {
+      const token = await getToken();
 
+      if (!token) {
+        return null;
+      }
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/userByToken`,
+        {
+          headers: {
+            Authorization: `Bearer ${token.value}`,
+          },
+        }
+      );
+      if (response.status === 200) {
+        createUser(response.data);
+        if (!response.data.is_profile_setup) {
+          router.push("/completer-profil");
+        }
+      } else {
+        return null;
+      }
+      return token ? token.value : null;
+    } catch (error) {
+      console.error("Error fetching user token:", error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getUserToken();
+  }, []);
   return (
     <UserContext.Provider
       value={{
@@ -37,6 +85,8 @@ export function UserProvider({ children }) {
         createUser,
         selectUser,
         deleteUser,
+        updateUser,
+        loading,
       }}
     >
       {children}

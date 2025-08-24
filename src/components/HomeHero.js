@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React from "react";
 
 const HomeHero = () => {
@@ -16,11 +17,14 @@ const HomeHero = () => {
           Trois-Rivières.
         </p>
         <div className="flex md:flex-row flex-col items-center justify-center mt-10 md:gap-8 gap-4">
-          <button className="bg-pr rounded-md  px-12 py-2 md:text-2xl text-lg cursor-pointer">
+          <Link
+            href="/menu"
+            className="bg-pr rounded-md  px-12 py-2 md:text-2xl text-lg cursor-pointer"
+          >
             <span className="text-black font-bebas-neue">
               Commander maintenant
             </span>
-          </button>
+          </Link>
         </div>
       </div>
     </section>

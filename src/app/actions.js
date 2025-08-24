@@ -8,7 +8,8 @@ export async function create(data) {
 }
 
 export async function getToken() {
-  return cookies().get("token");
+  const cookieStore = await cookies();
+  return cookieStore.get("token");
 }
 
 export async function logout() {

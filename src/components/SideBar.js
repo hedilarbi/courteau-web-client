@@ -4,19 +4,20 @@ import { MdClose } from "react-icons/md";
 import { FaFacebook } from "react-icons/fa";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions";
-import { useUser } from "@/context/UserContext";
+
 const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
   const pathname = usePathname();
 
   const handleLogout = async () => {
     deleteUser();
     await logout();
+    setShowSidebar(false);
   };
   return (
     <div
       className={`${
         showSidebar ? "" : "translate-x-[100%]"
-      }  w-[80%] bg-black fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen p-4 z-20 transition-width duration-300 ease-in-out`}
+      }  w-[100%] bg-black fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen min-h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
     >
       <div className="flex justify-end mb-4">
         <button className="text-white " onClick={() => setShowSidebar(false)}>
@@ -89,25 +90,34 @@ const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
       ) : (
         <div className="flex flex-col gap-4 mt-8 border-b pb-8 border-black">
           <Link
+            href="/inscription"
+            className={`text-white hover:text-pr ${
+              pathname === "/inscription" && "text-pr"
+            } `}
+            onClick={() => setShowSidebar(false)}
+          >
+            S&apos;inscrire
+          </Link>
+          <Link
             href="/connexion"
             className={`text-white hover:text-pr ${
               pathname === "/connexion" && "text-pr"
             } `}
             onClick={() => setShowSidebar(false)}
           >
-            Connexion
+            Se connecter
           </Link>
         </div>
       )}
-      <div className="flex items-center justify-center mt-8 gap-4">
+      <div className="flex items-center justify-center mt-2 gap-4 ">
         <Link href="https://www.facebook.com/">
-          <FaFacebook size={24} color="black" />
+          <FaFacebook size={24} color="white" />
         </Link>
         <Link href="https://www.facebook.com/">
-          <FaFacebook size={24} color="black" />
+          <FaFacebook size={24} color="white" />
         </Link>
         <Link href="https://www.facebook.com/">
-          <FaFacebook size={24} color="black" />
+          <FaFacebook size={24} color="white" />
         </Link>
       </div>
     </div>

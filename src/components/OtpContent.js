@@ -1,8 +1,11 @@
+"use client";
 import React, { useState } from "react";
 import BackButton from "./BackButton";
 import OTPInput from "react-otp-input";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
+import { create } from "@/app/actions";
+import { createUserService } from "@/services/UserServices";
 
 const OtpContent = ({ phoneNumber }) => {
   const [error, setError] = useState("");
@@ -19,12 +22,16 @@ const OtpContent = ({ phoneNumber }) => {
     try {
       if (otp === "000000") {
         const response = await createUserService(phoneNumber);
-        console.log("Response from createUserService:", response);
+
         if (response.status) {
           await create(response.data.token);
           createUser(response.data);
-          router.push("/");
           setIsLoading(false);
+          if (response.data.user.is_profile_setup) {
+            router.push("/");
+          } else {
+            router.push("/completer-profil");
+          }
         } else {
           setError("Erreur lors de la création de l'utilisateur");
           setIsLoading(false);
@@ -41,13 +48,19 @@ const OtpContent = ({ phoneNumber }) => {
             await create(response.data.token);
             createUser(response.data);
             setIsLoading(false);
+            if (response.data.user.is_profile_setup) {
+              router.push("/");
+            } else {
+              router.push("/completer-profil");
+            }
           }
-          router.push("/");
         }
       }
     } catch (err) {
       console.error("Error verifying code:", err);
       setError("Une erreur s'est produite. Veuillez réessayer.");
+      setIsLoading(false);
+    } finally {
       setIsLoading(false);
     }
   };

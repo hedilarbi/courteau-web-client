@@ -28,26 +28,26 @@ export default function ConnexionPage() {
 
       const formattedValue = "+1" + phoneNumber;
 
-      if (phoneNumber === "8196929494") {
-        router.push(`/otp?phoneNumber=${phoneNumber}`);
-      } else {
-        sendSmsVerification(formattedValue)
-          .then((sent) => {
-            if (!sent) {
-              setError("Erreur lors de l'envoi du code de vérification");
-              setIsLoading(false);
-              return;
-            }
-            router.push(`/otp?phoneNumber=${phoneNumber}`);
-          })
-          .then(() => setIsLoading(false))
-          .catch((err) => {
-            setIsLoading(false);
-          });
-      }
+      // if (phoneNumber === "8196929494") {
+      //   router.push(`/otp?phoneNumber=${phoneNumber}`);
+      // } else {
+      //   sendSmsVerification(formattedValue)
+      //     .then((sent) => {
+      //       if (!sent) {
+      //         setError("Erreur lors de l'envoi du code de vérification");
+      //         setIsLoading(false);
+      //         return;
+      //       }
+      //       router.push(`/otp?phoneNumber=${phoneNumber}`);
+      //     })
+      //     .then(() => setIsLoading(false))
+      //     .catch((err) => {
+      //       setIsLoading(false);
+      //     });
+      // }
 
-      // setIsLoading(false);
-      // navigation.navigate("Otp", { phoneNumber: formattedValue });
+      setIsLoading(false);
+      navigation.navigate("otp", { phoneNumber: formattedValue });
     } catch (err) {
       setIsLoading(false);
       setError("Une erreur s'est produite. Veuillez réessayer.");
@@ -82,10 +82,11 @@ export default function ConnexionPage() {
       <div className="flex items-center p-8 rounded   flex-1">
         <div className="w-full">
           <h1 className="md:text-4xl text-3xl font-bold mb-4 font-bebas-neue text-left">
-            Connexion
+            Se connecter
           </h1>
           <p className="mt-2 font-lato text-base md:text-xl scroll-mb-14">
-            Accédez à votre compte pour profiter de toutes les fonctionnalités.
+            Entrez votre numéro de téléphone pour recevoir un code de
+            vérification par SMS.
           </p>
 
           <div className="mb-4 mt-4">

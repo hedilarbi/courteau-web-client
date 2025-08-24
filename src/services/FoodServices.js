@@ -281,6 +281,114 @@ const getVedettes = async () => {
   }
 };
 
+const getMenuItemsByCategory = async (categoryId) => {
+  try {
+    let menuItemsResponse = await axios.get(
+      `${API_URL}/menuItems/category/${categoryId}`,
+      {
+        timeout: 10000,
+      }
+    );
+    if (menuItemsResponse?.status === 200) {
+      return {
+        status: true,
+        message: "menu items by category fetched",
+        data: menuItemsResponse?.data,
+      };
+    } else {
+      return {
+        status: false,
+        message: "menu items by category not found",
+      };
+    }
+  } catch (error) {
+    return {
+      status: false,
+      message: error.message,
+    };
+  }
+};
+const getOffer = async (id) => {
+  try {
+    let getOfferResponse = await axios.get(`${API_URL}/offers/${id}`, {
+      timeout: 10000,
+    });
+    if (getOfferResponse.status === 200) {
+      return {
+        status: true,
+        message: "order data",
+        data: getOfferResponse.data,
+      };
+    } else {
+      return {
+        status: false,
+        message: "didn't found",
+        data: "offer data no ",
+      };
+    }
+  } catch (error) {
+    return {
+      status: false,
+      message: error.message,
+    };
+  }
+};
+
+const getItemBySlug = async (slug) => {
+  try {
+    let getItemResponse = await axios.get(`${API_URL}/menuItems/slug/${slug}`, {
+      timeout: 10000,
+    });
+    if (getItemResponse.status === 200) {
+      return {
+        status: true,
+        message: "item data fetched",
+        data: getItemResponse.data,
+      };
+    } else {
+      return {
+        status: false,
+        message: "item data not found",
+      };
+    }
+  } catch (error) {
+    return {
+      status: false,
+      message: error.message,
+    };
+  }
+};
+const verifyPromoCode = async (code, userId) => {
+  try {
+    let response = await axios.post(
+      `${API_URL}/promoCodes/verify`,
+      {
+        code,
+        userId,
+      },
+      {
+        timeout: 10000,
+      }
+    );
+    if (response?.status === 200) {
+      return {
+        status: true,
+        message: "Promo code is valid",
+        data: response?.data,
+      };
+    } else {
+      return {
+        status: false,
+        message: "Promo code is invalid or expired",
+      };
+    }
+  } catch (error) {
+    return {
+      status: false,
+      message: error.response.data.error,
+    };
+  }
+};
 export {
   getCategories,
   getOffers,
@@ -293,4 +401,8 @@ export {
   getRestaurantItem,
   getRestaurantOffer,
   getVedettes,
+  getMenuItemsByCategory,
+  getOffer,
+  getItemBySlug,
+  verifyPromoCode,
 };

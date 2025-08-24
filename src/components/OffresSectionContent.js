@@ -1,60 +1,93 @@
-"use client";
-import { getCategories, getOffers, getVedettes } from "@/services/FoodServices";
-import React, { useEffect, useState } from "react";
-import Spinner from "./spinner/Spinner";
+import { getOffers } from "@/services/FoodServices";
 import Image from "next/image";
+import Link from "next/link";
+import React from "react";
 
-const OffresSectionContent = () => {
-  const [items, setItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+const OffresSectionContent = async () => {
+  let items = [];
+  try {
+    const res = await getOffers(); // idéalement cacheable côté serveur (ISR/tags)
+    const raw = Array.isArray(res?.data) ? res.data : [];
+    // Garde uniquement les offres valides
+    items = raw.filter((o) => o && o._id && o.image && o.name);
+  } catch (e) {
+    console.error("getOffers failed:", e);
+  }
 
-  const fetchData = async () => {
-    try {
-      const responnse = await getOffers();
-      if (responnse.status) {
-        setItems(responnse.data);
-      }
-    } catch (err) {
-      setError(
-        "Une erreur s'est produite lors de la récupération des données."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  useEffect(() => {
-    fetchData();
-  }, []);
-  if (isLoading) {
+  if (!items.length) {
+    // Skeleton simple si aucune donnée
     return (
-      <div className="h-36 flex items-center justify-center mt-8">
-        <Spinner />
-      </div>
+      <section aria-label="Offres" className="mt-8  ">
+        <div className="-mx-6 md:mx-0 px-6 md:px-0">
+          <div className="flex gap-3 md:gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-20 w-32 md:h-48 md:w-72 rounded-xl bg-gray-200 animate-pulse flex-none"
+                aria-hidden="true"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
     );
   }
   return (
-    <div className="mt-8 overflow-x-auto ">
-      <div className="flex gap-4">
-        {items.map((item) => (
-          <div
-            key={item._id}
-            className="relative md:h-48 md:w-72 h-20 w-28 flex-none rounded-md"
-          >
-            <div className="absolute inset-0 bg-black/35 rounded-md flex-none h-full z-10" />
-            <Image
-              src={item.image}
-              alt={item.name}
-              fill
-              className="object-cover rounded-md"
-            />
-            <p className="absolute bottom-2 left-4 z-20 md:text-2xl text-xs  text-white font-bebas-neue">
-              {item.name}
-            </p>
-          </div>
-        ))}
+    <section aria-label="Offres" className="mt-8 ">
+      <div
+        className="
+          -mx-6 md:mx-0 px-6 md:px-0
+          overflow-x-auto overscroll-x-contain scroll-smooth touch-pan-x
+          scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent
+        "
+      >
+        <ul
+          role="list"
+          className="flex gap-3 md:gap-4 pb-1 snap-x snap-mandatory"
+        >
+          {items.map((item, idx) => (
+            <li key={item._id} role="listitem" className="snap-start">
+              <Link
+                href={`menu/offres/${item.slug}`}
+                aria-haspopup="dialog"
+                aria-controls="offer-modal"
+                className="
+                  group relative block
+                  h-20 w-32 md:h-48 md:w-72
+                  overflow-hidden rounded-xl ring-1 ring-black/5 shadow-sm
+                  transition-transform duration-200 will-change-transform
+                  hover:scale-[1.015] focus-visible:scale-[1.015]
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pr
+                  bg-white
+                "
+                title={item.name}
+              >
+                <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/60 via-black/10 to-transparent rounded-xl" />
+                <Image
+                  src={item.image}
+                  alt={item.name}
+                  fill
+                  sizes="(max-width: 640px) 8rem, (max-width: 1024px) 18rem, 18rem"
+                  className="object-cover"
+                  priority={idx < 2}
+                />
+                <span
+                  className="
+                    absolute left-3 right-3 bottom-2 z-20
+                    text-white drop-shadow
+                    text-xs md:text-2xl font-bebas-neue tracking-wide
+                    line-clamp-1
+                    text-left
+                  "
+                >
+                  {item.name}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
-    </div>
+    </section>
   );
 };
 
