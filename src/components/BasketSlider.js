@@ -15,7 +15,9 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
   const [showOfferModal, setShowOfferModal] = React.useState(false);
   const [showItemModal, setShowItemModal] = React.useState(false);
   const [itemId, setItemId] = React.useState(null);
+  const [offerId, setOfferId] = React.useState(null);
   const [itemUID, setItemUID] = React.useState(null);
+  const [offerUID, setOfferUID] = React.useState(null);
   const router = useRouter();
 
   return (
@@ -24,20 +26,20 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
         showBasketSlider ? "" : "translate-x-[100%]"
       }  md:w-[40%] w-[100%]  bg-[#F3F4F6] flex flex-col  fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
     >
-      {showOfferModal && (
-        <OfferModal
-          setShowOfferModal={setShowOfferModal}
-          itemId={itemId}
-          itemUID={itemUID}
-        />
-      )}
-      {showItemModal && (
-        <MenuItemModal
-          setShowMenuItemModal={setShowItemModal}
-          itemId={itemId}
-          itemUID={itemUID}
-        />
-      )}
+      <OfferModal
+        setShowOfferModal={setShowOfferModal}
+        itemId={offerId}
+        itemUID={offerUID}
+        showOfferModal={showOfferModal}
+      />
+
+      <MenuItemModal
+        setShowMenuItemModal={setShowItemModal}
+        itemId={itemId}
+        itemUID={itemUID}
+        showMenuItemModal={showItemModal}
+      />
+
       <div className="flex justify-end mb-4">
         <button
           className="text-black cursor-pointer text-3xl "
@@ -226,8 +228,8 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                         <button
                           className="bg-pr text-black text-sm font-semibold flex items-center cursor-pointer justify-center gap-2 px-3 py-2 rounded-md mt-2"
                           onClick={() => {
-                            setItemId(item.id);
-                            setItemUID(item.uid);
+                            setOfferId(item.id);
+                            setOfferUID(item.uid);
                             setShowOfferModal(true);
                           }}
                         >

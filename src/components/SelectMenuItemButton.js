@@ -7,26 +7,28 @@ const SelectMenuItemButton = ({ itemId, selectedCategory }) => {
   const [showMenuItemModal, setShowMenuItemModal] = React.useState(false);
   const [showOfferModal, setShowOfferModal] = React.useState(false);
   const [selectedItem, setSelectedItem] = React.useState(null);
+  const [selectedOffer, setSelectedOffer] = React.useState(null);
   return (
     <>
-      {showMenuItemModal && (
-        <MenuItemModal
-          itemId={selectedItem}
-          setShowMenuItemModal={setShowMenuItemModal}
-        />
-      )}
-      {showOfferModal && (
-        <OfferModal
-          itemId={selectedItem}
-          setShowOfferModal={setShowOfferModal}
-        />
-      )}
+      <MenuItemModal
+        itemId={selectedItem}
+        setShowMenuItemModal={setShowMenuItemModal}
+        showMenuItemModal={showMenuItemModal}
+      />
+
+      <OfferModal
+        itemId={selectedOffer}
+        setShowOfferModal={setShowOfferModal}
+        showOfferModal={showOfferModal}
+      />
+
       <button
         onClick={() => {
-          setSelectedItem(itemId);
           if (selectedCategory === "offres") {
+            setSelectedOffer(itemId);
             setShowOfferModal(true);
           } else {
+            setSelectedItem(itemId);
             setShowMenuItemModal(true);
           }
         }}

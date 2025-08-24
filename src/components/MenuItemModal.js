@@ -9,7 +9,12 @@ import { FaRulerCombined, FaCartPlus } from "react-icons/fa";
 import { FaCheck } from "react-icons/fa";
 import { IoChatbubble } from "react-icons/io5";
 import Spinner from "./spinner/Spinner";
-const MenuItemModal = ({ itemId, setShowMenuItemModal, itemUID }) => {
+const MenuItemModal = ({
+  itemId,
+  setShowMenuItemModal,
+  itemUID,
+  showMenuItemModal,
+}) => {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -125,7 +130,11 @@ const MenuItemModal = ({ itemId, setShowMenuItemModal, itemUID }) => {
   }, [itemId]);
 
   return (
-    <div className="h-screen bg-[#F3F4F6] fixed inset-0 z-50 w-full md:px-14 px-4  overflow-y-auto text-black ">
+    <div
+      className={`h-screen bg-[#F3F4F6] fixed inset-0 z-50 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${
+        showMenuItemModal ? "" : "translate-y-[100%]"
+      } `}
+    >
       <div className="flex justify-end py-4">
         <button
           className="text-black p-2 cursor-pointer"

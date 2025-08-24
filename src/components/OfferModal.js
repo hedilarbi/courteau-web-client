@@ -12,7 +12,7 @@ import { FaCartPlus } from "react-icons/fa";
 import { FaCheck } from "react-icons/fa";
 import { IoChatbubble } from "react-icons/io5";
 import Spinner from "./spinner/Spinner";
-const OfferModal = ({ itemId, setShowOfferModal, itemUID }) => {
+const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
   const [offer, setOffer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -124,7 +124,11 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID }) => {
   }, [itemId]);
 
   return (
-    <div className="h-screen bg-[#F3F4F6] fixed inset-0 z-50 w-full md:px-14 px-4  overflow-y-auto text-black">
+    <div
+      className={`h-screen bg-[#F3F4F6] fixed inset-0 z-50 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${
+        showOfferModal ? "" : "translate-y-[100%]"
+      } `}
+    >
       {loading ? (
         <div className="flex items-center justify-center h-full">
           <Spinner />
