@@ -4,7 +4,7 @@ import Link from "next/link";
 import Script from "next/script";
 
 export const dynamic = "force-static";
-export const revalidate = 60 * 60 * 24 * 30; // 30 jours
+export const revalidate = 2592000;
 
 export async function generateMetadata() {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.example.com";
@@ -12,7 +12,7 @@ export async function generateMetadata() {
   const title = `Contact | ${brand}`;
   const description =
     "Contactez le Casse-Croûte Courteau. Retrouvez nos succursales en Mauricie (Trois-Rivières, Bécancour, Saint-Boniface) : adresses, téléphone et plan d’accès.";
-  const ogImage = `${base}/og/cover.jpg`; // remplace par ton image OG si dispo
+  const ogImage = `${base}/logo.svg`; // remplace par ton image OG si dispo
 
   return {
     title,

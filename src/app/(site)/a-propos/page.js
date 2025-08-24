@@ -8,7 +8,7 @@ import Link from "next/link";
 import Script from "next/script";
 
 export const dynamic = "force-static"; // page 100% statique
-export const revalidate = 60 * 60 * 24 * 30; // ISR: 30 jours
+export const revalidate = 2592000;
 
 export async function generateMetadata() {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.example.com";
@@ -16,8 +16,6 @@ export async function generateMetadata() {
   const title = `À propos | ${brand}`;
   const description =
     "Découvrez l’histoire et les valeurs du Casse-Croûte Courteau : fraîcheur, passion et communauté au cœur de la Mauricie. Commandez en ligne.";
-
-  const ogImage = `${base}/og/cover.jpg`; // adapte si tu as une image OG
 
   return {
     title,
@@ -31,13 +29,11 @@ export async function generateMetadata() {
       description,
       siteName: brand,
       locale: "fr_CA",
-      images: [{ url: ogImage, width: 1200, height: 630, alt: brand }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImage],
     },
   };
 }

@@ -6,7 +6,7 @@ import Script from "next/script";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-static"; // SSG si possible
-export const revalidate = 60 * 60 * 24 * 7; // ISR: 7 jours
+export const revalidate = 2592000;
 
 const BRAND = "Casse-Croûte Courteau";
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://www.lecourteau.com";
