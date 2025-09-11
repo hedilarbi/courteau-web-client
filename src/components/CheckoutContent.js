@@ -10,7 +10,7 @@ import PromoCodeBlock from "./PromoCodeBlock";
 import { useSelectBasketTotal } from "@/context/BasketContext";
 import TipsBlock from "./TipsBlock";
 import ResumeBlock from "./ResumeBlock";
-import Spinner from "./spinner/Spinner";
+
 import { useRouter } from "next/navigation";
 import ProcessPaiement from "./ProcessPaiement";
 import WarningBanner from "./WarningBanner";
@@ -130,10 +130,35 @@ const CheckoutContent = ({ restaurantsSettings }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Spinner />
+      <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 min-h-screen">
+        <div className="md:w-[70%] w-full mx-auto">
+          <h1 className="font-inter font-semibold text-black md:text-2xl text-lg">
+            Finaliser la commande
+          </h1>
+          <p className="font-inter font-medium  text-[#4B5563] md:text-lg text-base">
+            Complétez les informations ci-dessous pour confirmer votre commande
+          </p>
+          <div className="rounded-md bg-white p-6 shadow-md  ">
+            <div className="animate-pulse">
+              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
+              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
+              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
+            </div>
+          </div>
+          <div className="rounded-md bg-white p-6 shadow-md mt-4  ">
+            <div className="animate-pulse">
+              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
+              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
+              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
+  }
+
+  if (!user && !loading) {
+    return null;
   }
 
   return (

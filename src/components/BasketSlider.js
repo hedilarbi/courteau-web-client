@@ -8,9 +8,12 @@ import { IoPencilSharp } from "react-icons/io5";
 import OfferModal from "./OfferModal";
 import MenuItemModal from "./MenuItemModal";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
+import NoUserModal from "./NoUserModal";
 
 const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
   const basket = useSelectBasket();
+  const { user, loading } = useUser();
 
   const { removeFromBasket, removeOfferFromBasket, removeRewardFromBasket } =
     useBasket();
@@ -20,7 +23,17 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
   const [offerId, setOfferId] = React.useState(null);
   const [itemUID, setItemUID] = React.useState(null);
   const [offerUID, setOfferUID] = React.useState(null);
+  const [showNoUserModal, setShowNoUserModal] = React.useState(false);
   const router = useRouter();
+
+  const handleNav = () => {
+    if (!user) {
+      setShowNoUserModal(true);
+      return;
+    }
+    setShowBasketSlider(false);
+    router.push("/checkout");
+  };
 
   return (
     <div
@@ -28,6 +41,11 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
         showBasketSlider ? "" : "translate-x-[100%]"
       }  md:w-[40%] w-[100%]  bg-[#F3F4F6] flex flex-col  fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
     >
+      <NoUserModal
+        showNoUserModal={showNoUserModal}
+        setShowNoUserModal={setShowNoUserModal}
+      />
+
       <OfferModal
         setShowOfferModal={setShowOfferModal}
         itemId={offerId}
@@ -309,10 +327,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                   : "bg-pr cursor-pointer"
               }  text-black font-semibold font-inter px-4 py-2 rounded-md mt-4 w-full`}
               disabled={basket.size === 0 || basket.subtotal === 0}
-              onClick={() => {
-                setShowBasketSlider(false);
-                router.push("/checkout");
-              }}
+              onClick={handleNav}
             >
               Passer à la caisse
             </button>

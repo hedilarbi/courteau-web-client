@@ -16,13 +16,11 @@ const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
     return null;
   }
   let actifButton = true;
-  if (!user) {
-    actifButton = false;
-  }
 
   if (
     user?.fidelity_points < reward?.points &&
-    selectedCategory === "recompenses"
+    selectedCategory === "recompenses" &&
+    !user
   ) {
     actifButton = false;
   }

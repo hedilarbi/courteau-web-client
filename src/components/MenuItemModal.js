@@ -9,6 +9,7 @@ import { FaRulerCombined, FaCartPlus } from "react-icons/fa";
 import { FaCheck } from "react-icons/fa";
 import { IoChatbubble } from "react-icons/io5";
 import Spinner from "./spinner/Spinner";
+import ItemLoadingSkeleton from "./ItemLoadingSkeleton";
 const MenuItemModal = ({
   itemId,
   setShowMenuItemModal,
@@ -131,7 +132,7 @@ const MenuItemModal = ({
 
   return (
     <div
-      className={`h-screen bg-[#F3F4F6] fixed inset-0 z-50 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${
+      className={`h-screen bg-[#F3F4F6] fixed inset-0 z-40 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${
         showMenuItemModal ? "" : "translate-y-[100%]"
       } `}
     >
@@ -144,9 +145,7 @@ const MenuItemModal = ({
         </button>
       </div>
       {loading ? (
-        <div className="flex items-center justify-center h-full">
-          <Spinner />
-        </div>
+        <ItemLoadingSkeleton />
       ) : (
         <div className=" ">
           <div className=" flex md:flex-row flex-col md:gap-10 gap-5 items-start pb-10 ">

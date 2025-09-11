@@ -43,7 +43,7 @@ const VedetteSectionContent = async () => {
     <section aria-label="Plats en vedette" className="mt-8 ">
       <div
         className="
-          -mx-6 md:mx-0 px-6 md:px-0
+        
           overflow-x-auto overscroll-x-contain scroll-smooth touch-pan-x
           scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent
         "

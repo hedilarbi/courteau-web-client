@@ -18,17 +18,19 @@ const CategoriesSectionContient = async () => {
   if (!data.length) {
     // Fallback discret si aucune catégorie
     return (
-      <div className="mt-8 md:px-24 px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-20 md:h-48 rounded-md bg-gray-200 animate-pulse"
-              aria-hidden="true"
-            />
-          ))}
+      <section aria-label="Plats en vedette" className="mt-8  ">
+        <div className="-mx-6 md:mx-0 px-6 md:px-0">
+          <div className="flex gap-3 md:gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-20 w-32 md:h-48 md:w-72 rounded-xl bg-gray-200 animate-pulse flex-none"
+                aria-hidden="true"
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
@@ -36,7 +38,7 @@ const CategoriesSectionContient = async () => {
     <section aria-label="Catégories du menu" className="mt-8  ">
       <div
         className="
-          -mx-6 md:mx-0 px-6 md:px-0
+         
           overflow-x-auto overscroll-x-contain
           scroll-smooth touch-pan-x
           scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent

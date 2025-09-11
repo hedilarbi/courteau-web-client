@@ -17,7 +17,7 @@ const OffresSectionContent = async () => {
   if (!items.length) {
     // Skeleton simple si aucune donnée
     return (
-      <section aria-label="Offres" className="mt-8  ">
+      <section aria-label="Plats en vedette" className="mt-8  ">
         <div className="-mx-6 md:mx-0 px-6 md:px-0">
           <div className="flex gap-3 md:gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -36,7 +36,7 @@ const OffresSectionContent = async () => {
     <section aria-label="Offres" className="mt-8 ">
       <div
         className="
-          -mx-6 md:mx-0 px-6 md:px-0
+         
           overflow-x-auto overscroll-x-contain scroll-smooth touch-pan-x
           scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent
         "
