@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import OfferComponent from "@/components/OfferComponent";
+import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-static"; // SSG si possible
 export const revalidate = 1800; // ISR 30 min
@@ -132,9 +133,10 @@ export default async function Page({ params }) {
   };
 
   return (
-    <div className="mt-10 md:mt-10 w-full md:px-14 ">
+    <div className="mt-6 md:mt-6 w-full md:px-14 ">
+      <BackButton />
       {/* Fil d’Ariane visible */}
-      <nav aria-label="Fil d’Ariane" className="mb-4 text-sm">
+      <nav aria-label="Fil d’Ariane" className="mb-4 text-sm mt-4">
         <ol className="flex flex-wrap items-center gap-1 text-gray-600">
           <li>
             <Link href="/menu" className="hover:underline">
@@ -154,7 +156,7 @@ export default async function Page({ params }) {
         </ol>
       </nav>
 
-      <div className="flex md:flex-row flex-col md:gap-10 gap-5 items-start py-10">
+      <div className="flex md:flex-row flex-col md:gap-10 gap-5 items-start ">
         {/* Colonne visuel */}
         <article className="md:w-1/2 w-full rounded-md shadow-lg bg-white">
           <h1 className="px-6 pt-6 md:px-8 md:pt-8 text-2xl md:text-3xl font-bold">

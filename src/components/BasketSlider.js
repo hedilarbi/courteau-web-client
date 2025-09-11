@@ -11,7 +11,9 @@ import { useRouter } from "next/navigation";
 
 const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
   const basket = useSelectBasket();
-  const { removeFromBasket, removeOfferFromBasket } = useBasket();
+
+  const { removeFromBasket, removeOfferFromBasket, removeRewardFromBasket } =
+    useBasket();
   const [showOfferModal, setShowOfferModal] = React.useState(false);
   const [showItemModal, setShowItemModal] = React.useState(false);
   const [itemId, setItemId] = React.useState(null);
@@ -249,6 +251,39 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                 ))}
               </div>
             )}
+            {basket.rewards.length > 0 && (
+              <div>
+                <p className="text-black font-inter text-base mt-4 font-semibold">
+                  Récompenses
+                </p>
+                {basket.rewards.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between py-2 border-b border-gray-200 ${
+                      index === basket.rewards.length - 1 ? "border-b-0" : ""
+                    }`}
+                  >
+                    <Image
+                      src={item.item.image}
+                      alt={item.item.name}
+                      width={70}
+                      height={70}
+                      className="object-cover rounded-xl  md:w-40  w-14 h-14"
+                    />
+                    <p className="text-sm font-inter text-gray-700 ml-2">
+                      {item.item.name}
+                    </p>
+                    <button
+                      className="bg-red-500 flex items-center justify-center gap-2 text-white text-sm cursor-pointer px-3 py-2 rounded-md mt-2"
+                      onClick={() => removeRewardFromBasket(item._id)}
+                    >
+                      <FaTrash />
+                      <p className="font-inter font-semibold">Supprimer</p>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -268,7 +303,12 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
           </div>
           <div className="mt-2">
             <button
-              className="bg-pr text-black font-semibold font-inter px-4 py-2 rounded-md mt-4 w-full"
+              className={`${
+                basket.size === 0 || basket.subtotal === 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-pr cursor-pointer"
+              }  text-black font-semibold font-inter px-4 py-2 rounded-md mt-4 w-full`}
+              disabled={basket.size === 0 || basket.subtotal === 0}
               onClick={() => {
                 setShowBasketSlider(false);
                 router.push("/checkout");

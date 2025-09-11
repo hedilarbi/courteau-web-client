@@ -39,6 +39,7 @@ const AddAddressModal = ({
       }
 
       const data = await response.json();
+      console.log(data.results[0]);
 
       if (data.status === "OK" && data.results.length > 0) {
         const result = data.results[0];
@@ -64,7 +65,7 @@ const AddAddressModal = ({
 
   const handleAddAddress = async () => {
     if (!newAddress.trim()) {
-      setError("Please enter an address");
+      setError("Veuillez entrer une adresse valide.");
       return;
     }
     setIsLoading(true);

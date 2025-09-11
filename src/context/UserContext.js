@@ -27,6 +27,14 @@ function userReducer(state, action) {
       return { ...state, user: null };
     case "UPDATE_USER":
       return { ...state, user: { ...state.user, ...action.payload } };
+    case "REMOVE_POINTS":
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          fidelity_points: state.user.fidelity_points - action.payload,
+        },
+      };
 
     default:
       return state;
@@ -42,6 +50,8 @@ export function UserProvider({ children }) {
   const createUser = (user) => dispatch({ type: "CREATE_USER", payload: user });
   const selectUser = (user) => dispatch({ type: "SELECT_USER", payload: user });
   const updateUser = (user) => dispatch({ type: "UPDATE_USER", payload: user });
+  const removePoints = (points) =>
+    dispatch({ type: "REMOVE_POINTS", payload: points });
   const deleteUser = () => dispatch({ type: "DELETE_USER" });
   const getUserToken = async () => {
     try {
@@ -86,6 +96,7 @@ export function UserProvider({ children }) {
         selectUser,
         deleteUser,
         updateUser,
+        removePoints,
         loading,
       }}
     >

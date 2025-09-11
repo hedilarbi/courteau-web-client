@@ -26,6 +26,14 @@ async function fetchItemsByCategory(categorySlug) {
   return res.json();
 }
 
+async function fetchAwards() {
+  const res = await fetch(`${process.env.API_URL}/rewards`, {
+    next: { revalidate: 1800, tags: ["menu", "rewards"] },
+  });
+  if (!res.ok) throw new Error("Failed to fetch awards");
+  return res.json();
+}
+
 async function fetchOffers() {
   const res = await fetch(`${process.env.API_URL}/offers`, {
     next: { revalidate: 1800, tags: ["menu", "offers"] },
@@ -35,6 +43,12 @@ async function fetchOffers() {
 }
 export default async function Page({ searchParams }) {
   let categories = [
+    {
+      _id: "recompenses",
+      name: "Récompenses",
+      slug: "recompenses",
+      image: "/awards.png",
+    },
     {
       _id: "offers",
       name: "Offres",
@@ -50,11 +64,17 @@ export default async function Page({ searchParams }) {
 
   const knownIds = new Set((categories ?? []).map((c) => c.slug));
 
-  const firstCategorySlug = categories?.[1]?.slug ?? null;
+  const firstCategorySlug = categories?.[2]?.slug ?? null;
   let items = [];
   // Récupère les items de la catégorie sélectionnée ou de la première catégorie
   if (urlCategory && knownIds.has(urlCategory) && urlCategory === "offres") {
     items = await fetchOffers();
+  } else if (
+    urlCategory &&
+    knownIds.has(urlCategory) &&
+    urlCategory === "recompenses"
+  ) {
+    items = await fetchAwards();
   } else {
     items =
       urlCategory && knownIds.has(urlCategory)

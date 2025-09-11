@@ -25,7 +25,7 @@ const OtpContent = ({ phoneNumber }) => {
 
         if (response.status) {
           await create(response.data.token);
-          createUser(response.data);
+          createUser(response.data.user);
           setIsLoading(false);
           if (response.data.user.is_profile_setup) {
             router.push("/");

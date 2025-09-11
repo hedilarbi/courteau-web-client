@@ -17,7 +17,7 @@ const PromoCodeBlock = ({
       setIsLoading(true);
       setPromoCodeError(null);
       setPromoCodeIsValid(false);
-      if (firstOrderDiscountApplied) {
+      if (!firstOrderDiscountApplied) {
         setPromoCodeError("Une autre réduction est déjà appliquée.");
         return;
       }

@@ -4,6 +4,7 @@ import { Bebas_Neue, Inter } from "next/font/google";
 import Script from "next/script";
 import { AppProviders } from "@/context/AppProviders";
 import { Toaster } from "react-hot-toast";
+import StripeProvider from "@/providers/StripeProvider";
 
 const bebasNeue = Bebas_Neue({
   variable: "--font-bebas-neue",
@@ -78,10 +79,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr-CA">
       <body className={`${bebasNeue.variable} ${inter.variable} antialiased`}>
-        <AppProviders>
-          <Toaster position="top-left" containerStyle={{ zIndex: 9999 }} />
-          {children}
-        </AppProviders>
+        <StripeProvider>
+          <AppProviders>
+            <Toaster position="top-left" containerStyle={{ zIndex: 9999 }} />
+            {children}
+          </AppProviders>
+        </StripeProvider>
 
         <Script
           id="ld-website"

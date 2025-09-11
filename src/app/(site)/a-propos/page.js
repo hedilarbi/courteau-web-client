@@ -127,7 +127,7 @@ export default function Page() {
           <div className="flex-1 flex justify-center items-center py-4">
             <FaStore className="md:text-4xl text-2xl" />
             <p className="font-inter font-semibold text-black ml-5 capitalize md:text-xl text-lg">
-              5 succursales en Mauricie
+              5 succursales
             </p>
           </div>
         </div>

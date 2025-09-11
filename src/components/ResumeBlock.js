@@ -28,9 +28,11 @@ const ResumeBlock = ({
         {!firstOrderDiscountApplied && (
           <div className="flex justify-between">
             <span className="font-inter text-gray-700">
-              Remise première commande
+              Remise 1 ère commande (20%)
             </span>
-            <span className="font-inter font-semibold text-gray-900">20%</span>
+            <span className="font-inter font-semibold text-gray-900">
+              -${(subTotal * 0.2).toFixed(2)}
+            </span>
           </div>
         )}
 
@@ -46,14 +48,24 @@ const ResumeBlock = ({
         )}
         {promoCodeData && promoCodeIsValid && (
           <div className="flex justify-between">
-            <span className="font-inter text-gray-700">Code promo</span>
-            <span className="font-inter font-semibold text-gray-900">
+            <span className="font-inter text-gray-700">
+              Code promo (
               {promoCodeData.type === "percent"
                 ? "-" + promoCodeData.percent + "%"
                 : promoCodeData.type === "amount"
                 ? "-" + promoCodeData.amount + "$"
                 : promoCodeData.type === "free_item"
                 ? promoCodeData.freeItem.name
+                : ""}
+              ){" "}
+            </span>
+            <span className="font-inter font-semibold text-gray-900">
+              {promoCodeData.type === "percent"
+                ? "-$" + ((promoCodeData.percent / 100) * subTotal).toFixed(2)
+                : promoCodeData.type === "amount"
+                ? "-$" + promoCodeData.amount.toFixed(2)
+                : promoCodeData.type === "free_item"
+                ? "Offert"
                 : ""}
             </span>
           </div>

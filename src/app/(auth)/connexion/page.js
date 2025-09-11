@@ -47,7 +47,7 @@ export default function ConnexionPage() {
       // }
 
       setIsLoading(false);
-      navigation.navigate("otp", { phoneNumber: formattedValue });
+      router.push(`/otp?phoneNumber=${phoneNumber}`);
     } catch (err) {
       setIsLoading(false);
       setError("Une erreur s'est produite. Veuillez réessayer.");

@@ -17,7 +17,7 @@ const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
     <div
       className={`${
         showSidebar ? "" : "translate-x-[100%]"
-      }  w-[100%] bg-black fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen min-h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
+      }  w-[90%] bg-black fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen min-h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
     >
       <div className="flex justify-end mb-4">
         <button className="text-white " onClick={() => setShowSidebar(false)}>

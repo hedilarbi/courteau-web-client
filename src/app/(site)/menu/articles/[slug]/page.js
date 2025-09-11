@@ -65,6 +65,7 @@ export async function generateStaticParams() {
 }
 
 import ArticleComponent from "@/components/ArticleComponent";
+import BackButton from "@/components/BackButton";
 
 export default async function Page({ params }) {
   const slug = decodeURIComponent(params.slug);
@@ -118,9 +119,9 @@ export default async function Page({ params }) {
   };
 
   return (
-    <div className="mt-10 md:mt-10 bg-[#F3F4F6] w-full md:px-14 ">
-      {/* Fil d’Ariane HTML */}
-      <nav aria-label="Fil d’Ariane" className="mb-4 text-sm">
+    <div className="mt-6 md:mt-6 bg-[#F3F4F6] w-full md:px-14 ">
+      <BackButton />
+      <nav aria-label="Fil d’Ariane" className="mb-4 text-sm mt-4">
         <ol className="flex flex-wrap items-center gap-1 text-gray-600">
           <li>
             <Link href="/menu" className="hover:underline">
@@ -147,13 +148,9 @@ export default async function Page({ params }) {
         </ol>
       </nav>
 
-      <div className="flex md:flex-row flex-col md:gap-10 gap-5 items-start py-10">
+      <div className="flex md:flex-row flex-col md:gap-10 gap-5 items-start">
         {/* Colonne visuel + description */}
         <article className="md:w-1/2 w-full rounded-md shadow-lg bg-white">
-          <h1 className="px-6 pt-6 md:px-8 md:pt-8 text-2xl md:text-3xl font-bold">
-            {item.name}
-          </h1>
-
           <div className=" md:px-8 md:py-4 px-0 py-0">
             <Image
               src={item.image}

@@ -12,6 +12,7 @@ import TipsBlock from "./TipsBlock";
 import ResumeBlock from "./ResumeBlock";
 import Spinner from "./spinner/Spinner";
 import { useRouter } from "next/navigation";
+import ProcessPaiement from "./ProcessPaiement";
 const CheckoutContent = ({ restaurantsSettings }) => {
   const { user, loading } = useUser();
   const router = useRouter();
@@ -153,7 +154,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             selectedRestaurant={selectedRestaurant}
             setSelectedRestaurant={setSelectedRestaurant}
             restaurantsSettings={restaurantsSettings}
-            userId={user.id}
+            userId={user._id}
             userAddresses={user.addresses}
             deliveryMode={deliveryMode}
           />
@@ -184,6 +185,19 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             promoCodeIsValid={promoCodeIsValid}
             deliveryMode={deliveryMode}
             subTotalWithDiscount={subTotalWithDiscount}
+          />
+          <ProcessPaiement
+            user={user}
+            total={total}
+            selectedRestaurant={selectedRestaurant}
+            address={address}
+            deliveryMode={deliveryMode}
+            tipAmount={tips}
+            promoCode={promoCodeIsValid ? promoCodeData : null}
+            subTotal={subTotal}
+            subTotalWithDiscount={subTotalWithDiscount}
+            tvq={tvq}
+            tps={tps}
           />
         </section>
       </div>
