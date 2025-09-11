@@ -9,7 +9,7 @@ const VedetteSectionContent = async () => {
   let items = [];
   try {
     const res = await getVedettes();
-    console.log("getVedettes response:", res);
+
     const raw = Array.isArray(res?.data) ? res.data : [];
     const cleaned = raw
       .map((it) => it?.menuItem)

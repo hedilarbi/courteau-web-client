@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import React from "react";
 
 import HamburgerMenuButton from "./HamburgerMenuButton";
-import HeaderLoginButton from "./HeaderLoginButton";
+
 const Navigation = () => {
   const pathname = usePathname();
   const currentPath = pathname.split("/")[1];
