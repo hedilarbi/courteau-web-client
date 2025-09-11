@@ -26,6 +26,7 @@ export default function CheckoutCard({
   tipAmount,
   promoCode,
   subTotalWithDiscount,
+  canOrder,
 }) {
   const { clearBasket } = useBasket();
   const router = useRouter();
@@ -100,66 +101,96 @@ export default function CheckoutCard({
   );
 
   async function handleNewCardFlow() {
-    if (!stripe || !elements) throw new Error("Stripe non initialisé.");
-    const card = elements.getElement(CardElement);
-    if (!card) throw new Error("Card element introuvable.");
-    if (!cardComplete)
-      throw new Error("Veuillez remplir les détails de la carte.");
-    if (!user?.email) throw new Error("Email requis.");
+    try {
+      if (!stripe || !elements) {
+        setError("Stripe non initialisé.");
+        return;
+      }
+      const card = elements.getElement(CardElement);
+      if (!card) {
+        setError("Erreur avec le formulaire de la carte.");
+        return;
+      }
+      if (!cardComplete) {
+        setError("Veuillez compléter les informations de la carte.");
+        return;
+      }
 
-    // 1) Create PaymentMethod on web (like Expo)
-    const pmRes = await stripe.createPaymentMethod({
-      type: "card",
-      card,
-      billing_details: { email: user.email.trim() },
-    });
-    if (pmRes.error || !pmRes.paymentMethod?.id) {
-      throw new Error(
-        pmRes.error?.message ||
-          "Erreur lors de la création du moyen de paiement."
+      if (!user?.email) {
+        setError("Email requis.");
+        return;
+      }
+
+      // 1) Create PaymentMethod on web (like Expo)
+      const pmRes = await stripe.createPaymentMethod({
+        type: "card",
+        card,
+        billing_details: { email: user.email.trim() },
+      });
+      if (pmRes.error || !pmRes.paymentMethod?.id) {
+        setError(
+          pmRes.error?.message ||
+            "Erreur lors de la création du moyen de paiement."
+        );
+        return;
+      }
+
+      // 2) Ask server to create & confirm manual-capture PI
+      return getPaymentIntentClientSecret(
+        user._id,
+        amountCents,
+        user.email.trim(),
+        pmRes.paymentMethod.id,
+        false
       );
+    } catch (e) {
+      setError(e?.message || "Erreur lors de la création du paiement.");
+      console.log(e);
+      await catchError(user?._id || "", e?.message || "unknown", "CheckoutWeb");
     }
-
-    // 2) Ask server to create & confirm manual-capture PI
-    return getPaymentIntentClientSecret(
-      user._id,
-      amountCents,
-      user.email.trim(),
-      pmRes.paymentMethod.id,
-      false
-    );
   }
 
   async function handleSavedCardFlow(pmId) {
-    return getPaymentIntentClientSecret(
-      user._id,
-      amountCents,
-      user.email.trim(),
-      pmId,
-      true
-    );
+    try {
+      return getPaymentIntentClientSecret(
+        user._id,
+        amountCents,
+        user.email.trim(),
+        pmId,
+        true
+      );
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   async function processPi(pi) {
-    if (!pi?.id) throw new Error("Réponse paiement invalide.");
+    if (!pi?.id) {
+      setError("Erreur lors du traitement du paiement.");
+      return;
+    }
 
     // SCA/3DS
     if (pi.status === "requires_action" && pi.client_secret && stripe) {
       const result = await stripe.handleCardAction(pi.client_secret);
       if (result.error) {
         if (result.error.code === "payment_intent_authentication_failure") {
-          throw new Error("Nous n'avons pas pu vérifier votre carte.");
+          setError("Échec de l'authentification 3D Secure.");
+          return;
         }
-        throw new Error(result.error.message || "Authentification échouée.");
+        setError(
+          result.error.message || "Erreur lors de l'authentification 3D Secure."
+        );
+        return;
       }
 
       const response = await confirmPaiment(result.paymentIntent.id);
 
       if (!response.status) {
-        throw new Error(
-          response.error?.message ||
-            "Erreur lors de la confirmation du paiement."
+        setError(
+          response.message || "Erreur lors de la confirmation du paiement."
         );
+        return;
       }
       const updated = response.data.data;
       if (
@@ -170,9 +201,8 @@ export default function CheckoutCard({
         handlePaymentReady(updated.id);
         return;
       }
-      throw new Error(
-        `Authentification requise (${updated?.status || "inconnu"}).`
-      );
+      setError(`Statut paiement inattendu.`);
+      return;
     }
 
     // No 3DS required → capturable later by backoffice
@@ -185,7 +215,7 @@ export default function CheckoutCard({
       return;
     }
 
-    throw new Error(`Statut paiement inattendu: ${pi.status}`);
+    setError(`Statut paiement inattendu`);
   }
 
   async function onPay() {
@@ -230,35 +260,34 @@ export default function CheckoutCard({
         return;
       }
 
-      if (!stripe || !elements) throw new Error("Stripe non initialisé.");
+      if (!stripe || !elements) {
+        setError("Stripe non initialisé.");
+        return;
+      }
 
       let pi;
       if (selectedPmId) {
         const response = await handleSavedCardFlow(selectedPmId);
 
-        if (response.error) {
-          throw new Error(
-            response.error?.message ||
-              "Erreur lors de la création du moyen de paiement."
-          );
+        if (!response.status) {
+          setError(response.message);
+          return;
         }
         pi = response.data;
       } else if (showCardField) {
         const response = await handleNewCardFlow();
-        if (response.error) {
-          throw new Error(
-            response.error?.message ||
-              "Erreur lors de la création du moyen de paiement."
-          );
+        if (!response.status) {
+          setError(response.message);
+          return;
         }
         pi = response.data;
       } else {
-        throw new Error("Veuillez sélectionner ou ajouter une carte.");
+        setError("Aucun moyen de paiement sélectionné.");
+        return;
       }
 
       await processPi(pi);
     } catch (e) {
-      console.log(e);
       setError(e?.message || "Erreur lors du traitement du paiement.");
       await catchError(user?._id || "", e?.message || "unknown", "CheckoutWeb");
     } finally {
@@ -435,9 +464,16 @@ export default function CheckoutCard({
         type="button"
         onClick={onPay}
         disabled={
-          loading || (!!showCardField && !cardComplete && !selectedPmId)
+          loading ||
+          (!!showCardField && !cardComplete && !selectedPmId) ||
+          !canOrder ||
+          user.isBanned ||
+          !stripe ||
+          !elements ||
+          !total ||
+          total <= 0
         }
-        className="w-full rounded-md bg-pr font-bebas-neue text-xl py-3 font-bold disabled:opacity-60"
+        className={`w-full rounded-md bg-pr font-bebas-neue text-xl py-3 font-bold disabled:bg-gray-400 disabled:cursor-not-allowed`}
       >
         {loading ? "Traitement..." : "Payer"}
       </button>

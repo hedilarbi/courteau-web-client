@@ -13,6 +13,7 @@ import ResumeBlock from "./ResumeBlock";
 import Spinner from "./spinner/Spinner";
 import { useRouter } from "next/navigation";
 import ProcessPaiement from "./ProcessPaiement";
+import WarningBanner from "./WarningBanner";
 const CheckoutContent = ({ restaurantsSettings }) => {
   const { user, loading } = useUser();
   const router = useRouter();
@@ -34,6 +35,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       : null
   );
   const [address, setAddress] = useState({});
+  const [canOrder, setCanOrder] = useState(true);
 
   useEffect(() => {
     if (user && user.addresses && user.addresses.length > 0 && !loading) {
@@ -137,6 +139,19 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   return (
     <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 relative ">
       <div className="md:w-[70%] w-full mx-auto">
+        {user.isBanned && (
+          <div className="bg-red-500 text-white font-inter font-semibold mb-4">
+            <p className="text-center py-2 px-4">
+              Votre compte a été désactivé. Veuillez contacter le support pour
+              plus d&apos;informations.
+            </p>
+          </div>
+        )}
+        <WarningBanner
+          settings={selectedRestaurant.settings}
+          deliveryMode={deliveryMode}
+          setCanOrder={setCanOrder}
+        />
         <h1 className="font-inter font-semibold text-black md:text-2xl text-lg">
           Finaliser la commande
         </h1>
@@ -198,6 +213,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             subTotalWithDiscount={subTotalWithDiscount}
             tvq={tvq}
             tps={tps}
+            canOrder={canOrder}
           />
         </section>
       </div>

@@ -18,6 +18,7 @@ const ProcessPaiement = ({
   subTotalWithDiscount,
   tvq,
   tps,
+  canOrder,
 }) => {
   const [processPaiement, setProcessPaiement] = useState(false);
 
@@ -66,6 +67,7 @@ const ProcessPaiement = ({
           subTotalWithDiscount={subTotalWithDiscount}
           tvq={tvq}
           tps={tps}
+          canOrder={canOrder}
         />
       </Elements>
     </div>
