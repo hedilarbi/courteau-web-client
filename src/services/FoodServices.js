@@ -1,5 +1,8 @@
 import axios from "axios";
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  process.env.API_URL ||
+  "http://localhost:5000/api";
 axios.defaults.timeout = 15000; // Timeout of 10 seconds
 const getCategories = async () => {
   try {
