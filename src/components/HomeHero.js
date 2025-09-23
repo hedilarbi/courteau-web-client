@@ -9,7 +9,7 @@ const HomeHero = () => {
     >
       <div>
         <h1 className="md:text-5xl text-3xl font-bebas-neue font-bold tracking-widest text-white text-center">
-          Bienvenu au Casse-Croûte Courteau
+          Bienvenue au Casse-Croûte Courteau
         </h1>
         <p className="md:text-xl text-base font-inter font-medium text-white mt-6 text-center md:px-36 px-0">
           Venez découvrir les généreuses et délicieuses poutines ou les
