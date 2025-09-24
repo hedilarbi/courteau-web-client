@@ -21,7 +21,7 @@ export default function MenuCategoriesSection({
             aria-current={active ? "page" : undefined} // 🔁 mieux que aria-pressed sur un lien
             className={`${
               active ? "ring-2 ring-pr" : ""
-            } rounded-full md:h-24 md:w-24 h-16 w-16 relative flex-none shadow-md flex justify-center items-center`}
+            } rounded-full md:h-28 md:w-28 h-20 w-20 relative flex-none shadow-md flex justify-center items-center`}
           >
             <Image
               src={category.image}
@@ -34,7 +34,7 @@ export default function MenuCategoriesSection({
             <h2
               className={`${
                 active ? "text-pr" : "text-white"
-              } text-xs md:text-xl absolute z-20 font-bebas-neue`}
+              } text-xs md:text-lg absolute z-20 font-bebas-neue text-center`}
             >
               {category.name}
             </h2>

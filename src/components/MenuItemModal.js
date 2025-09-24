@@ -8,7 +8,7 @@ import { AiOutlineClose } from "react-icons/ai";
 import { FaRulerCombined, FaCartPlus } from "react-icons/fa";
 import { FaCheck } from "react-icons/fa";
 import { IoChatbubble } from "react-icons/io5";
-import Spinner from "./spinner/Spinner";
+
 import ItemLoadingSkeleton from "./ItemLoadingSkeleton";
 const MenuItemModal = ({
   itemId,
