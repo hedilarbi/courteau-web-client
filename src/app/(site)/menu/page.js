@@ -8,7 +8,7 @@ import Script from "next/script";
 // 👉 Remplace par tes vrais appels serveur (ou direct DB)
 async function fetchCategories() {
   const res = await fetch(`${process.env.API_URL}/categories`, {
-    next: { revalidate: 1800, tags: ["menu", "categories"] },
+    cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch categories");
   return res.json();
@@ -18,10 +18,13 @@ async function fetchItemsByCategory(categorySlug) {
   const res = await fetch(
     `${process.env.API_URL}/menuItems/category/slug/${categorySlug}`,
     {
-      next: { revalidate: 1800, tags: ["menu", `category:${categorySlug}`] },
+      cache: "no-store",
     }
   );
-  if (!res.ok) throw new Error("Failed to fetch items");
+  if (!res.ok) {
+    console.log("Failed to fetch items for category:", categorySlug);
+    throw new Error("Failed to fetch items");
+  }
 
   return res.json();
 }
@@ -57,6 +60,7 @@ export default async function Page({ searchParams }) {
     },
   ];
   const res = await fetchCategories();
+
   categories = [...categories, ...res];
 
   const urlCategory =
