@@ -286,7 +286,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                       alt={item.item.name}
                       width={70}
                       height={70}
-                      className="object-cover rounded-xl  md:w-40  w-14 h-14"
+                      className="object-cover rounded-xl  md:w-40  w-14  h-30"
                     />
                     <p className="text-sm font-inter text-gray-700 ml-2">
                       {item.item.name}

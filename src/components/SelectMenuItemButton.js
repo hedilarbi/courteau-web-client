@@ -4,7 +4,7 @@ import MenuItemModal from "./MenuItemModal";
 import OfferModal from "./OfferModal";
 import { useBasket } from "@/context/BasketContext";
 import { useUser } from "@/context/UserContext";
-
+import toast from "react-hot-toast";
 const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
   const [showMenuItemModal, setShowMenuItemModal] = React.useState(false);
   const [showOfferModal, setShowOfferModal] = React.useState(false);
@@ -61,6 +61,7 @@ const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
             setShowOfferModal(true);
           } else if (selectedCategory === "recompenses") {
             handleAddReward();
+            toast.success("Article ajouté au panier");
           } else {
             setSelectedItem(itemId);
             setShowMenuItemModal(true);

@@ -22,7 +22,7 @@ const WarningBanner = ({ settings, deliveryMode, setCanOrder }) => {
     return null;
   }
   return (
-    <div className="bg-red-500 text-white font-inter font-semibold">
+    <div className="bg-red-500 text-white font-inter font-semibold mb-4 rounded-md">
       <p className="text-center py-2 px-4">{message}</p>
     </div>
   );
