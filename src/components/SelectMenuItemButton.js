@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import MenuItemModal from "./MenuItemModal";
 import OfferModal from "./OfferModal";
 import { useBasket } from "@/context/BasketContext";
@@ -12,24 +12,33 @@ const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
   const [selectedOffer, setSelectedOffer] = React.useState(null);
   const { addRewardToBasket } = useBasket();
   const { removePoints, user, loading } = useUser();
-  if (loading) {
-    return null;
-  }
-  let actifButton = true;
+  const [actifButton, setActifButton] = React.useState(true);
 
-  if (
-    user?.fidelity_points < reward?.points &&
-    selectedCategory === "recompenses" &&
-    !user
-  ) {
-    actifButton = false;
-  }
   const handleAddReward = () => {
     if (user && actifButton) {
       addRewardToBasket(reward);
       removePoints(reward.points);
     }
   };
+
+  useEffect(() => {
+    if (!user && selectedCategory === "recompenses") {
+      setActifButton(false);
+      return;
+    }
+    if (
+      user?.fidelity_points < reward?.points &&
+      selectedCategory === "recompenses"
+    ) {
+      setActifButton(false);
+    } else {
+      setActifButton(true);
+    }
+  }, [user, loading, reward, selectedCategory]);
+
+  if (loading) {
+    return null;
+  }
 
   return (
     <>
@@ -57,9 +66,11 @@ const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
             setShowMenuItemModal(true);
           }
         }}
-        className={`bg-pr cursor-pointer   text-black font-bebas-neue text-center text-lg rounded-md px-4 py-2 mt-4 w-full ${
-          !actifButton && "bg-gray-400  cursor-not-allowed"
-        }`}
+        className={` ${
+          actifButton
+            ? "bg-pr cursor-pointer"
+            : "bg-gray-400 cursor-not-allowed"
+        } text-black font-bebas-neue text-center text-lg rounded-md px-4 py-2 mt-4 w-full `}
         disabled={!actifButton}
       >
         {selectedCategory === "recompenses"

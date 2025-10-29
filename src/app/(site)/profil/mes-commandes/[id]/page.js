@@ -49,6 +49,26 @@ const Page = () => {
     return null;
   }
 
+  const statusStyles = (status) => {
+    switch (status) {
+      case "Livreé":
+        return "text-green-400";
+      case "En cours":
+        return "text-yellow-400";
+      case "Annulé":
+        return "text-red-400";
+      case "En Livraison":
+        return "text-yellow-400";
+
+      case "Terminée":
+        return "text-green-400";
+      case "Ramassé":
+        return "text-green-400";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
     <div className="md:mt-28 mt-20  min-h-[80vh]  bg-[#F3F4F6] p-4 pb-20">
       {order && (
@@ -60,11 +80,7 @@ const Page = () => {
             </h2>
             <p
               className={`px-4 py-1 rounded-full text-sm font-bold shadow transition 
-                ${
-                  order.status === "livrée"
-                    ? "bg-pr-100 text-pr-700 border border-pr-300"
-                    : "bg-gray-100 text-gray-700 border border-gray-200"
-                }`}
+                ${statusStyles(order.status)}`}
             >
               {order.status}
             </p>
@@ -78,7 +94,13 @@ const Page = () => {
                     {order.type === "pick up" ? "À emporter" : "Livraison"}
                   </span>
                 </div>
-                {order.type === "pick up" && order.restaurant?.name && (
+                {order.type === "delivery" && (
+                  <div>
+                    <span className="font-semibold text-pr-500">Adresse :</span>{" "}
+                    <span className="text-pr-700">{order.address}</span>
+                  </div>
+                )}
+                {order.restaurant?.name && (
                   <div>
                     <span className="font-semibold text-pr-500">
                       Restaurant :
@@ -86,10 +108,6 @@ const Page = () => {
                     <span className="text-pr-700">{order.restaurant.name}</span>
                   </div>
                 )}
-                <div>
-                  <span className="font-semibold text-pr-500">Adresse :</span>{" "}
-                  <span className="text-pr-700">{order.address}</span>
-                </div>
                 <div>
                   <span className="font-semibold text-pr-500">Date :</span>{" "}
                   <span className="text-pr-700">
@@ -162,7 +180,7 @@ const Page = () => {
           </div>
 
           <div className="shadow-lg bg-white p-6 rounded-xl mb-6">
-            <div className="space-y-3 bg-pr-50/60 rounded-xl p-6 border border-pr-100 shadow-inner">
+            <div className="space-y-3 ">
               <div className="flex justify-between">
                 <span className="font-semibold text-pr-500">Sous-total</span>
                 <span className="text-pr-700">
@@ -194,9 +212,9 @@ const Page = () => {
                   ${(order.sub_total * 0.09975).toFixed(2)}
                 </span>
               </div>
-              {order.tip && order.tip > 0 && (
+              {order.tip > 0 && (
                 <div className="flex justify-between">
-                  <span className="font-semibold text-pr-500">Pourboire</span>
+                  <span className="font-semibold ">Pourboire</span>
                   <span className="text-pr-700">
                     ${order.tip ? order.tip.toFixed(2) : "0.00"}
                   </span>
@@ -218,7 +236,7 @@ const Page = () => {
                     $
                     {order.delivery_fee
                       ? order.delivery_fee.toFixed(2)
-                      : "0.00"}{" "}
+                      : "0.00"}
                   </span>
                 </div>
               )}

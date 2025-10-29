@@ -55,12 +55,7 @@ const Page = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.dob ||
-      !formData.address
-    ) {
+    if (!formData.name || !formData.email) {
       setError("Veuillez remplir tous les champs.");
       return;
     }
@@ -74,15 +69,18 @@ const Page = () => {
     try {
       setIsLoading(true);
       setError("");
-
-      const { coords } = await geocodeAddress(formData.address);
+      let userCoords = null;
+      if (formData.address) {
+        const { coords } = await geocodeAddress(formData.address);
+        userCoords = coords;
+      }
 
       const response = await setUserInfo(
         user._id,
         formData.name,
         formData.email,
         formData.address,
-        coords,
+        userCoords,
         formData.dob
       );
 

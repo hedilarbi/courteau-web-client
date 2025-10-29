@@ -42,6 +42,25 @@ const Page = () => {
       </div>
     );
   }
+  const statusStyles = (status) => {
+    switch (status) {
+      case "Livreé":
+        return "text-green-400";
+      case "En cours":
+        return "text-yellow-400";
+      case "Annulé":
+        return "text-red-400";
+      case "En Livraison":
+        return "text-yellow-400";
+
+      case "Terminée":
+        return "text-green-400";
+      case "Ramassé":
+        return "text-green-400";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
   return (
     <div>
       <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-2 pb-20 min-h-screen">
@@ -82,15 +101,7 @@ const Page = () => {
                   </p>
                   <p className="text-gray-600">
                     Statut:{" "}
-                    <span
-                      className={
-                        order.status === "Livrée"
-                          ? "text-green-500"
-                          : order.status === "En cours"
-                          ? "text-yellow-500"
-                          : "text-red-500"
-                      }
-                    >
+                    <span className={`font-bold ${statusStyles(order.status)}`}>
                       {order.status}
                     </span>
                   </p>

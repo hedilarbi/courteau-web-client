@@ -22,7 +22,8 @@ function summarize(text = "", max = 160) {
 }
 
 export async function generateMetadata({ params }) {
-  const post = (blogueList || []).find((b) => b.slug === params.slug);
+  const { slug } = await params;
+  const post = (blogueList || []).find((b) => b.slug === slug);
   if (!post) {
     return {
       title: `Article introuvable | ${BRAND}`,
@@ -67,8 +68,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function Page({ params }) {
-  const { slug } = params;
+export default async function Page({ params }) {
+  const { slug } = await params;
   const blogue = (blogueList || []).find((item) => item.slug === slug);
   if (!blogue) return notFound();
 

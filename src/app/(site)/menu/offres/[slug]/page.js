@@ -30,9 +30,10 @@ export async function generateStaticParams() {
 
 // Métadonnées SEO par offre (Canada / fr-CA / CAD)
 export async function generateMetadata({ params }) {
+  const { slug: offerSlug } = await params;
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.example.com";
   const brand = "Casse-Croûte Courteau";
-  const offer = await fetchOffer(params.slug);
+  const offer = await fetchOffer(offerSlug);
 
   if (!offer) {
     return {
@@ -77,7 +78,8 @@ export async function generateMetadata({ params }) {
 export default async function Page({ params }) {
   const brand = "Casse-Croûte Courteau";
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.example.com";
-  const slug = decodeURIComponent(params.slug);
+  const { slug: offerSlug } = await params;
+  const slug = decodeURIComponent(offerSlug);
 
   const data = await fetchOffer(slug);
   if (!data) notFound();

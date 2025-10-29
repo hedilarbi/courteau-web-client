@@ -18,8 +18,9 @@ async function fetchItem(slug) {
 
 // SEO dynamique pour chaque article (JS, sans types)
 export async function generateMetadata({ params }) {
+  const { slug: menuItemSlug } = await params;
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.lecourteau.com";
-  const item = await fetchItem(params.slug);
+  const item = await fetchItem(menuItemSlug);
 
   if (!item) {
     return {
@@ -68,7 +69,8 @@ import ArticleComponent from "@/components/ArticleComponent";
 import BackButton from "@/components/BackButton";
 
 export default async function Page({ params }) {
-  const slug = decodeURIComponent(params.slug);
+  const { slug: menuItemSlug } = await params;
+  const slug = decodeURIComponent(menuItemSlug);
   const item = await fetchItem(slug);
   if (!item) notFound();
 

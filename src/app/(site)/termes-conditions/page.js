@@ -2,7 +2,7 @@ import React from "react";
 
 const page = () => {
   return (
-    <main className="md:px-14 md:py-10 p-4 ">
+    <main className="md:px-14 md:py-10 p-4 md:mt-28 mt-20 mb-20">
       <h1 className="md:text-4xl text-2xl font-bold mb-4 font-bebas-neue text-center">
         Termes et Conditions
       </h1>
@@ -13,16 +13,16 @@ const page = () => {
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           Dernière mise à jour : 23 décembre 2023 <br /> La présente Politique
           de confidentialité décrit nos politiques et procédures en matière de
-          collecte, d&quot;utilisation et de divulgation de vos informations
+          collecte, d&apos;utilisation et de divulgation de vos informations
           lorsque vous utilisez le service et vous informe de vos droits en
           matière de confidentialité et de la protection légale qui vous est
           accordée.
           <br /> Nous utilisons vos données personnelles pour fournir et
           améliorer le service.
           <br /> En utilisant le service, vous acceptez la collecte et
-          l&quot;utilisation des informations conformément à cette Politique de
+          l&apos;utilisation des informations conformément à cette Politique de
           confidentialité.
-          <br /> Cette Politique de confidentialité a été créée à l&quot;aide du
+          <br /> Cette Politique de confidentialité a été créée à l&apos;aide du
           générateur de politiques de confidentialité.
         </p>
         <h2 className="md:text-2xl text-lg  font-bold mb-2 font-inter mt-2">
@@ -34,7 +34,7 @@ const page = () => {
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           Les termes dont la première lettre est en majuscule ont des
           significations définies dans les conditions suivantes. Les définitions
-          suivantes auront la même signification qu&quot;ils apparaissent au
+          suivantes auront la même signification qu&apos;ils apparaissent au
           singulier ou au pluriel.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
@@ -47,7 +47,7 @@ const page = () => {
           <span className="font-bold text-black md:text-base text-sm">
             Compte
           </span>{" "}
-          signifie un compte unique créé pour vous permettre d&quot;accéder à
+          signifie un compte unique créé pour vous permettre d&apos;accéder à
           notre service ou à certaines parties de notre service.
         </p>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold">
@@ -55,10 +55,10 @@ const page = () => {
             Affilié
           </span>{" "}
           désigne une entité qui contrôle, est contrôlée par, ou est sous le
-          contrôle commun d&quot;une partie, où « contrôle » signifie la
+          contrôle commun d&apos;une partie, où « contrôle » signifie la
           propriété de 50 % ou plus des actions, des participations ou
-          d&quot;autres titres ayant droit de vote pour l&quot;élection des
-          administrateurs ou d&quot;autres organes de direction.
+          d&apos;autres titres ayant droit de vote pour l&apos;élection des
+          administrateurs ou d&apos;autres organes de direction.
         </p>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold">
           <span className="font-bold text-black md:text-base text-sm">
@@ -85,7 +85,7 @@ const page = () => {
           <span className="font-bold text-black md:text-base text-sm">
             Dispositif
           </span>{" "}
-          signifie tout appareil pouvant accéder au service, tel qu&quot;un
+          signifie tout appareil pouvant accéder au service, tel qu&apos;un
           ordinateur, un téléphone portable ou une tablette numérique.
         </p>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold">
@@ -99,7 +99,7 @@ const page = () => {
           <span className="font-bold text-black md:text-base text-sm">
             Service
           </span>
-          fait référence à l&quot;Application.
+          fait référence à l&apos;Application.
         </p>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold">
           <span className="font-bold text-black md:text-base text-sm">
@@ -122,18 +122,18 @@ const page = () => {
         </p>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold">
           <span className="font-bold text-black md:text-base text-sm">
-            Données d&quot;utilisation{" "}
+            Données d&apos;utilisation{" "}
           </span>
           fait référence aux données collectées automatiquement, générées soit
-          par l&quot;utilisation du service, soit par l&quot;infrastructure du
-          service elle-même (par exemple, la durée d&quot;une visite de page).
+          par l&apos;utilisation du service, soit par l&apos;infrastructure du
+          service elle-même (par exemple, la durée d&apos;une visite de page).
         </p>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold">
           <span className="font-bold text-black md:text-base text-sm">
             Vous{" "}
           </span>
-          désigne l&quot;individu accédant ou utilisant le service, ou
-          l&quot;entreprise ou toute autre entité légale au nom de laquelle cet
+          désigne l&apos;individu accédant ou utilisant le service, ou
+          l&apos;entreprise ou toute autre entité légale au nom de laquelle cet
           individu accède ou utilise le service, le cas échéant.
         </p>
         <h2 className="md:text-2xl text-lg font-bold mb-2 font-inter mt-2">
@@ -156,27 +156,27 @@ const page = () => {
           postal, Ville <br />
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
-          Données d&quot;utilisation
+          Données d&apos;utilisation
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
-          Les données d&quot;utilisation sont collectées automatiquement lors de
-          l&quot;utilisation du service. Les données d&quot;utilisation peuvent
-          inclure des informations telles que l&quot;adresse IP de votre
+          Les données d&apos;utilisation sont collectées automatiquement lors de
+          l&apos;utilisation du service. Les données d&apos;utilisation peuvent
+          inclure des informations telles que l&apos;adresse IP de votre
           appareil (par exemple, adresse IP), le type de navigateur, la version
           du navigateur, les pages de notre service que vous visitez,
-          l&quot;heure et la date de votre visite, le temps passé sur ces pages,
-          des identifiants uniques d&quot;appareils et d&quot;autres données de
-          diagnostic. Lorsque vous accédez au service par le biais d&quot;un
+          l&apos;heure et la date de votre visite, le temps passé sur ces pages,
+          des identifiants uniques d&apos;appareils et d&apos;autres données de
+          diagnostic. Lorsque vous accédez au service par le biais d&apos;un
           appareil mobile, nous pouvons collecter certaines informations
-          automatiquement, notamment, mais sans s&quot;y limiter, le type
-          d&quot;appareil mobile que vous utilisez, l&quot;ID unique de votre
-          appareil mobile, l&quot;adresse IP de votre appareil mobile, votre
-          système d&quot;exploitation mobile, le type de navigateur Internet
-          mobile que vous utilisez, des identifiants uniques d&quot;appareils et
-          d&quot;autres données de diagnostic. Nous pouvons également collecter
+          automatiquement, notamment, mais sans s&apos;y limiter, le type
+          d&apos;appareil mobile que vous utilisez, l&apos;ID unique de votre
+          appareil mobile, l&apos;adresse IP de votre appareil mobile, votre
+          système d&apos;exploitation mobile, le type de navigateur Internet
+          mobile que vous utilisez, des identifiants uniques d&apos;appareils et
+          d&apos;autres données de diagnostic. Nous pouvons également collecter
           des informations que votre navigateur envoie chaque fois que vous
           visitez notre service ou lorsque vous accédez au service par le biais
-          d&quot;un appareil mobile.
+          d&apos;un appareil mobile.
         </p>
 
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
@@ -190,15 +190,15 @@ const page = () => {
           Twitter
           <br /> LinkedIn
           <br /> Si vous décidez de vous inscrire ou de nous accorder autrement
-          l&quot;accès à un service de médias sociaux tiers, nous pouvons
+          l&apos;accès à un service de médias sociaux tiers, nous pouvons
           collecter des données personnelles déjà associées à votre compte de
           service de médias sociaux tiers, telles que votre nom, votre adresse
           e-mail, vos activités ou votre liste de contacts associée à ce compte.
           Vous avez également la possibilité de partager des informations
           supplémentaires avec la Société via votre compte de service de médias
           sociaux tiers. Si vous choisissez de fournir de telles informations et
-          des données personnelles lors de l&quot;inscription ou autrement, vous
-          donnez à la Société l&quot;autorisation de les utiliser, de les
+          des données personnelles lors de l&apos;inscription ou autrement, vous
+          donnez à la Société l&apos;autorisation de les utiliser, de les
           partager et de les stocker de manière conforme à la présente Politique
           de confidentialité.
         </p>
@@ -212,20 +212,20 @@ const page = () => {
           <span className="font-bold text-black md:text-base text-sm">
             Pour fournir et maintenir notre service
           </span>
-          , y compris pour surveiller l&quot;utilisation de notre service.
+          , y compris pour surveiller l&apos;utilisation de notre service.
           <br />
           <span className="font-bold text-black md:text-base text-sm">
             {" "}
             Pour gérer votre compte :
           </span>{" "}
-          pour gérer votre inscription en tant qu&quot;utilisateur du service.
+          pour gérer votre inscription en tant qu&apos;utilisateur du service.
           Les données personnelles que vous fournissez peuvent vous donner accès
           à différentes fonctionnalités du service qui sont disponibles pour
-          vous en tant qu&quot;utilisateur enregistré. <br />
+          vous en tant qu&apos;utilisateur enregistré. <br />
           <span className="font-bold text-black md:text-base text-sm">
-            Pour l&quot;exécution d&quot;un contrat :{" "}
+            Pour l&apos;exécution d&apos;un contrat :{" "}
           </span>
-          le développement, le respect et la réalisation du contrat d&quot;achat
+          le développement, le respect et la réalisation du contrat d&apos;achat
           des produits, articles ou services que vous avez achetés ou de tout
           autre contrat avec nous via le service. <br />
           <span className="font-bold text-black md:text-base text-sm">
@@ -233,7 +233,7 @@ const page = () => {
           </span>{" "}
           Pour vous contacter par e-mail, appels téléphoniques, SMS ou autres
           formes équivalentes de communication électronique, telles que les
-          notifications push d&quot;une application mobile concernant mises à
+          notifications push d&apos;une application mobile concernant mises à
           jour ou communications informatives liées aux fonctionnalités,
           produits ou services contractés, y compris les mises à jour de
           sécurité, lorsque cela est nécessaire ou raisonnable pour leur mise en
@@ -242,7 +242,7 @@ const page = () => {
             Pour vous fournir :
           </span>{" "}
           Pour vous fournir des actualités, des offres spéciales et des
-          informations générales sur d&quot;autres biens, services et événements
+          informations générales sur d&apos;autres biens, services et événements
           que nous proposons et qui sont similaires à ceux que vous avez déjà
           achetés ou sur lesquels vous avez enquêté, sauf si vous avez choisi de
           ne pas recevoir de telles informations.
@@ -252,24 +252,24 @@ const page = () => {
           </span>{" "}
           pour répondre à vos demandes et les gérer. <br />
           <span className="font-bold text-black md:text-base text-sm">
-            Pour les transferts d&quot;entreprise :
+            Pour les transferts d&apos;entreprise :
           </span>{" "}
           nous pouvons utiliser vos informations pour évaluer ou mener une
           fusion, une cession, une restructuration, une réorganisation, une
           dissolution ou une autre vente ou transfert de tout ou partie de nos
-          actifs, que ce soit en tant qu&quot;entreprise en activité ou dans le
-          cadre d&quot;une procédure de faillite, de liquidation ou de procédure
+          actifs, que ce soit en tant qu&apos;entreprise en activité ou dans le
+          cadre d&apos;une procédure de faillite, de liquidation ou de procédure
           similaire, dans laquelle des données personnelles détenues par nous à
           propos de nos utilisateurs de services font partie des actifs
           transférés.
           <br />
           <span className="font-bold text-black md:text-base text-sm">
-            À d&quot;autres fins :
+            À d&apos;autres fins :
           </span>{" "}
-          nous pouvons utiliser vos informations à d&quot;autres fins, telles
-          que l&quot;analyse de données, l&quot;identification des tendances
-          d&quot;utilisation, la détermination de l&quot;efficacité de nos
-          campagnes promotionnelles et l&quot;évaluation et l&quot;amélioration
+          nous pouvons utiliser vos informations à d&apos;autres fins, telles
+          que l&apos;analyse de données, l&apos;identification des tendances
+          d&apos;utilisation, la détermination de l&apos;efficacité de nos
+          campagnes promotionnelles et l&apos;évaluation et l&apos;amélioration
           de notre service, de nos produits, de nos services, de notre marketing
           et de votre expérience. Nous pouvons partager vos informations
           personnelles dans les situations suivantes :
@@ -280,14 +280,14 @@ const page = () => {
           </span>{" "}
           nous pouvons partager vos informations personnelles avec des
           prestataires de services pour surveiller et analyser
-          l&quot;utilisation de notre service et pour vous contacter.
+          l&apos;utilisation de notre service et pour vous contacter.
           <br />
           <span className="font-bold text-black md:text-base text-sm">
-            Pour les transferts d&quot;entreprise :
+            Pour les transferts d&apos;entreprise :
           </span>{" "}
           nous pouvons partager ou transférer vos informations personnelles dans
           le cadre de, ou lors de négociations relatives à, toute fusion, vente
-          d&quot;actifs de la société, financement, ou acquisition de tout ou
+          d&apos;actifs de la société, financement, ou acquisition de tout ou
           partie de notre entreprise par une autre entreprise. Avec des affiliés
           : nous pouvons partager vos informations avec nos affiliés, auquel cas
           nous exigerons que ces affiliés respectent cette politique de
@@ -305,16 +305,16 @@ const page = () => {
           <br />
           <span className="font-bold text-black md:text-base text-sm">
             {" "}
-            Avec d&quot;autres utilisateurs :{" "}
+            Avec d&apos;autres utilisateurs :{" "}
           </span>
           lorsque vous partagez des informations personnelles ou interagissez
-          autrement dans les zones publiques avec d&quot;autres utilisateurs,
+          autrement dans les zones publiques avec d&apos;autres utilisateurs,
           ces informations peuvent être vues par tous les utilisateurs et
           peuvent être diffusées publiquement. Si vous interagissez avec
-          d&quot;autres utilisateurs ou vous inscrivez via un service de médias
+          d&apos;autres utilisateurs ou vous inscrivez via un service de médias
           sociaux tiers, vos contacts sur le service de médias sociaux tiers
           peuvent voir votre nom, votre profil, vos images et la description de
-          votre activité. De même, d&quot;autres utilisateurs pourront consulter
+          votre activité. De même, d&apos;autres utilisateurs pourront consulter
           les descriptions de votre activité, communiquer avec vous et consulter
           votre profil. <br />
           <span className="font-bold text-black md:text-base text-sm">
@@ -335,8 +335,8 @@ const page = () => {
           légales (par exemple, si nous sommes tenus de conserver vos données
           pour respecter les lois applicables), résoudre les litiges et faire
           respecter nos accords et politiques juridiques. La société conservera
-          également les données d&quot;utilisation à des fins d&quot;analyse
-          interne. Les données d&quot;utilisation sont généralement conservées
+          également les données d&apos;utilisation à des fins d&apos;analyse
+          interne. Les données d&apos;utilisation sont généralement conservées
           pour une période plus courte, sauf lorsque ces données sont utilisées
           pour renforcer la sécurité ou améliorer la fonctionnalité de notre
           service, ou lorsque nous sommes légalement obligés de conserver ces
@@ -347,7 +347,7 @@ const page = () => {
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           Vos informations, y compris les données personnelles, sont traitées
-          dans les bureaux d&quot;exploitation de la société et dans tout autre
+          dans les bureaux d&apos;exploitation de la société et dans tout autre
           lieu où les parties impliquées dans le traitement sont situées. Cela
           signifie que ces informations peuvent être transférées — et conservées
           — sur des ordinateurs situés en dehors de votre état, province, pays
@@ -358,7 +358,7 @@ const page = () => {
           transfert. La société prendra toutes les mesures raisonnablement
           nécessaires pour garantir que vos données sont traitées de manière
           sécurisée et conformément à la présente politique de confidentialité,
-          et aucun transfert de vos données personnelles n&quot;aura lieu vers
+          et aucun transfert de vos données personnelles n&apos;aura lieu vers
           une organisation ou un pays à moins que des contrôles adéquats ne
           soient en place, y compris la sécurité de vos données et autres
           informations personnelles.
@@ -375,7 +375,7 @@ const page = () => {
           vous connectant à votre compte, le cas échéant, et en visitant la
           section des paramètres de compte qui vous permet de gérer vos
           informations personnelles. Vous pouvez également nous contacter pour
-          demander l&quot;accès, la correction ou la suppression de toute
+          demander l&apos;accès, la correction ou la suppression de toute
           information personnelle que vous nous avez fournie. Veuillez noter,
           cependant, que nous pouvons avoir besoin de conserver certaines
           informations lorsque nous avons une obligation légale ou une base
@@ -389,13 +389,13 @@ const page = () => {
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           Si la société est impliquée dans une fusion, une acquisition ou une
-          vente d&quot;actifs, vos données personnelles peuvent être
+          vente d&apos;actifs, vos données personnelles peuvent être
           transférées. Nous fournirons un avis avant que vos données
           personnelles soient transférées et deviennent soumises à une politique
           de confidentialité différente.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
-          Forces de l&quot;ordre
+          Forces de l&apos;ordre
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           Dans certaines circonstances, la société peut être tenue de divulguer
@@ -422,9 +422,9 @@ const page = () => {
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
           La sécurité de vos données personnelles est importante pour nous, mais
-          n&quot;oubliez pas qu&quot;aucune méthode de transmission sur Internet
-          ou méthode de stockage électronique n&quot;est totalement sécurisée.
-          Bien que nous nous efforcions d&quot;utiliser des moyens
+          n&apos;oubliez pas qu&apos;aucune méthode de transmission sur Internet
+          ou méthode de stockage électronique n&apos;est totalement sécurisée.
+          Bien que nous nous efforcions d&apos;utiliser des moyens
           commercialement acceptables pour protéger vos données personnelles,
           nous ne pouvons garantir leur sécurité absolue.
         </p>
@@ -433,30 +433,30 @@ const page = () => {
           Confidentialité des enfants
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
-          Notre service ne s&quot;adresse à personne de moins de 13 ans. Nous ne
-          collectons sciemment aucune information d&quot;identification
+          Notre service ne s&apos;adresse à personne de moins de 13 ans. Nous ne
+          collectons sciemment aucune information d&apos;identification
           personnelle auprès de quiconque de moins de 13 ans. Si vous êtes un
           parent ou un tuteur et que vous savez que votre enfant nous a fourni
           des données personnelles, veuillez nous contacter. Si nous apprenons
           que nous avons collecté des données personnelles auprès de
-          quelqu&quot;un de moins de 13 ans sans vérification du consentement
+          quelqu&apos;un de moins de 13 ans sans vérification du consentement
           parental, nous prendrons des mesures pour supprimer ces informations
           de nos serveurs. Si nous devons nous appuyer sur le consentement en
           tant que base légale pour le traitement de vos informations et que
-          votre pays exige le consentement d&quot;un parent, nous pouvons exiger
-          le consentement de vos parents avant de collecter et d&quot;utiliser
+          votre pays exige le consentement d&apos;un parent, nous pouvons exiger
+          le consentement de vos parents avant de collecter et d&apos;utiliser
           ces informations.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
-          Liens vers d&quot;autres sites Web
+          Liens vers d&apos;autres sites Web
         </h3>
         <p className="md:text-base/7 text-sm font-inter text-gray-700 font-semibold ">
-          Notre service peut contenir des liens vers d&quot;autres sites Web qui
+          Notre service peut contenir des liens vers d&apos;autres sites Web qui
           ne sont pas exploités par nous. Si vous cliquez sur un lien tiers,
           vous serez dirigé vers le site de ce tiers. Nous vous recommandons
           vivement de consulter la politique de confidentialité de chaque site
-          que vous visitez. Nous n&quot;avons aucun contrôle sur et
-          n&quot;assumons aucune responsabilité pour le contenu, les politiques
+          que vous visitez. Nous n&apos;avons aucun contrôle sur et
+          n&apos;assumons aucune responsabilité pour le contenu, les politiques
           de confidentialité ou les pratiques de tout site Web tiers ou service.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
@@ -472,7 +472,7 @@ const page = () => {
           politique de confidentialité. Il est conseillé de consulter
           périodiquement cette politique de confidentialité pour tout
           changement. Les changements apportés à cette politique de
-          confidentialité sont effectifs lorsqu&quot;ils sont publiés sur cette
+          confidentialité sont effectifs lorsqu&apos;ils sont publiés sur cette
           page.
         </p>
         <h3 className="md:text-xl text-base font-bold mb-2 font-inter mt-2">
