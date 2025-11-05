@@ -42,7 +42,7 @@ const ResumeBlock = ({
               Sous total après remise
             </span>
             <span className="font-inter font-semibold text-gray-900">
-              ${subTotalWithDiscount.toFixed(2)}
+              ${subTotalWithDiscount}
             </span>
           </div>
         )}

@@ -71,7 +71,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
         ? subTotal * 0.8
         : subTotal;
     }
-    console.log(subTotalWithDiscount.current);
+
     let tipValue = 0;
     if (selectedTip === "other") {
       tipValue = parseFloat(tips);
@@ -82,7 +82,6 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       tipValue = 0;
       setTips(0);
     } else {
-      console.log(selectedTip);
       tipValue =
         (parseFloat(subTotalWithDiscount.current) * parseFloat(selectedTip)) /
         100;
