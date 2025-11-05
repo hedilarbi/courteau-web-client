@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { useUser } from "@/context/UserContext";
 
@@ -20,9 +20,10 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const subTotal = useSelectBasketTotal();
   const [tips, setTips] = useState("");
   const [selectedTip, setSelectedTip] = useState(0);
-  const subTotalWithDiscount = !user?.firstOrderDiscountApplied
-    ? subTotal * 0.8
-    : subTotal;
+
+  const subTotalWithDiscount = useRef(
+    !user?.firstOrderDiscountApplied ? subTotal * 0.8 : subTotal
+  );
   const [deliveryMode, setDeliveryMode] = useState("delivery");
   const [promoCodeData, setPromoCodeData] = useState(null);
   const [promoCodeIsValid, setPromoCodeIsValid] = useState(false);
@@ -53,16 +54,24 @@ const CheckoutContent = ({ restaurantsSettings }) => {
 
   useEffect(() => {
     let promoCodeDiscount = null;
+
     if (promoCodeIsValid && promoCodeData) {
       if (promoCodeData.type === "percent") {
         promoCodeDiscount =
-          (subTotalWithDiscount * promoCodeData.percent) / 100;
+          (parseFloat(subTotalWithDiscount.current) * promoCodeData.percent) /
+          100;
+        subTotalWithDiscount.current -= promoCodeDiscount;
       }
       if (promoCodeData.type === "amount") {
         promoCodeDiscount = promoCodeData.amount;
+        subTotalWithDiscount.current -= promoCodeDiscount;
       }
+    } else {
+      subTotalWithDiscount.current = !user?.firstOrderDiscountApplied
+        ? subTotal * 0.8
+        : subTotal;
     }
-
+    console.log(subTotalWithDiscount.current);
     let tipValue = 0;
     if (selectedTip === "other") {
       tipValue = parseFloat(tips);
@@ -73,16 +82,21 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       tipValue = 0;
       setTips(0);
     } else {
-      tipValue = (subTotalWithDiscount * parseFloat(selectedTip)) / 100;
+      console.log(selectedTip);
+      tipValue =
+        (parseFloat(subTotalWithDiscount.current) * parseFloat(selectedTip)) /
+        100;
       setTips(tipValue);
     }
     if (deliveryMode === "delivery") {
       const tvqValue =
-        ((subTotalWithDiscount + selectedRestaurant.settings.delivery_fee) *
+        ((parseFloat(subTotalWithDiscount.current) +
+          selectedRestaurant.settings.delivery_fee) *
           9.975) /
         100;
       const tpsValue =
-        ((subTotalWithDiscount + selectedRestaurant.settings.delivery_fee) *
+        ((parseFloat(subTotalWithDiscount.current) +
+          selectedRestaurant.settings.delivery_fee) *
           5) /
         100;
       setTvq(tvqValue);
@@ -90,40 +104,43 @@ const CheckoutContent = ({ restaurantsSettings }) => {
 
       setTotal(
         selectedRestaurant.settings.delivery_fee +
-          parseFloat(subTotalWithDiscount) +
+          parseFloat(subTotalWithDiscount.current) +
           tvqValue +
           tpsValue +
-          tipValue -
-          promoCodeDiscount
+          tipValue
       );
     } else {
-      const tvqValue = (subTotalWithDiscount * 9.975) / 100;
-      const tpsValue = (subTotalWithDiscount * 5) / 100;
+      const tvqValue = (parseFloat(subTotalWithDiscount.current) * 9.975) / 100;
+      const tpsValue = (parseFloat(subTotalWithDiscount.current) * 5) / 100;
       setTvq(tvqValue);
       setTps(tpsValue);
 
       setTotal(
-        parseFloat(subTotalWithDiscount) +
+        parseFloat(subTotalWithDiscount.current) +
           tvqValue +
           tipValue +
-          tpsValue -
-          promoCodeDiscount
+          tpsValue
       );
     }
   }, [
     deliveryMode,
-    tips,
+
     selectedTip,
     selectedRestaurant,
     promoCodeData?.code,
     user,
+    promoCodeIsValid,
+    subTotal,
+
+    selectedRestaurant?.settings?.delivery_fee,
+    promoCodeData,
   ]);
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/connexion");
     }
-    if (!subTotal) {
+    if (!subTotal || subTotal <= 0) {
       router.replace("/menu");
     }
   }, [loading, user, router]);
@@ -224,7 +241,9 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             promoCodeData={promoCodeData}
             promoCodeIsValid={promoCodeIsValid}
             deliveryMode={deliveryMode}
-            subTotalWithDiscount={subTotalWithDiscount}
+            subTotalWithDiscount={parseFloat(
+              subTotalWithDiscount.current
+            ).toFixed(2)}
           />
           <ProcessPaiement
             user={user}
@@ -235,7 +254,9 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             tipAmount={tips}
             promoCode={promoCodeIsValid ? promoCodeData : null}
             subTotal={subTotal}
-            subTotalWithDiscount={subTotalWithDiscount}
+            subTotalWithDiscount={parseFloat(
+              subTotalWithDiscount.current
+            ).toFixed(2)}
             tvq={tvq}
             tps={tps}
             canOrder={canOrder}

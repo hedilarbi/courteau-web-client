@@ -94,6 +94,22 @@ const Page = () => {
                     {order.type === "pick up" ? "À emporter" : "Livraison"}
                   </span>
                 </div>
+                {order.promoCode && (
+                  <div>
+                    <span className="font-semibold text-pr-500">
+                      Code promo :
+                    </span>{" "}
+                    <span className="text-pr-700">
+                      {order.promoCode.code} (
+                      {order.promoCode.percent
+                        ? `-${order.promoCode.percent}%`
+                        : order.promoCode.amount
+                        ? `-${order.promoCode.amount.toFixed(2)}$`
+                        : "Article gratuit"}
+                      )
+                    </span>
+                  </div>
+                )}
                 {order.type === "delivery" && (
                   <div>
                     <span className="font-semibold text-pr-500">Adresse :</span>{" "}
@@ -150,7 +166,7 @@ const Page = () => {
               </div>
             )}
             {order.offers.length > 0 && (
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 <h3 className="font-inter font-semibold text-xl">Offres</h3>
                 {order.offers.map((item, index) => (
                   <div
@@ -163,15 +179,37 @@ const Page = () => {
                   >
                     <div>
                       <p className="font-semibold font-inter text-pr-700">
-                        {item.item.name}{" "}
-                        <span className="text-gray-500 font-medium">
-                          {" "}
-                          ({item.size}){" "}
-                        </span>
+                        {item.offer.name}
                       </p>
                     </div>
                     <div className="font-inter font-semibold">
                       {item.price.toFixed(2)} $
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {order.rewards.length > 0 && (
+              <div className="space-y-4 mt-4">
+                <h3 className="font-inter font-semibold text-xl">
+                  Récompenses
+                </h3>
+                {order.rewards.map((item, index) => (
+                  <div
+                    key={item._id}
+                    className={`flex justify-between items-center ${
+                      order.rewards.length - 1 === index
+                        ? ""
+                        : "border-b border-gray-200 pb-2"
+                    }`}
+                  >
+                    <div>
+                      <p className="font-semibold font-inter text-pr-700">
+                        {item.item.name}
+                      </p>
+                    </div>
+                    <div className="font-inter font-semibold">
+                      {item.points} pts
                     </div>
                   </div>
                 ))}
@@ -187,6 +225,7 @@ const Page = () => {
                   ${order.sub_total.toFixed(2)}
                 </span>
               </div>
+
               {order.discount > 0 && (
                 <div className="flex justify-between">
                   <span className="font-semibold text-pr-500">
@@ -197,6 +236,24 @@ const Page = () => {
                     {(order.sub_total - order.sub_total_after_discount).toFixed(
                       2
                     )}
+                  </span>
+                </div>
+              )}
+              {order.promoCode && (
+                <div className="flex justify-between">
+                  <span className="font-semibold text-pr-500">
+                    Code promo (
+                    {order.promoCode.percent
+                      ? `-${order.promoCode.percent}%`
+                      : order.promoCode.amount
+                      ? `-${order.promoCode.amount.toFixed(2)}$`
+                      : "Article grauit"}
+                    )
+                  </span>
+                  <span className="text-pr-700">
+                    -$
+                    {order.sub_total -
+                      order.sub_total_after_discount.toFixed(2)}
                   </span>
                 </div>
               )}
@@ -221,12 +278,6 @@ const Page = () => {
                 </div>
               )}
 
-              {order.promoCode && (
-                <div className="flex justify-between">
-                  <span className="font-semibold text-pr-500">Code promo</span>
-                  <span className="text-pr-700">{order.promoCode}</span>
-                </div>
-              )}
               {order.type === "delivery" && (
                 <div className="flex justify-between">
                   <span className="font-semibold text-pr-500">

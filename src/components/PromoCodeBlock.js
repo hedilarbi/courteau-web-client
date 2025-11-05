@@ -61,12 +61,26 @@ const PromoCodeBlock = ({
           placeholder="COURTEAU2024"
           className=" border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-pr flex-1"
         />
-        <button
-          onClick={handleVerifyPromoCode}
-          className="bg-pr text-black px-4 py-2 rounded-md hover:bg-pr/90 transition font-semibold  "
-        >
-          {isLoading ? "Vérification..." : "Appliquer"}
-        </button>
+        {promoCodeIsValid ? (
+          <button
+            onClick={() => {
+              setPromoCodeIsValid(false);
+              setPromoCodeData(null);
+              setCode("");
+            }}
+            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-500/90 transition font-semibold  "
+          >
+            Annuler
+          </button>
+        ) : (
+          <button
+            onClick={handleVerifyPromoCode}
+            disabled={isLoading}
+            className="bg-pr text-black px-4 py-2 rounded-md hover:bg-pr/90 transition font-semibold  "
+          >
+            {isLoading ? "Vérification..." : "Appliquer"}
+          </button>
+        )}
       </div>
       {promoCodeError && (
         <p className="text-red-500 text-sm mt-2">{promoCodeError}</p>

@@ -290,7 +290,6 @@ export default function CheckoutCard({
     } catch (e) {
       setError(e?.message || "Erreur lors du traitement du paiement.");
       await catchError(user?._id || "", e?.message || "unknown", "CheckoutWeb");
-    } finally {
       setLoading(false);
     }
   }
@@ -307,7 +306,7 @@ export default function CheckoutCard({
           : [];
 
         orderItems.push({
-          size: item.size,
+          size: item.size.size,
           customizations,
           price: item.price,
           item: item.id,
