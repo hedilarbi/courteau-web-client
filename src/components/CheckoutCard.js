@@ -145,7 +145,7 @@ export default function CheckoutCard({
       );
     } catch (e) {
       setError(e?.message || "Erreur lors de la création du paiement.");
-      console.log(e);
+
       await catchError(user?._id || "", e?.message || "unknown", "CheckoutWeb");
     }
   }
@@ -160,7 +160,9 @@ export default function CheckoutCard({
         true
       );
     } catch (e) {
-      console.log(e);
+      setError(e?.message || "Erreur lors de la création du paiement.");
+
+      await catchError(user?._id || "", e?.message || "unknown", "CheckoutWeb");
     }
   }
 
@@ -290,6 +292,7 @@ export default function CheckoutCard({
     } catch (e) {
       setError(e?.message || "Erreur lors du traitement du paiement.");
       await catchError(user?._id || "", e?.message || "unknown", "CheckoutWeb");
+    } finally {
       setLoading(false);
     }
   }
@@ -372,6 +375,9 @@ export default function CheckoutCard({
                 promoCodeId: promoCode._id,
               }
             : null,
+          scheduled: {
+            isScheduled: false,
+          },
         },
       };
 
@@ -384,10 +390,12 @@ export default function CheckoutCard({
         return;
       } else {
         clearBasket();
-        router.replace("/success?id=" + response.data._id);
+        router.replace("/success?id=" + response.data.orderId);
       }
     } catch (error) {
       console.error("Error in handlePaymentReady:", error);
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -19,7 +19,6 @@ const Page = () => {
       setIsLoading(true);
       const response = await getOrder(id);
       if (response.status) {
-        console.log(response.data);
         setOrder(response.data);
       }
     } catch (error) {

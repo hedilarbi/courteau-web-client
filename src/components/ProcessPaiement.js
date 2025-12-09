@@ -34,6 +34,8 @@ const ProcessPaiement = ({
       </div>
     );
   }
+  const amountCents = Math.trunc(Number(total || 0) * 100);
+  const hasValidAmount = amountCents > 0;
 
   return (
     <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
@@ -46,30 +48,36 @@ const ProcessPaiement = ({
           Nous n&apos;acceptons pas les cartes cadeaux pour le paiement.
         </p>
       </div>
-      <Elements
-        stripe={stripePromise}
-        options={{
-          mode: "payment",
-          currency: "cad",
-          amount: Math.trunc(total * 100), // amount in cents
-          locale: "fr",
-        }}
-      >
-        <CheckoutCard
-          user={user}
-          total={total}
-          selectedRestaurant={selectedRestaurant}
-          address={address}
-          deliveryMode={deliveryMode}
-          tipAmount={tipAmount}
-          promoCode={promoCode}
-          subTotal={subTotal}
-          subTotalWithDiscount={subTotalWithDiscount}
-          tvq={tvq}
-          tps={tps}
-          canOrder={canOrder}
-        />
-      </Elements>
+      {hasValidAmount ? (
+        <Elements
+          stripe={stripePromise}
+          options={{
+            mode: "payment",
+            currency: "cad",
+            amount: amountCents, // amount in cents (Stripe requires > 0)
+            locale: "fr",
+          }}
+        >
+          <CheckoutCard
+            user={user}
+            total={total}
+            selectedRestaurant={selectedRestaurant}
+            address={address}
+            deliveryMode={deliveryMode}
+            tipAmount={tipAmount}
+            promoCode={promoCode}
+            subTotal={subTotal}
+            subTotalWithDiscount={subTotalWithDiscount}
+            tvq={tvq}
+            tps={tps}
+            canOrder={canOrder}
+          />
+        </Elements>
+      ) : (
+        <div className="mt-4 text-sm text-gray-600 font-inter">
+          Calcul du total en cours...
+        </div>
+      )}
     </div>
   );
 };

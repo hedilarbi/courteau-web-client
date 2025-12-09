@@ -21,15 +21,13 @@ const OtpContent = ({ phoneNumber }) => {
     setIsLoading(true);
     try {
       if (otp === "000000") {
-        console.log(phoneNumber);
         const response = await createUserService(phoneNumber);
-        console.log(response);
 
         if (response.status) {
           await create(response.data.token);
           createUser(response.data.user);
           setIsLoading(false);
-          console.log(response.data.user);
+
           if (response.data.user.is_profile_setup) {
             router.push("/");
           } else {

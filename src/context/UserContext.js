@@ -1,6 +1,6 @@
 "use client";
 
-import { getToken } from "@/app/actions";
+import { getToken, logout } from "@/app/actions";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import {
@@ -79,6 +79,7 @@ export function UserProvider({ children }) {
       return token ? token.value : null;
     } catch (error) {
       console.error("Error fetching user token:", error);
+      await logout();
       return null;
     } finally {
       setLoading(false);

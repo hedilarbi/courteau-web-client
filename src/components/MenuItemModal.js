@@ -113,6 +113,7 @@ const MenuItemModal = ({
         comment: comment,
       });
       toast.success("Article ajouté au panier !");
+      setShowMenuItemModal(false);
     } else {
       updateItemInBasket({
         uid: itemFromBasket.uid,
@@ -122,6 +123,7 @@ const MenuItemModal = ({
         comment: comment,
       });
       toast.success("Article mis à jour dans le panier !");
+      setShowMenuItemModal(false);
     }
   };
   useEffect(() => {

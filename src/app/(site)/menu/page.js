@@ -22,7 +22,6 @@ async function fetchItemsByCategory(categorySlug) {
     }
   );
   if (!res.ok) {
-    console.log("Failed to fetch items for category:", categorySlug);
     throw new Error("Failed to fetch items");
   }
 

@@ -107,6 +107,7 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
         comment: comment,
       });
       toast.success("Offre ajoutée au panier !");
+      setShowOfferModal(false);
     } else {
       updateOfferInBasket({
         uid: offerFromBasket.uid,
@@ -116,6 +117,7 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
         comment: comment,
       });
       toast.success("Offre mise à jour dans le panier !");
+      setShowOfferModal(false);
     }
   };
   useEffect(() => {
