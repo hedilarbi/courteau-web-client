@@ -28,26 +28,26 @@ export default function ConnexionPage() {
 
       const formattedValue = "+1" + phoneNumber;
 
-      //   if (phoneNumber === "8196929494") {
-      //     router.push(`/otp?phoneNumber=${phoneNumber}`);
-      //   } else {
-      //     sendSmsVerification(formattedValue)
-      //       .then((sent) => {
-      //         if (!sent) {
-      //           setError("Erreur lors de l'envoi du code de vérification");
-      //           setIsLoading(false);
-      //           return;
-      //         }
-      //         router.push(`/otp?phoneNumber=${phoneNumber}`);
-      //       })
-      //       .then(() => setIsLoading(false))
-      //       .catch((err) => {
-      //         setIsLoading(false);
-      //       });
-      //   }
+      if (phoneNumber === "8196929494") {
+        router.push(`/otp?phoneNumber=${phoneNumber}`);
+      } else {
+        sendSmsVerification(formattedValue)
+          .then((sent) => {
+            if (!sent) {
+              setError("Erreur lors de l'envoi du code de vérification");
+              setIsLoading(false);
+              return;
+            }
+            router.push(`/otp?phoneNumber=${phoneNumber}`);
+          })
+          .then(() => setIsLoading(false))
+          .catch((err) => {
+            setIsLoading(false);
+          });
+      }
 
-      setIsLoading(false);
-      router.push(`/otp?phoneNumber=${phoneNumber}`);
+      // setIsLoading(false);
+      // router.push(`/otp?phoneNumber=${phoneNumber}`);
     } catch (err) {
       setIsLoading(false);
       setError("Une erreur s'est produite. Veuillez réessayer.");
