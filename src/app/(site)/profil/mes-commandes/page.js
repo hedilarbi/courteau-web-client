@@ -42,9 +42,12 @@ const Page = () => {
       </div>
     );
   }
+  const getStatusLabel = (status) =>
+    status === "Livreé" ? "Livrée" : status;
+
   const statusStyles = (status) => {
-    switch (status) {
-      case "Livreé":
+    switch (getStatusLabel(status)) {
+      case "Livrée":
         return "text-green-400";
       case "En cours":
         return "text-yellow-400";
@@ -73,7 +76,7 @@ const Page = () => {
           </div>
           <h1 className="text-2xl font-bold">Mes Commandes</h1>
         </div>
-        {error && <p className="text-red-500">Error: {error.message}</p>}
+        {error && <p className="text-red-500">Erreur : {error.message}</p>}
         {!error && orders.length === 0 && (
           <p className="text-gray-500">
             Vous n&apos;avez pas encore de commandes.
@@ -102,7 +105,7 @@ const Page = () => {
                   <p className="text-gray-600">
                     Statut:{" "}
                     <span className={`font-bold ${statusStyles(order.status)}`}>
-                      {order.status}
+                      {getStatusLabel(order.status)}
                     </span>
                   </p>
                 </div>

@@ -522,7 +522,7 @@ const getPaymentIntentClientSecret = async (
 
     return {
       status: false,
-      message: message || "Une erreur s'est produite . Veuillez réessayer.",
+      message: message || "Une erreur s'est produite. Veuillez réessayer.",
     };
   }
 };

@@ -83,12 +83,12 @@ const blogueList = [
       {
         subtitle: "Une pizza du samedi soir",
         content:
-          "Parfois, ça fait du bien de se gâter un peu; c’est pourquoi nos pizzas sont parfaites pour combler votre fringale du samedi soir!  Que vous préfériez nos variétés classiques comme la toute garnie ou nos variétés signature comme la Carnivore, il y en a certainement une qui comblera vos papilles. N’hésitez pas à toutes les essayer; chacune est préparée avec des ingrédients frais du jour et provenant de producteurs locaux. Vous pourrez donc vous régaler sans vous sentir coupable tout en encourageant l’industrie québécoise. Que demander de plus?",
+          "Parfois, ça fait du bien de se gâter un peu; c’est pourquoi nos pizzas sont parfaites pour combler votre fringale du samedi soir! Que vous préfériez nos variétés classiques comme la toute garnie ou nos variétés signature comme la Carnivore, il y en a certainement une qui comblera vos papilles. N’hésitez pas à toutes les essayer; chacune est préparée avec des ingrédients frais du jour et provenant de producteurs locaux. Vous pourrez donc vous régaler sans vous sentir coupable tout en encourageant l’industrie québécoise. Que demander de plus?",
       },
       {
         subtitle: "Des plats pour tous les goûts",
         content:
-          "Peu importe votre appétit ou ce que vos papilles désirent, nous avons des plats qui sauront combler tous les amateurs de bonne bouffe. Si vous cherchez un endroit pour satisfaire votre fringale et vous réchauffer cet automne, vous n’avez qu’à retenir un seul endroit : le Casse-Croûte Courteau. ",
+          "Peu importe votre appétit ou ce que vos papilles désirent, nous avons des plats qui sauront combler tous les amateurs de bonne bouffe. Si vous cherchez un endroit pour satisfaire votre fringale et vous réchauffer cet automne, vous n’avez qu’à retenir un seul endroit : le Casse-Croûte Courteau.",
       },
     ],
   },

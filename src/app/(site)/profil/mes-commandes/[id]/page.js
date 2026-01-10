@@ -48,9 +48,12 @@ const Page = () => {
     return null;
   }
 
+  const getStatusLabel = (status) =>
+    status === "Livreé" ? "Livrée" : status;
+
   const statusStyles = (status) => {
-    switch (status) {
-      case "Livreé":
+    switch (getStatusLabel(status)) {
+      case "Livrée":
         return "text-green-400";
       case "En cours":
         return "text-yellow-400";
@@ -81,7 +84,7 @@ const Page = () => {
               className={`px-4 py-1 rounded-full text-sm font-bold shadow transition 
                 ${statusStyles(order.status)}`}
             >
-              {order.status}
+              {getStatusLabel(order.status)}
             </p>
           </div>
           <div className="shadow-lg bg-white p-6 rounded-xl mb-6">
