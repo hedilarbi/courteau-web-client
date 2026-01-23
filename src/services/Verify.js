@@ -1,4 +1,4 @@
-const TWILIO_BASE_URL = process.env.NEXT_PUBLIC_TWILIO_BASE_URL;
+const VERIFY_API_BASE = "/api/verify";
 const sendSmsVerification = async (phoneNumber) => {
   try {
     const data = JSON.stringify({
@@ -6,7 +6,7 @@ const sendSmsVerification = async (phoneNumber) => {
       channel: "sms",
     });
 
-    const response = await fetch(`${TWILIO_BASE_URL}/start-verify`, {
+    const response = await fetch(`${VERIFY_API_BASE}/start`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -28,7 +28,7 @@ const checkVerification = async (phoneNumber, code) => {
       code,
     });
 
-    const response = await fetch(`${TWILIO_BASE_URL}/check-verify`, {
+    const response = await fetch(`${VERIFY_API_BASE}/check`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

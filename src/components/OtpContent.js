@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import { create } from "@/app/actions";
 import { createUserService } from "@/services/UserServices";
+import { checkVerification } from "@/services/Verify";
 
 const OtpContent = ({ phoneNumber }) => {
   const [error, setError] = useState("");
@@ -19,6 +20,7 @@ const OtpContent = ({ phoneNumber }) => {
   const { createUser } = useUser();
   const verifyCode = async () => {
     setIsLoading(true);
+    console.log("Verifying code:", otp);
     try {
       if (otp === "000000") {
         const response = await createUserService(phoneNumber);
@@ -77,7 +79,7 @@ const OtpContent = ({ phoneNumber }) => {
       .catch((err) => {
         console.error("Error resending code:", err);
         setResendError(
-          "Une erreur s'est produite lors de l'envoi du code. Veuillez réessayer."
+          "Une erreur s'est produite lors de l'envoi du code. Veuillez réessayer.",
         );
         setResending(false);
       });

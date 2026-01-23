@@ -66,10 +66,11 @@ export function UserProvider({ children }) {
           headers: {
             Authorization: `Bearer ${token.value}`,
           },
-        }
+        },
       );
       if (response.status === 200) {
         createUser(response.data);
+
         if (!response.data.is_profile_setup) {
           router.push("/completer-profil");
         }
