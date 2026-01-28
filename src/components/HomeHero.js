@@ -4,8 +4,7 @@ import React from "react";
 const HomeHero = () => {
   return (
     <section
-      style={{ backgroundImage: "url('/HomeHero.jpg')" }}
-      className="bg-cover bg-center h-[calc(100vh-140px)] flex items-center justify-center md:px-24 px-6 md:mt-28 mt-16"
+      className="bg-cover bg-center h-[calc(100vh-140px)] flex items-center justify-center md:px-24 px-6 md:mt-28 mt-16 bg-[url('/hero1.jpg')] md:bg-[url('/hero2.jpg')]"
     >
       <div>
         <h1 className="md:text-5xl text-3xl font-bebas-neue font-bold tracking-widest text-white text-center">
