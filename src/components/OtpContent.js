@@ -60,7 +60,7 @@ const OtpContent = ({ phoneNumber }) => {
         }
       }
     } catch (err) {
-      console.error("Error verifying code:", err);
+      console.error("Erreur lors de la vérification du code :", err);
       setError("Une erreur s'est produite. Veuillez réessayer.");
       setIsLoading(false);
     } finally {
@@ -77,7 +77,7 @@ const OtpContent = ({ phoneNumber }) => {
         setResendSuccess(true);
       })
       .catch((err) => {
-        console.error("Error resending code:", err);
+        console.error("Erreur lors du renvoi du code :", err);
         setResendError(
           "Une erreur s'est produite lors de l'envoi du code. Veuillez réessayer.",
         );

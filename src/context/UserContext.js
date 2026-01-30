@@ -79,7 +79,7 @@ export function UserProvider({ children }) {
       }
       return token ? token.value : null;
     } catch (error) {
-      console.error("Error fetching user token:", error);
+      console.error("Erreur lors de la récupération du token utilisateur :", error);
       await logout();
       return null;
     } finally {

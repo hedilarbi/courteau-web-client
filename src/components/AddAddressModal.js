@@ -25,7 +25,7 @@ const AddAddressModal = ({
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
       if (!apiKey) {
-        throw new Error("Google Maps API key is not configured");
+        throw new Error("La clé API Google Maps n'est pas configurée.");
       }
 
       const response = await fetch(
@@ -35,24 +35,31 @@ const AddAddressModal = ({
       );
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Erreur HTTP (statut ${response.status}).`);
       }
 
       const data = await response.json();
+      console.log("Google Geocoding response:", data);
 
       if (data.status === "OK" && data.results.length > 0) {
         const result = data.results[0];
         const { lat, lng } = result.geometry.location;
         const formattedAddress = result.formatted_address;
 
+        if (!isFinite(lat) || !isFinite(lng)) {
+          throw new Error(
+            "Adresse introuvable ou incomplète. Veuillez préciser votre adresse."
+          );
+        }
+
         return {
           address: newAddress,
           coords: { latitude: lat, longitude: lng },
         };
       } else if (data.status === "ZERO_RESULTS") {
-        throw new Error("No results found for this address");
+        throw new Error("Aucun résultat pour cette adresse.");
       } else {
-        throw new Error(`Geocoding failed: ${data.status}`);
+        throw new Error(`Échec du géocodage : ${data.status}`);
       }
     } catch (error) {
       console.error("Geocoding error:", error);
@@ -97,7 +104,7 @@ const AddAddressModal = ({
       }
     } catch (error) {
       setIsLoading(false);
-      setError(error.message || "Failed to validate address");
+      setError(error.message || "Impossible de valider l'adresse.");
     }
   };
 

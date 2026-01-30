@@ -6,7 +6,7 @@ const TWILIO_BASE_URL =
 export async function POST(request) {
   if (!TWILIO_BASE_URL) {
     return NextResponse.json(
-      { success: false, message: "TWILIO_BASE_URL is not configured" },
+      { success: false, message: "TWILIO_BASE_URL n'est pas configurée." },
       { status: 500 }
     );
   }
@@ -16,7 +16,7 @@ export async function POST(request) {
     payload = await request.json();
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: "Invalid JSON body" },
+      { success: false, message: "Corps JSON invalide." },
       { status: 400 }
     );
   }
@@ -38,7 +38,7 @@ export async function POST(request) {
       } catch (error) {
         data = {
           success: false,
-          message: "Invalid response from verify service",
+          message: "Réponse invalide du service de vérification.",
         };
       }
     }
@@ -46,7 +46,7 @@ export async function POST(request) {
     return NextResponse.json(data, { status: twilioResponse.status });
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: "Failed to reach verify service" },
+      { success: false, message: "Impossible de joindre le service de vérification." },
       { status: 502 }
     );
   }

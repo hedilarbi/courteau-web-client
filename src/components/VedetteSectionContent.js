@@ -17,7 +17,7 @@ const VedetteSectionContent = async () => {
     const uniqueBySlug = [...new Map(cleaned.map((m) => [m.slug, m])).values()];
     items = uniqueBySlug;
   } catch (e) {
-    console.error("getVedettes failed:", e);
+    console.error("Échec du chargement des vedettes :", e);
   }
 
   // 2) Skeleton si vide

@@ -28,7 +28,9 @@ const Page = () => {
   // Keep geocoding side-effect free; let submit handler manage loading/errors
   const geocodeAddress = async (address) => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) throw new Error("Google Maps API key is not configured");
+    if (!apiKey) {
+      throw new Error("La clé API Google Maps n'est pas configurée.");
+    }
 
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
@@ -37,7 +39,7 @@ const Page = () => {
     );
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Erreur HTTP (statut ${response.status}).`);
     }
 
     const data = await response.json();
@@ -47,9 +49,9 @@ const Page = () => {
       return { coords: { latitude: lat, longitude: lng } };
     }
     if (data.status === "ZERO_RESULTS") {
-      throw new Error("No results found for this address");
+      throw new Error("Aucun résultat pour cette adresse.");
     }
-    throw new Error(`Geocoding failed: ${data.status}`);
+    throw new Error(`Échec du géocodage : ${data.status}`);
   };
 
   const handleSubmit = async (e) => {

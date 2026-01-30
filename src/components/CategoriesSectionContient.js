@@ -12,7 +12,7 @@ const CategoriesSectionContient = async () => {
     data = Array.isArray(res?.data) ? res.data : [];
   } catch (e) {
     // En prod, on reste silencieux côté UI
-    console.error("getCategories failed:", e);
+    console.error("Échec du chargement des catégories :", e);
   }
 
   if (!data.length) {

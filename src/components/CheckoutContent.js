@@ -37,6 +37,11 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   );
   const [address, setAddress] = useState({});
   const [canOrder, setCanOrder] = useState(true);
+  const isAddressValid =
+    deliveryMode !== "delivery" ||
+    (!!address?.address &&
+      !!address?.coords?.latitude &&
+      !!address?.coords?.longitude);
 
   useEffect(() => {
     if (user && user.addresses && user.addresses.length > 0 && !loading) {
@@ -192,6 +197,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
           settings={selectedRestaurant.settings}
           deliveryMode={deliveryMode}
           setCanOrder={setCanOrder}
+          addressValid={isAddressValid}
         />
         <h1 className="font-inter font-semibold text-black md:text-2xl text-lg">
           Finaliser la commande

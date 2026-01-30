@@ -10,7 +10,9 @@ async function fetchCategories() {
   const res = await fetch(`${process.env.API_URL}/categories`, {
     cache: "no-store",
   });
-  if (!res.ok) throw new Error("Failed to fetch categories");
+  if (!res.ok) {
+    throw new Error("Impossible de récupérer les catégories.");
+  }
   return res.json();
 }
 
@@ -22,7 +24,7 @@ async function fetchItemsByCategory(categorySlug) {
     }
   );
   if (!res.ok) {
-    throw new Error("Failed to fetch items");
+    throw new Error("Impossible de récupérer les items.");
   }
 
   return res.json();
@@ -32,7 +34,9 @@ async function fetchAwards() {
   const res = await fetch(`${process.env.API_URL}/rewards`, {
     next: { revalidate: 1800, tags: ["menu", "rewards"] },
   });
-  if (!res.ok) throw new Error("Failed to fetch awards");
+  if (!res.ok) {
+    throw new Error("Impossible de récupérer les récompenses.");
+  }
   return res.json();
 }
 
@@ -40,7 +44,9 @@ async function fetchOffers() {
   const res = await fetch(`${process.env.API_URL}/offers`, {
     next: { revalidate: 1800, tags: ["menu", "offers"] },
   });
-  if (!res.ok) throw new Error("Failed to fetch offers");
+  if (!res.ok) {
+    throw new Error("Impossible de récupérer les offres.");
+  }
   return res.json();
 }
 export default async function Page({ searchParams }) {

@@ -40,6 +40,11 @@ export default function CheckoutCard({
   const [showCardField, setShowCardField] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
   const [error, setError] = useState(null);
+  const isAddressValid =
+    deliveryMode !== "delivery" ||
+    (!!address?.address &&
+      !!address?.coords?.latitude &&
+      !!address?.coords?.longitude);
 
   const brandIcon = (brand) => {
     switch (brand) {
@@ -250,16 +255,27 @@ export default function CheckoutCard({
         }
       }
 
-      const radius = selectedRestaurant?.settings?.delivery_range || 6;
+      if (deliveryMode === "delivery") {
+        if (
+          !address?.address ||
+          !address?.coords ||
+          !address?.coords.latitude ||
+          !address?.coords.longitude
+        ) {
+          setError("Veuillez sélectionner une adresse de livraison valide.");
+          return;
+        }
 
-      const distance = calculateDistance(
-        address.coords,
-        selectedRestaurant.location
-      );
+        const radius = selectedRestaurant?.settings?.delivery_range || 6;
+        const distance = calculateDistance(
+          address.coords,
+          selectedRestaurant.location
+        );
 
-      if (distance > radius && deliveryMode === "delivery") {
-        setError(`L'adresse est hors de la zone de livraison .`);
-        return;
+        if (distance > radius) {
+          setError(`L'adresse est hors de la zone de livraison .`);
+          return;
+        }
       }
 
       if (!stripe || !elements) {
@@ -393,7 +409,7 @@ export default function CheckoutCard({
         router.replace("/success?id=" + response.data.orderId);
       }
     } catch (error) {
-      console.error("Error in handlePaymentReady:", error);
+      console.error("Erreur dans handlePaymentReady :", error);
     } finally {
       setLoading(false);
     }
@@ -474,6 +490,7 @@ export default function CheckoutCard({
           loading ||
           (!!showCardField && !cardComplete && !selectedPmId) ||
           !canOrder ||
+          !isAddressValid ||
           user.isBanned ||
           !stripe ||
           !elements ||
@@ -484,6 +501,12 @@ export default function CheckoutCard({
       >
         {loading ? "Traitement..." : "Payer"}
       </button>
+      {!isAddressValid && deliveryMode === "delivery" && (
+        <div className="text-red-600 text-sm">
+          Adresse de livraison invalide ou incomplète. Veuillez la mettre à
+          jour.
+        </div>
+      )}
     </div>
   );
 }

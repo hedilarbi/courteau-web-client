@@ -11,7 +11,7 @@ const OffresSectionContent = async () => {
     // Garde uniquement les offres valides
     items = raw.filter((o) => o && o._id && o.image && o.name);
   } catch (e) {
-    console.error("getOffers failed:", e);
+    console.error("Échec du chargement des offres :", e);
   }
 
   if (!items.length) {
