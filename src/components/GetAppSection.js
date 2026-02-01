@@ -15,24 +15,24 @@ const GetAppSection = () => {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 md:gap-16 gap-6 md:mt-12 mt-8">
-        <a
-          href="#"
+        <Link
+          href="https://apps.apple.com/us/app/casse-croûte-courteau/id6476014838"
           className="bg-white flex justify-center items-center px-12 py-3 rounded-md"
         >
           <FaApple />{" "}
           <span className="font-inter font-semibold text-base ml-2">
             App store
           </span>
-        </a>
-        <a
-          href="#"
+        </Link>
+        <Link
+          href="https://play.google.com/store/apps/details?id=com.hedilarbi95.lecourteauclient"
           className="bg-white flex justify-center items-center px-12 py-3 rounded-md"
         >
           <FaGooglePlay />{" "}
           <span className="font-inter font-semibold text-base ml-2">
             Google play
           </span>
-        </a>
+        </Link>
 
         <Link
           href="/menu"
