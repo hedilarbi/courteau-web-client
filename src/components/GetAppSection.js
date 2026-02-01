@@ -18,6 +18,7 @@ const GetAppSection = () => {
         <Link
           href="https://apps.apple.com/us/app/casse-croûte-courteau/id6476014838"
           className="bg-white flex justify-center items-center px-12 py-3 rounded-md"
+          target="_blank"
         >
           <FaApple />{" "}
           <span className="font-inter font-semibold text-base ml-2">
@@ -27,6 +28,7 @@ const GetAppSection = () => {
         <Link
           href="https://play.google.com/store/apps/details?id=com.hedilarbi95.lecourteauclient"
           className="bg-white flex justify-center items-center px-12 py-3 rounded-md"
+          target="_blank"
         >
           <FaGooglePlay />{" "}
           <span className="font-inter font-semibold text-base ml-2">
