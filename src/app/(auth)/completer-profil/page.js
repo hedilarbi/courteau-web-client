@@ -34,8 +34,8 @@ const Page = () => {
 
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-        address
-      )}&key=${apiKey}`
+        address,
+      )}&key=${apiKey}`,
     );
 
     if (!response.ok) {
@@ -67,6 +67,10 @@ const Page = () => {
       setError("Veuillez entrer une adresse courriel valide.");
       return;
     }
+    if (formData.dob === "") {
+      setError("Veuillez entrer votre date de naissance.");
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -83,7 +87,7 @@ const Page = () => {
         formData.email,
         formData.address,
         userCoords,
-        formData.dob
+        formData.dob,
       );
 
       if (response.status) {
@@ -95,7 +99,7 @@ const Page = () => {
       setError("Erreur lors de la mise à jour des informations utilisateur.");
     } catch (err) {
       setError(
-        err?.message || "Erreur lors de la géocodification de l'adresse."
+        err?.message || "Erreur lors de la géocodification de l'adresse.",
       );
     } finally {
       setIsLoading(false);
