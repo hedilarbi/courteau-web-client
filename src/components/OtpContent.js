@@ -20,7 +20,7 @@ const OtpContent = ({ phoneNumber }) => {
   const { createUser } = useUser();
   const verifyCode = async () => {
     setIsLoading(true);
-    console.log("Verifying code:", otp);
+
     try {
       if (otp === "000000") {
         const response = await createUserService(phoneNumber);

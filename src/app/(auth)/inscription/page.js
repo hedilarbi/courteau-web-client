@@ -28,7 +28,7 @@ export default function ConnexionPage() {
 
       const formattedValue = "+1" + phoneNumber;
 
-      if (phoneNumber === "8196929494") {
+      if (phoneNumber === "8196929494" || phoneNumber === "4388094567") {
         router.push(`/otp?phoneNumber=${phoneNumber}`);
       } else {
         sendSmsVerification(formattedValue)
