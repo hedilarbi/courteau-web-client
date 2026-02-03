@@ -53,7 +53,10 @@ const CategoriesSectionContient = async () => {
           "
         >
           {data.map((item, idx) => {
-            const href = `/menu?category=${item.slug}`;
+            const href = {
+              pathname: "/menu",
+              query: { category: item.slug },
+            };
             return (
               <li key={item._id} role="listitem" className="snap-start">
                 <Link

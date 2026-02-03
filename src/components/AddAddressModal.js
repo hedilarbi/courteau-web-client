@@ -30,8 +30,8 @@ const AddAddressModal = ({
 
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-          address
-        )}&key=${apiKey}`
+          address,
+        )}&key=${apiKey}`,
       );
 
       if (!response.ok) {
@@ -39,7 +39,6 @@ const AddAddressModal = ({
       }
 
       const data = await response.json();
-      console.log("Google Geocoding response:", data);
 
       if (data.status === "OK" && data.results.length > 0) {
         const result = data.results[0];
@@ -48,7 +47,7 @@ const AddAddressModal = ({
 
         if (!isFinite(lat) || !isFinite(lng)) {
           throw new Error(
-            "Adresse introuvable ou incomplète. Veuillez préciser votre adresse."
+            "Adresse introuvable ou incomplète. Veuillez préciser votre adresse.",
           );
         }
 
@@ -82,13 +81,13 @@ const AddAddressModal = ({
       const response = await addToAddresses(
         userId,
         geocodedAddress.address,
-        geocodedAddress.coords
+        geocodedAddress.coords,
       );
 
       if (response.status) {
         const restaurantIndex = getClosestRestaurant(
           geocodedAddress.coords,
-          restaurantsSettings
+          restaurantsSettings,
         );
 
         const closestRestaurant = restaurantsSettings[restaurantIndex];

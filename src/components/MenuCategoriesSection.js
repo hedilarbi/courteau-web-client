@@ -11,7 +11,10 @@ export default function MenuCategoriesSection({
     <div className="py-6 shadow-md border-b border-gray-200 md:px-24 px-6 flex gap-2 md:gap-4 overflow-x-auto">
       {categories.map((category) => {
         const active = category.slug === selectedCategory;
-        const href = `/menu?category=${category.slug}`;
+        const href = {
+          pathname: "/menu",
+          query: { category: category.slug },
+        };
         return (
           <Link
             key={category._id}

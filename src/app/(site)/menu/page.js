@@ -21,7 +21,7 @@ async function fetchItemsByCategory(categorySlug) {
     `${process.env.API_URL}/menuItems/category/slug/${categorySlug}`,
     {
       cache: "no-store",
-    }
+    },
   );
   if (!res.ok) {
     throw new Error("Impossible de récupérer les items.");
@@ -68,30 +68,31 @@ export default async function Page({ searchParams }) {
 
   categories = [...categories, ...res];
 
+  const resolvedSearchParams = await searchParams;
   const urlCategory =
-    typeof searchParams?.category === "string" ? searchParams.category : null;
+    typeof resolvedSearchParams?.category === "string"
+      ? resolvedSearchParams.category
+      : null;
 
   const knownIds = new Set((categories ?? []).map((c) => c.slug));
 
   const firstCategorySlug = categories?.[2]?.slug ?? null;
+  const isKnownCategory = urlCategory && knownIds.has(urlCategory);
   let items = [];
   // Récupère les items de la catégorie sélectionnée ou de la première catégorie
-  if (urlCategory && knownIds.has(urlCategory) && urlCategory === "offres") {
+  if (isKnownCategory && urlCategory === "offres") {
     items = await fetchOffers();
-  } else if (
-    urlCategory &&
-    knownIds.has(urlCategory) &&
-    urlCategory === "recompenses"
-  ) {
+  } else if (isKnownCategory && urlCategory === "recompenses") {
     items = await fetchAwards();
   } else {
-    items =
-      urlCategory && knownIds.has(urlCategory)
-        ? await fetchItemsByCategory(urlCategory)
-        : await fetchItemsByCategory(firstCategorySlug);
+    items = isKnownCategory
+      ? await fetchItemsByCategory(urlCategory)
+      : await fetchItemsByCategory(firstCategorySlug);
   }
 
-  const selectedCategorySlug = urlCategory ? urlCategory : firstCategorySlug;
+  const selectedCategorySlug = isKnownCategory
+    ? urlCategory
+    : firstCategorySlug;
   // JSON-LD ItemList pour la catégorie active (bonus SEO)
   const itemListLd = {
     "@context": "https://schema.org",
@@ -100,7 +101,9 @@ export default async function Page({ searchParams }) {
       items?.map((it, idx) => ({
         "@type": "ListItem",
         position: idx + 1,
-        url: `https://www.lecourteau.com/menu?category=${it.slug || it._id}`,
+        url: `https://www.lecourteau.com/menu?category=${encodeURIComponent(
+          it.slug || it._id,
+        )}`,
         name: it.name,
         image: it.image,
       })) ?? [],

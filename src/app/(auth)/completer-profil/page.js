@@ -67,7 +67,7 @@ const Page = () => {
       setError("Veuillez entrer une adresse courriel valide.");
       return;
     }
-    console.log("Date de naissance soumise :", formData.dob);
+
     if (formData.dob === "") {
       setError("Veuillez entrer votre date de naissance.");
       return;
