@@ -6,13 +6,12 @@ import Script from "next/script";
 import OfferComponent from "@/components/OfferComponent";
 import BackButton from "@/components/BackButton";
 
-export const dynamic = "force-static"; // SSG si possible
-export const revalidate = 1800; // ISR 30 min
+export const dynamic = "force-dynamic";
 
 async function fetchOffer(slug) {
   const res = await fetch(
     `${process.env.API_URL}/offers/slug/${encodeURIComponent(slug)}`,
-    { next: { revalidate: 1800, tags: ["menu", "offres", `offre:${slug}`] } }
+    { cache: "no-store" }
   );
   if (!res.ok) return null;
   return res.json();

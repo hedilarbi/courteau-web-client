@@ -10,16 +10,21 @@ import PromoCodeBlock from "./PromoCodeBlock";
 import { useSelectBasketTotal } from "@/context/BasketContext";
 import TipsBlock from "./TipsBlock";
 import ResumeBlock from "./ResumeBlock";
+import ScheduleBlock from "./ScheduleBlock";
 
 import { useRouter } from "next/navigation";
 import ProcessPaiement from "./ProcessPaiement";
 import WarningBanner from "./WarningBanner";
+import { getScheduleValidationError } from "@/utils/dateHandlers";
 const CheckoutContent = ({ restaurantsSettings }) => {
   const { user, loading } = useUser();
   const router = useRouter();
   const subTotal = useSelectBasketTotal();
   const [tips, setTips] = useState("");
   const [selectedTip, setSelectedTip] = useState(0);
+  const [scheduleOption, setScheduleOption] = useState("now");
+  const [scheduledDateTime, setScheduledDateTime] = useState(null);
+  const [scheduleError, setScheduleError] = useState("");
 
   const subTotalWithDiscount = useRef(
     !user?.firstOrderDiscountApplied ? subTotal * 0.8 : subTotal
@@ -56,6 +61,35 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       setSelectedRestaurant(closestRestaurant);
     }
   }, [loading]);
+
+  const isScheduledOrder = scheduleOption === "later";
+
+  useEffect(() => {
+    if (deliveryMode !== "delivery") {
+      setScheduleOption("now");
+      setScheduledDateTime(null);
+      setScheduleError("");
+    }
+  }, [deliveryMode]);
+
+  useEffect(() => {
+    if (scheduleOption === "now") {
+      setScheduledDateTime(null);
+      setScheduleError("");
+    }
+  }, [scheduleOption]);
+
+  useEffect(() => {
+    if (!isScheduledOrder || !scheduledDateTime || !selectedRestaurant) {
+      setScheduleError("");
+      return;
+    }
+    const error = getScheduleValidationError(
+      scheduledDateTime,
+      selectedRestaurant
+    );
+    setScheduleError(error || "");
+  }, [isScheduledOrder, scheduledDateTime, selectedRestaurant]);
 
   useEffect(() => {
     let promoCodeDiscount = null;
@@ -220,6 +254,13 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             userAddresses={user.addresses}
             deliveryMode={deliveryMode}
           />
+          <ScheduleBlock
+            scheduleOption={scheduleOption}
+            setScheduleOption={setScheduleOption}
+            scheduledDateTime={scheduledDateTime}
+            setScheduledDateTime={setScheduledDateTime}
+            scheduleError={scheduleError}
+          />
 
           <PromoCodeBlock
             userId={user._id}
@@ -265,6 +306,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             tvq={tvq}
             tps={tps}
             canOrder={canOrder}
+            isScheduledOrder={isScheduledOrder}
+            scheduledDateTime={scheduledDateTime}
           />
         </section>
       </div>

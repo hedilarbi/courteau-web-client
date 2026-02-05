@@ -1,6 +1,5 @@
 // app/menu/page.jsx
-export const revalidate = 1800; // ISR: regénère au plus toutes les 30 min
-export const dynamic = "force-dynamic"; // force SSG si possible
+export const dynamic = "force-dynamic";
 
 import MenuContent from "@/components/MenuContent";
 import Script from "next/script";
@@ -32,7 +31,7 @@ async function fetchItemsByCategory(categorySlug) {
 
 async function fetchAwards() {
   const res = await fetch(`${process.env.API_URL}/rewards`, {
-    next: { revalidate: 1800, tags: ["menu", "rewards"] },
+    cache: "no-store",
   });
   if (!res.ok) {
     throw new Error("Impossible de récupérer les récompenses.");
@@ -42,7 +41,7 @@ async function fetchAwards() {
 
 async function fetchOffers() {
   const res = await fetch(`${process.env.API_URL}/offers`, {
-    next: { revalidate: 1800, tags: ["menu", "offers"] },
+    cache: "no-store",
   });
   if (!res.ok) {
     throw new Error("Impossible de récupérer les offres.");
@@ -50,6 +49,7 @@ async function fetchOffers() {
   return res.json();
 }
 export default async function Page({ searchParams }) {
+  const resolvedSearchParams = await searchParams;
   let categories = [
     {
       _id: "recompenses",
@@ -68,7 +68,6 @@ export default async function Page({ searchParams }) {
 
   categories = [...categories, ...res];
 
-  const resolvedSearchParams = await searchParams;
   const urlCategory =
     typeof resolvedSearchParams?.category === "string"
       ? resolvedSearchParams.category

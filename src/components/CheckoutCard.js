@@ -11,6 +11,7 @@ import {
 } from "@/services/UserServices";
 
 import { calculateDistance } from "@/utils/locationHandlers";
+import { getScheduleValidationError } from "@/utils/dateHandlers";
 import { useBasket, useSelectBasket } from "@/context/BasketContext";
 import { useRouter } from "next/navigation";
 import Spinner from "./spinner/Spinner";
@@ -27,6 +28,8 @@ export default function CheckoutCard({
   promoCode,
   subTotalWithDiscount,
   canOrder,
+  isScheduledOrder,
+  scheduledDateTime,
 }) {
   const { clearBasket } = useBasket();
   const router = useRouter();
@@ -278,6 +281,23 @@ export default function CheckoutCard({
         }
       }
 
+      if (isScheduledOrder) {
+        if (!scheduledDateTime) {
+          setError(
+            "Veuillez sélectionner une date et une heure pour la commande programmée."
+          );
+          return;
+        }
+        const validationError = getScheduleValidationError(
+          scheduledDateTime,
+          selectedRestaurant
+        );
+        if (validationError) {
+          setError(validationError);
+          return;
+        }
+      }
+
       if (!stripe || !elements) {
         setError("Stripe non initialisé.");
         return;
@@ -363,6 +383,13 @@ export default function CheckoutCard({
         orderRewards.push({ id: item._id, points: item.points })
       );
 
+      const scheduledFor =
+        isScheduledOrder &&
+        scheduledDateTime &&
+        !Number.isNaN(scheduledDateTime.getTime())
+          ? scheduledDateTime.toISOString()
+          : null;
+
       const order = {
         type: deliveryMode,
         address: address.address,
@@ -392,7 +419,8 @@ export default function CheckoutCard({
               }
             : null,
           scheduled: {
-            isScheduled: false,
+            isScheduled: isScheduledOrder,
+            scheduledFor,
           },
         },
       };

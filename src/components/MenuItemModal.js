@@ -10,6 +10,20 @@ import { FaCheck } from "react-icons/fa";
 import { IoChatbubble } from "react-icons/io5";
 
 import ItemLoadingSkeleton from "./ItemLoadingSkeleton";
+const parseRuleValue = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getFreeLimit = (rule) => {
+  if (!rule) return 0;
+  if (rule.max === null || rule.max === undefined) return Infinity;
+  const max = parseRuleValue(rule.max);
+  if (max !== null) return max;
+  const min = parseRuleValue(rule.min);
+  if (min !== null) return min;
+  return 0;
+};
 const MenuItemModal = ({
   itemId,
   setShowMenuItemModal,
@@ -20,9 +34,14 @@ const MenuItemModal = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [customizationGroup, setCustomizationGroup] = useState(null);
+  const [selectedGroupIds, setSelectedGroupIds] = useState([]);
   const [categorizedCustomization, setCategorizedCustomization] = useState({});
   const [comment, setComment] = useState("");
   const itemFromBasket = useSelectBasketItemWithUID(itemUID)[0];
+  const usingCustomizationGroup = Boolean(
+    customizationGroup?.toppings?.length
+  );
 
   const { addToBasket, updateItemInBasket } = useBasket();
   const fetchItem = async () => {
@@ -30,37 +49,44 @@ const MenuItemModal = ({
       setLoading(true);
       const response = await getMenuItem(itemId);
       if (response.status) {
+        console.log("Menu item response:", response.data);
         setItem(response.data);
+        const groupData = response?.data?.customization_group;
+        const hasGroup = Boolean(groupData?.toppings?.length);
+        const basketCustomizations = itemFromBasket?.customization || [];
+
         if (!itemFromBasket) {
           setSelectedSize(response.data.prices[0]);
+        } else {
+          setSelectedSize(itemFromBasket.size);
+          setComment(itemFromBasket.comment || "");
+        }
+
+        if (hasGroup) {
+          setCustomizationGroup(groupData);
+          setCategorizedCustomization({});
+          setSelectedGroupIds(basketCustomizations.map((custom) => custom._id));
+        } else {
+          setCustomizationGroup(null);
+          setSelectedGroupIds([]);
           const customizations = response?.data?.customization || [];
           const CustomizationList = {};
-          customizations.forEach((item) => {
-            if (!CustomizationList[item.category.name]) {
-              CustomizationList[item.category?.name] = [];
+          customizations.forEach((customization) => {
+            if (!CustomizationList[customization.category?.name]) {
+              CustomizationList[customization.category?.name] = [];
             }
+            const isSelected = basketCustomizations.some(
+              (custom) =>
+                custom?._id === customization._id ||
+                custom?.name === customization.name
+            );
 
-            CustomizationList[item.category.name].push({
-              ...item,
-              state: false,
+            CustomizationList[customization.category.name].push({
+              ...customization,
+              state: isSelected,
             });
           });
           setCategorizedCustomization(CustomizationList);
-        } else {
-          setSelectedSize(itemFromBasket.size);
-          setCategorizedCustomization(
-            itemFromBasket.customization.reduce((acc, curr) => {
-              if (!acc[curr.category.name]) {
-                acc[curr.category.name] = [];
-              }
-              acc[curr.category.name].push({
-                ...curr,
-                state: true,
-              });
-              return acc;
-            }, {})
-          );
-          setComment(itemFromBasket.comment || "");
         }
       } else {
         setError(response.message);
@@ -72,8 +98,40 @@ const MenuItemModal = ({
     }
   };
 
+  const selectedGroupItems = useMemo(() => {
+    if (!usingCustomizationGroup) return [];
+    const freeLimit = getFreeLimit(customizationGroup?.selectionRule);
+    const toppings = customizationGroup?.toppings || [];
+
+    return selectedGroupIds
+      .map((id, index) => {
+        const topping = toppings.find((item) => item._id === id);
+        if (!topping) return null;
+        return {
+          ...topping,
+          price:
+            freeLimit !== Infinity && index >= freeLimit
+              ? Number(topping.price) || 0
+              : 0,
+        };
+      })
+      .filter(Boolean);
+  }, [usingCustomizationGroup, customizationGroup, selectedGroupIds]);
+
+  const selectedItems = useMemo(() => {
+    if (usingCustomizationGroup) return selectedGroupItems;
+
+    return Object.keys(categorizedCustomization).reduce((result, category) => {
+      const elements = categorizedCustomization[category];
+      const selectedItemsList = elements.filter(
+        (element) => element.state === true
+      );
+      return [...result, ...selectedItemsList];
+    }, []);
+  }, [usingCustomizationGroup, selectedGroupItems, categorizedCustomization]);
+
   const calculateTotalPrice = () => {
-    let newPrice = selectedSize.price;
+    let newPrice = selectedSize?.price || 0;
 
     if (selectedItems && selectedItems.length > 0) {
       selectedItems.map((item) => (newPrice += item.price));
@@ -91,17 +149,40 @@ const MenuItemModal = ({
     });
     setCategorizedCustomization(copy);
   };
-  const selectedItems = useMemo(() => {
-    return Object.keys(categorizedCustomization).reduce((result, category) => {
-      const elements = categorizedCustomization[category];
-      const selectedItemsList = elements.filter(
-        (element) => element.state === true
-      );
-      return [...result, ...selectedItemsList];
-    }, []);
-  }, [categorizedCustomization]);
+
+  const handleGroupCustomizationChange = (itemId) => {
+    setSelectedGroupIds((prev) => {
+      if (prev.includes(itemId)) {
+        return prev.filter((id) => id !== itemId);
+      }
+      return [...prev, itemId];
+    });
+  };
+
+  const selectionSummary = useMemo(() => {
+    if (!usingCustomizationGroup) return "";
+    const rule = customizationGroup?.selectionRule;
+    const minDisplay = parseRuleValue(rule?.min) || 0;
+    const maxValue = rule?.max;
+    const maxNumeric = parseRuleValue(maxValue);
+    const maxDisplay =
+      maxValue === null || maxValue === undefined || maxNumeric === null
+        ? "illimite"
+        : maxNumeric;
+
+    return `(min ${minDisplay} gratuit et maximum ${maxDisplay})`;
+  }, [usingCustomizationGroup, customizationGroup]);
 
   const handleAddToBasket = () => {
+    if (usingCustomizationGroup) {
+      const rule = customizationGroup?.selectionRule;
+      const minRequired = rule?.isRequired ? parseRuleValue(rule?.min) : 0;
+      if (minRequired && selectedGroupIds.length < minRequired) {
+        toast.error(`Veuillez selectionner au moins ${minRequired} option(s).`);
+        return;
+      }
+    }
+
     if (!itemFromBasket) {
       addToBasket({
         id: item._id,
@@ -213,46 +294,99 @@ const MenuItemModal = ({
                     </button>
                   ))}
                 </div>
-                {Object?.entries(categorizedCustomization).map(
-                  ([key, toppings]) => {
-                    return (
-                      <div key={key} className="mt-4 ">
-                        <p className="text-base font-inter font-semibold capitalize">
-                          {key}
-                        </p>
-                        {toppings?.map((topping) => {
-                          return (
-                            <button
-                              key={topping._id}
-                              className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
-                              onClick={() =>
-                                handleCustomizationChange(
-                                  topping.category.name,
-                                  topping._id
-                                )
-                              }
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
-                                  {topping.state && (
-                                    <span className="text-pr text-sm">
-                                      <FaCheck />
-                                    </span>
-                                  )}
+                {usingCustomizationGroup ? (
+                  <div className="mt-4 ">
+                    <p className="text-base font-inter font-semibold capitalize">
+                      Personnaliser {selectionSummary}
+                    </p>
+                    {customizationGroup?.toppings?.map((topping) => {
+                      const selectedIndex = selectedGroupIds.indexOf(
+                        topping._id
+                      );
+                      const isSelected = selectedIndex !== -1;
+                      const freeLimit = getFreeLimit(
+                        customizationGroup?.selectionRule
+                      );
+                      const isExtraSelection =
+                        freeLimit !== Infinity && selectedIndex >= freeLimit;
+                      const shouldShowExtraPrice =
+                        topping.price > 0 &&
+                        freeLimit !== Infinity &&
+                        (isExtraSelection ||
+                          (!isSelected &&
+                            selectedGroupIds.length >= freeLimit));
+
+                      return (
+                        <button
+                          key={topping._id}
+                          className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
+                          onClick={() =>
+                            handleGroupCustomizationChange(topping._id)
+                          }
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
+                              {isSelected && (
+                                <span className="text-pr text-sm">
+                                  <FaCheck />
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm capitalize font-inter font-medium">
+                              {topping.name}
+                            </p>
+                          </div>
+                          {shouldShowExtraPrice && (
+                            <p className="font-bebas-neue text-pr md:text-xl text-base">
+                              + ${Number(topping.price).toFixed(2)}
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  Object?.entries(categorizedCustomization).map(
+                    ([key, toppings]) => {
+                      return (
+                        <div key={key} className="mt-4 ">
+                          <p className="text-base font-inter font-semibold capitalize">
+                            {key}
+                          </p>
+                          {toppings?.map((topping) => {
+                            return (
+                              <button
+                                key={topping._id}
+                                className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
+                                onClick={() =>
+                                  handleCustomizationChange(
+                                    topping.category.name,
+                                    topping._id
+                                  )
+                                }
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
+                                    {topping.state && (
+                                      <span className="text-pr text-sm">
+                                        <FaCheck />
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm capitalize font-inter font-medium">
+                                    {topping.name}
+                                  </p>
                                 </div>
-                                <p className="text-sm capitalize font-inter font-medium">
-                                  {topping.name}
+                                <p className="font-bebas-neue text-pr md:text-xl text-base">
+                                  + ${topping.price.toFixed(2)}
                                 </p>
-                              </div>
-                              <p className="font-bebas-neue text-pr md:text-xl text-base">
-                                + ${topping.price.toFixed(2)}
-                              </p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    );
-                  }
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    }
+                  )
                 )}
                 <div className="mt-6">
                   <IoChatbubble className="text-pr text-xl" />

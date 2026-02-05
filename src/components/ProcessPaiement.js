@@ -19,6 +19,8 @@ const ProcessPaiement = ({
   tvq,
   tps,
   canOrder,
+  isScheduledOrder,
+  scheduledDateTime,
 }) => {
   const [processPaiement, setProcessPaiement] = useState(false);
 
@@ -71,6 +73,8 @@ const ProcessPaiement = ({
             tvq={tvq}
             tps={tps}
             canOrder={canOrder}
+            isScheduledOrder={isScheduledOrder}
+            scheduledDateTime={scheduledDateTime}
           />
         </Elements>
       ) : (

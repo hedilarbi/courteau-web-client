@@ -14,8 +14,7 @@ const AddAddressModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { updateUser } = useUser();
-  console.log("Restaurants Settings:");
-  // Function to geocode address using Google Maps API
+ 
   const geocodeAddress = async (address) => {
     try {
       setIsLoading(true);

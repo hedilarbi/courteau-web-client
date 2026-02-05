@@ -4,13 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 
-export const dynamic = "force-static";
-export const revalidate = 1800; // 30 min
+export const dynamic = "force-dynamic";
 
 async function fetchItem(slug) {
   const res = await fetch(
     `${process.env.API_URL}/menuItems/slug/${encodeURIComponent(slug)}`,
-    { next: { revalidate: 1800, tags: ["menu", `product:${slug}`] } }
+    { cache: "no-store" }
   );
   if (!res.ok) return null;
   return res.json();
