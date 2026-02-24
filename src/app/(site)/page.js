@@ -6,6 +6,9 @@ import OrderOnlineSection from "@/components/OrderOnlineSection";
 import VedetteSection from "@/components/VedetteSection";
 import React from "react";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const page = () => {
   return (
     <>
