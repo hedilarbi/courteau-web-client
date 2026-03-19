@@ -28,7 +28,17 @@ export default function ConnexionPage() {
 
       const formattedValue = "+1" + phoneNumber;
 
-      if (phoneNumber === "8196929494" || phoneNumber === "4388094567") {
+      if (
+        phoneNumber === "8196929494" ||
+        phoneNumber === "4388094567" ||
+        phoneNumber === "12312355" ||
+        phoneNumber === "12312366" ||
+        phoneNumber === "12312377" ||
+        phoneNumber === "12312388" ||
+        phoneNumber === "12312399" ||
+        phoneNumber === "1231231212" ||
+        phoneNumber === "1231231414"
+      ) {
         router.push(`/otp?phoneNumber=${phoneNumber}`);
       } else {
         sendSmsVerification(formattedValue)
@@ -133,6 +143,16 @@ export default function ConnexionPage() {
               Conditions d&apos;utilisation
             </span>{" "}
             .
+          </p>
+
+          <p className="mt-4 text-sm text-gray-700 text-center">
+            Vous avez déjà un compte ?{" "}
+            <span
+              className="text-pr cursor-pointer underline"
+              onClick={() => router.push("/connexion")}
+            >
+              Connectez-vous
+            </span>
           </p>
 
           <p

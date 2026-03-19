@@ -7,11 +7,14 @@ const ResumeBlock = ({
   deliveryFee,
   tips,
   subTotalWithDiscount,
-  firstOrderDiscountApplied,
+  firstOrderDiscountAllowed,
   promoCodeData,
   promoCodeIsValid,
+  promoCodeAllowed,
   total,
   deliveryMode,
+  subscriptionActive,
+  subscriptionDiscountAmount,
 }) => {
   return (
     <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
@@ -25,7 +28,7 @@ const ResumeBlock = ({
             ${subTotal.toFixed(2)}
           </span>
         </div>
-        {!firstOrderDiscountApplied && (
+        {firstOrderDiscountAllowed && (
           <div className="flex justify-between">
             <span className="font-inter text-gray-700">
               Remise 1 ère commande (20%)
@@ -35,18 +38,28 @@ const ResumeBlock = ({
             </span>
           </div>
         )}
+        {subscriptionActive && subscriptionDiscountAmount > 0 && (
+          <div className="flex justify-between">
+            <span className="font-inter text-gray-700">
+              Rabais abonnement (-15%)
+            </span>
+            <span className="font-inter font-semibold text-gray-900">
+              -${subscriptionDiscountAmount.toFixed(2)}
+            </span>
+          </div>
+        )}
 
-        {!firstOrderDiscountApplied && (
+        {(firstOrderDiscountAllowed || subscriptionActive) && (
           <div className="flex justify-between">
             <span className="font-inter text-gray-700">
               Sous total après remise
             </span>
             <span className="font-inter font-semibold text-gray-900">
-              ${subTotalWithDiscount}
+              ${Number(subTotalWithDiscount || 0).toFixed(2)}
             </span>
           </div>
         )}
-        {promoCodeData && promoCodeIsValid && (
+        {promoCodeAllowed && promoCodeData && promoCodeIsValid && (
           <div className="flex justify-between">
             <span className="font-inter text-gray-700">
               Code promo (
@@ -70,11 +83,11 @@ const ResumeBlock = ({
             </span>
           </div>
         )}
-        {deliveryMode === "delivery" && (
+        {deliveryMode === "delivery" && Number(deliveryFee || 0) > 0 && (
           <div className="flex justify-between">
             <span className="font-inter text-gray-700">Frais de livraison</span>
             <span className="font-inter font-semibold text-gray-900">
-              ${deliveryFee.toFixed(2)}
+              ${Number(deliveryFee || 0).toFixed(2)}
             </span>
           </div>
         )}

@@ -401,7 +401,37 @@ const createOrder = async (order) => {
   } catch (error) {
     return {
       status: false,
-      message: error.message,
+      message: error?.response?.data?.message || error.message,
+    };
+  }
+};
+const createZeroTotalSubscriptionOrder = async (order) => {
+  try {
+    let createOrderResponse = await axios.post(
+      `${API_URL}/orders/create/subscription-zero-total`,
+      {
+        order,
+      },
+      {
+        timeout: 15000,
+      }
+    );
+    if (createOrderResponse.status === 201) {
+      return {
+        status: true,
+        message: "order data",
+        data: createOrderResponse.data,
+      };
+    } else {
+      return {
+        status: false,
+        message: "didn't found",
+      };
+    }
+  } catch (error) {
+    return {
+      status: false,
+      message: error?.response?.data?.message || error.message,
     };
   }
 };
@@ -602,5 +632,6 @@ export {
   getPaymentIntentClientSecret,
   catchError,
   createOrder,
+  createZeroTotalSubscriptionOrder,
   confirmPaiment,
 };

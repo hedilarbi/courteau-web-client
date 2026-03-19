@@ -66,7 +66,7 @@ const AddressesBlock = ({
             </div>
           )}
           <button
-            className="mt-3  text-pr rounded-md font-inter font-semibold transition md:text-lg text-base  flex items-center justify-center gap-2 cursor-pointer"
+            className="mt-3  bg-pr text-black rounded-md py-2 px-3 font-inter font-semibold transition md:text-lg text-base  flex items-center justify-center gap-2 cursor-pointer"
             onClick={() => {
               setShowAddAddressModal(true);
             }}

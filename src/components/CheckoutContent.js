@@ -1,40 +1,136 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
-
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
+import {
+  useBasket,
+  useSelectBasket,
+  useSelectBasketItems,
+  useSelectBasketTotal,
+} from "@/context/BasketContext";
 
 import { getClosestRestaurant } from "@/utils/locationHandlers";
+import { getScheduleValidationError } from "@/utils/dateHandlers";
+import { getSubscriptionConfig } from "@/services/SubscriptionServices";
+import WarningBanner from "./WarningBanner";
 import OrderTypeBlock from "./OrderTypeBlock";
 import AddressesBlock from "./AddressesBlock";
+import ScheduleBlock from "./ScheduleBlock";
 import PromoCodeBlock from "./PromoCodeBlock";
-import { useSelectBasketTotal } from "@/context/BasketContext";
 import TipsBlock from "./TipsBlock";
 import ResumeBlock from "./ResumeBlock";
-import ScheduleBlock from "./ScheduleBlock";
-
-import { useRouter } from "next/navigation";
 import ProcessPaiement from "./ProcessPaiement";
-import WarningBanner from "./WarningBanner";
-import { getScheduleValidationError } from "@/utils/dateHandlers";
+import MenuItemModal from "./MenuItemModal";
+
+const SUBSCRIPTION_DISCOUNT_PERCENT = 15;
+const BIRTHDAY_TIMEZONE = "America/Toronto";
+
+const getCurrentDateParts = (timezone = BIRTHDAY_TIMEZONE) => {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const parts = formatter.formatToParts(new Date());
+    return {
+      year: Number(parts.find((part) => part.type === "year")?.value || 0),
+      month: String(parts.find((part) => part.type === "month")?.value || ""),
+      day: String(parts.find((part) => part.type === "day")?.value || ""),
+    };
+  } catch (error) {
+    const now = new Date();
+    return {
+      year: now.getUTCFullYear(),
+      month: String(now.getUTCMonth() + 1).padStart(2, "0"),
+      day: String(now.getUTCDate()).padStart(2, "0"),
+    };
+  }
+};
+
+const getBirthUtcParts = (value) => {
+  const birthDate = new Date(value);
+  if (Number.isNaN(birthDate.getTime())) {
+    return { month: "", day: "" };
+  }
+
+  return {
+    month: String(birthDate.getUTCMonth() + 1).padStart(2, "0"),
+    day: String(birthDate.getUTCDate()).padStart(2, "0"),
+  };
+};
+
+const toSafeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const roundMoney = (value, fallback = 0) => {
+  const normalized = toSafeNumber(value, fallback);
+  return Math.round(normalized * 100) / 100;
+};
+
+const getMonthCycleKey = (date = new Date()) => {
+  const target = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(target.getTime())) {
+    const now = new Date();
+    return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(
+      2,
+      "0"
+    )}`;
+  }
+
+  return `${target.getUTCFullYear()}-${String(target.getUTCMonth() + 1).padStart(
+    2,
+    "0"
+  )}`;
+};
+
+const getExpectedSubscriptionCycleKey = (user, fallbackDate = new Date()) => {
+  const periodStart = user?.subscriptionCurrentPeriodStart
+    ? new Date(user.subscriptionCurrentPeriodStart)
+    : null;
+
+  if (periodStart instanceof Date && !Number.isNaN(periodStart.getTime())) {
+    return `period-${periodStart.toISOString()}`;
+  }
+
+  return getMonthCycleKey(fallbackDate);
+};
+
+const isUserSubscriptionActive = (user) => {
+  if (!user) return false;
+
+  const status = String(user?.subscriptionStatus || "")
+    .toLowerCase()
+    .trim();
+  const statusActive = status === "active" || status === "trialing";
+  const periodEnd = user?.subscriptionCurrentPeriodEnd
+    ? new Date(user.subscriptionCurrentPeriodEnd)
+    : null;
+  const hasValidPeriodEnd =
+    periodEnd instanceof Date && !Number.isNaN(periodEnd.getTime());
+  const notExpired = !hasValidPeriodEnd || periodEnd.getTime() > Date.now();
+  return Boolean(user?.subscriptionIsActive) || (statusActive && notExpired);
+};
+
 const CheckoutContent = ({ restaurantsSettings }) => {
   const { user, loading } = useUser();
-  const router = useRouter();
+  const { removeFromBasket } = useBasket();
+  const basket = useSelectBasket();
+  const basketItems = useSelectBasketItems();
   const subTotal = useSelectBasketTotal();
+  const router = useRouter();
+
   const [tips, setTips] = useState("");
   const [selectedTip, setSelectedTip] = useState(0);
   const [scheduleOption, setScheduleOption] = useState("now");
   const [scheduledDateTime, setScheduledDateTime] = useState(null);
   const [scheduleError, setScheduleError] = useState("");
-
-  const subTotalWithDiscount = useRef(
-    !user?.firstOrderDiscountApplied ? subTotal * 0.8 : subTotal
-  );
   const [deliveryMode, setDeliveryMode] = useState("delivery");
   const [promoCodeData, setPromoCodeData] = useState(null);
   const [promoCodeIsValid, setPromoCodeIsValid] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [tvq, setTvq] = useState(0);
-  const [tps, setTps] = useState(0);
   const [selectedRestaurant, setSelectedRestaurant] = useState(
     restaurantsSettings && restaurantsSettings.length > 0
       ? restaurantsSettings[0]
@@ -42,11 +138,293 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   );
   const [address, setAddress] = useState({});
   const [canOrder, setCanOrder] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [tvq, setTvq] = useState(0);
+  const [tps, setTps] = useState(0);
+  const [subTotalWithDiscount, setSubTotalWithDiscount] = useState(
+    roundMoney(subTotal, 0)
+  );
+  const [tipAmount, setTipAmount] = useState(0);
+  const [subscriptionConfig, setSubscriptionConfig] = useState(null);
+  const [isSubscriptionConfigLoaded, setIsSubscriptionConfigLoaded] =
+    useState(false);
+  const [showSubscriptionItemModal, setShowSubscriptionItemModal] =
+    useState(false);
+  const [showBirthdayItemModal, setShowBirthdayItemModal] = useState(false);
+
+  const isScheduledOrder = scheduleOption === "later";
   const isAddressValid =
     deliveryMode !== "delivery" ||
     (!!address?.address &&
       !!address?.coords?.latitude &&
       !!address?.coords?.longitude);
+
+  const subscriptionActive = isUserSubscriptionActive(user);
+  const firstOrderDiscountAllowed =
+    !user?.firstOrderDiscountApplied;
+  const promoCodeAllowed = !subscriptionActive;
+  const currentCycleKey = getExpectedSubscriptionCycleKey(user, new Date());
+  const userCycleKey = String(user?.subscriptionFreeItemCycleKey || "").trim();
+  const subscriptionFreeItemUsedCount =
+    userCycleKey === currentCycleKey
+      ? toSafeNumber(user?.subscriptionFreeItemUsedCount, 0)
+      : 0;
+  const subscriptionFreeItemRemaining = Math.max(
+    0,
+    1 - subscriptionFreeItemUsedCount
+  );
+
+  const configuredSubscriptionFreeItemId = String(
+    subscriptionConfig?.freeItem?.menuItemId || ""
+  ).trim();
+  const configuredSubscriptionFreeItemName = String(
+    subscriptionConfig?.freeItem?.menuItemName || ""
+  ).trim();
+  const configuredBirthdayFreeItemId = String(
+    subscriptionConfig?.birthdayFreeItem?.menuItemId || ""
+  ).trim();
+  const configuredBirthdayFreeItemName = String(
+    subscriptionConfig?.birthdayFreeItem?.menuItemName || ""
+  ).trim();
+  const birthdayBenefitsSummary =
+    user?.birthdayBenefits && typeof user.birthdayBenefits === "object"
+      ? user.birthdayBenefits
+      : {};
+  const fallbackCanClaimBirthdayFreeItem = useMemo(() => {
+    if (!user?.date_of_birth) return false;
+
+    const nowParts = getCurrentDateParts(BIRTHDAY_TIMEZONE);
+    const birthParts = getBirthUtcParts(user.date_of_birth);
+    if (!birthParts.month || !birthParts.day) return false;
+
+    const isBirthdayToday =
+      birthParts.month === nowParts.month && birthParts.day === nowParts.day;
+    if (!isBirthdayToday) return false;
+
+    const currentCycleYear = Number(nowParts.year || 0);
+    const storedCycleYear = Number(user?.birthdayFreeItemCycleYear || 0);
+    const rawUsedCount = Number(user?.birthdayFreeItemUsedCount || 0);
+    const usedCount =
+      Number.isFinite(rawUsedCount) && storedCycleYear === currentCycleYear
+        ? rawUsedCount
+        : 0;
+
+    return Math.max(0, 1 - usedCount) > 0;
+  }, [
+    user?.birthdayFreeItemCycleYear,
+    user?.birthdayFreeItemUsedCount,
+    user?.date_of_birth,
+  ]);
+  const canUseBirthdayFreeItem =
+    Boolean(
+      birthdayBenefitsSummary?.canClaimFreeItem || fallbackCanClaimBirthdayFreeItem
+    ) &&
+    Boolean(configuredBirthdayFreeItemId);
+
+  const canUseMonthlyFreeItem =
+    subscriptionActive &&
+    subscriptionFreeItemRemaining > 0 &&
+    Boolean(configuredSubscriptionFreeItemId);
+  const shouldApplySubscriptionDiscount =
+    subscriptionActive && !firstOrderDiscountAllowed;
+
+  const selectedFreeItem =
+    basketItems.find((item) => item.isSubscriptionFreeItem) || null;
+  const selectedBirthdayFreeItem =
+    basketItems.find((item) => item.isBirthdayFreeItem) || null;
+  const shouldShowBirthdayFreeItemSection =
+    Boolean(configuredBirthdayFreeItemId) &&
+    (canUseBirthdayFreeItem || Boolean(selectedBirthdayFreeItem));
+  const selectedFreeItemCustomizationAmount = roundMoney(
+    (selectedFreeItem?.customization || []).reduce(
+      (sum, customization) => sum + toSafeNumber(customization?.price, 0),
+      0
+    ),
+    0
+  );
+  const selectedFreeItemExtraPrice = roundMoney(
+    selectedFreeItem?.subscriptionFreeItemExtraPrice ??
+      selectedFreeItem?.price ??
+      selectedFreeItemCustomizationAmount,
+    0
+  );
+  const selectedFreeItemOriginalPrice = roundMoney(
+    selectedFreeItem?.originalPrice ??
+      selectedFreeItem?.basePrice ??
+      selectedFreeItem?.price ??
+      selectedFreeItemCustomizationAmount,
+    0
+  );
+  const selectedFreeItemBasePrice = roundMoney(
+    Math.max(0, selectedFreeItemOriginalPrice - selectedFreeItemExtraPrice),
+    0
+  );
+  const selectedBirthdayFreeItemCustomizationAmount = roundMoney(
+    (selectedBirthdayFreeItem?.customization || []).reduce(
+      (sum, customization) => sum + toSafeNumber(customization?.price, 0),
+      0
+    ),
+    0
+  );
+  const selectedBirthdayFreeItemExtraPrice = roundMoney(
+    selectedBirthdayFreeItem?.birthdayFreeItemExtraPrice ??
+      selectedBirthdayFreeItem?.price ??
+      selectedBirthdayFreeItemCustomizationAmount,
+    0
+  );
+  const selectedBirthdayFreeItemOriginalPrice = roundMoney(
+    selectedBirthdayFreeItem?.originalPrice ??
+      selectedBirthdayFreeItem?.basePrice ??
+      selectedBirthdayFreeItem?.price ??
+      selectedBirthdayFreeItemCustomizationAmount,
+    0
+  );
+  const selectedBirthdayFreeItemBasePrice = roundMoney(
+    Math.max(
+      0,
+      selectedBirthdayFreeItemOriginalPrice - selectedBirthdayFreeItemExtraPrice
+    ),
+    0
+  );
+  const shouldApplyFreeItemDiscount =
+    canUseMonthlyFreeItem &&
+    Boolean(selectedFreeItem) &&
+    selectedFreeItemBasePrice > 0;
+  const shouldApplyBirthdayFreeItem =
+    canUseBirthdayFreeItem && Boolean(selectedBirthdayFreeItem);
+  const shouldApplyBirthdayFreeItemDiscount =
+    shouldApplyBirthdayFreeItem && selectedBirthdayFreeItemBasePrice > 0;
+
+  const restaurantDeliveryFee = toSafeNumber(
+    selectedRestaurant?.settings?.delivery_fee,
+    0
+  );
+  const effectiveDeliveryFee =
+    deliveryMode === "delivery"
+      ? subscriptionActive
+        ? 0
+        : restaurantDeliveryFee
+      : 0;
+
+  const subscriptionScenarioSubtotal = roundMoney(
+    Math.max(0, subTotal * ((100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100)),
+    0
+  );
+  const potentialSubscriptionDiscountSavings = roundMoney(
+    Math.max(0, subTotalWithDiscount - subscriptionScenarioSubtotal),
+    0
+  );
+  const potentialSubscriptionDeliverySavings =
+    deliveryMode === "delivery" ? roundMoney(restaurantDeliveryFee, 0) : 0;
+  const potentialSubscriptionSavings = subscriptionActive
+    ? 0
+    : roundMoney(
+        potentialSubscriptionDiscountSavings + potentialSubscriptionDeliverySavings,
+        0
+      );
+
+  const subscriptionDiscountAmount = shouldApplySubscriptionDiscount
+    ? roundMoney(subTotal * (SUBSCRIPTION_DISCOUNT_PERCENT / 100), 0)
+    : 0;
+  const subscriptionFreeItemAmount = shouldApplyFreeItemDiscount
+    ? roundMoney(selectedFreeItemBasePrice, 0)
+    : 0;
+  const subscriptionFreeDeliveryAmount =
+    subscriptionActive && deliveryMode === "delivery" ? restaurantDeliveryFee : 0;
+
+  const subscriptionBenefits = subscriptionActive
+    ? {
+        isApplied: true,
+        discountPercent: shouldApplySubscriptionDiscount
+          ? SUBSCRIPTION_DISCOUNT_PERCENT
+          : 0,
+        discountAmount: subscriptionDiscountAmount,
+        freeDeliveryApplied: deliveryMode === "delivery",
+        freeDeliveryAmount: roundMoney(subscriptionFreeDeliveryAmount, 0),
+        freeItemApplied: Boolean(shouldApplyFreeItemDiscount),
+        freeItemAmount: subscriptionFreeItemAmount,
+        freeItemBasePrice: selectedFreeItemBasePrice,
+        freeItemMenuItemId:
+          configuredSubscriptionFreeItemId || selectedFreeItem?.id || null,
+        freeItemLabel:
+          configuredSubscriptionFreeItemName || selectedFreeItem?.name || "",
+        cycleKey: currentCycleKey,
+        monthlyPriceSnapshot: toSafeNumber(user?.subscriptionMonthlyPrice, 11.99),
+      }
+    : {
+        isApplied: false,
+      };
+  const birthdayBenefits =
+    shouldApplyBirthdayFreeItem
+      ? {
+          isApplied: true,
+          freeItemApplied: true,
+          freeItemAmount: roundMoney(selectedBirthdayFreeItemBasePrice, 0),
+          freeItemBasePrice: selectedBirthdayFreeItemBasePrice,
+          freeItemMenuItemId:
+            configuredBirthdayFreeItemId || selectedBirthdayFreeItem?.id || null,
+          freeItemLabel:
+            configuredBirthdayFreeItemName ||
+            selectedBirthdayFreeItem?.name ||
+            "",
+          cycleYear: toSafeNumber(
+            birthdayBenefitsSummary?.cycleYear,
+            new Date().getFullYear()
+          ),
+        }
+      : {
+          isApplied: false,
+          freeItemApplied: false,
+          freeItemAmount: 0,
+          freeItemBasePrice: 0,
+          freeItemMenuItemId: null,
+          freeItemLabel: "",
+          cycleYear: toSafeNumber(
+            birthdayBenefitsSummary?.cycleYear,
+            new Date().getFullYear()
+          ),
+        };
+
+  const normalizedTotal = roundMoney(total, 0);
+  const isZeroTotalSubscriptionOrder =
+    normalizedTotal <= 0 &&
+    ((subscriptionActive && canUseMonthlyFreeItem && Boolean(selectedFreeItem)) ||
+      (canUseBirthdayFreeItem && Boolean(selectedBirthdayFreeItem)));
+
+  const orderDiscountPercent = firstOrderDiscountAllowed
+    ? 20
+    : subscriptionActive
+    ? SUBSCRIPTION_DISCOUNT_PERCENT
+    : 0;
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadConfig = async () => {
+      setIsSubscriptionConfigLoaded(false);
+      try {
+        const response = await getSubscriptionConfig();
+        if (isMounted) {
+          setSubscriptionConfig(response?.status ? response.data || null : null);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setSubscriptionConfig(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsSubscriptionConfigLoaded(true);
+        }
+      }
+    };
+
+    if (user?._id) {
+      loadConfig();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?._id]);
 
   useEffect(() => {
     if (user && user.addresses && user.addresses.length > 0 && !loading) {
@@ -55,14 +433,10 @@ const CheckoutContent = ({ restaurantsSettings }) => {
         user.addresses[0].coords,
         restaurantsSettings
       );
-
       const closestRestaurant = restaurantsSettings[restaurantIndex];
-
       setSelectedRestaurant(closestRestaurant);
     }
-  }, [loading]);
-
-  const isScheduledOrder = scheduleOption === "later";
+  }, [loading, restaurantsSettings, user]);
 
   useEffect(() => {
     if (deliveryMode !== "delivery") {
@@ -92,96 +466,153 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   }, [isScheduledOrder, scheduledDateTime, selectedRestaurant]);
 
   useEffect(() => {
-    let promoCodeDiscount = null;
+    if (!selectedFreeItem?.uid) return;
+    if (!isSubscriptionConfigLoaded) return;
+    if (!canUseMonthlyFreeItem) {
+      removeFromBasket(selectedFreeItem.uid);
+      return;
+    }
+    if (!configuredSubscriptionFreeItemId) {
+      removeFromBasket(selectedFreeItem.uid);
+      return;
+    }
+    if (String(selectedFreeItem.id || "").trim() !== configuredSubscriptionFreeItemId) {
+      removeFromBasket(selectedFreeItem.uid);
+    }
+  }, [
+    canUseMonthlyFreeItem,
+    configuredSubscriptionFreeItemId,
+    isSubscriptionConfigLoaded,
+    removeFromBasket,
+    selectedFreeItem?.id,
+    selectedFreeItem?.uid,
+  ]);
 
-    if (promoCodeIsValid && promoCodeData) {
-      if (promoCodeData.type === "percent") {
-        promoCodeDiscount =
-          (parseFloat(subTotalWithDiscount.current) * promoCodeData.percent) /
-          100;
-        subTotalWithDiscount.current -= promoCodeDiscount;
-      }
-      if (promoCodeData.type === "amount") {
-        promoCodeDiscount = promoCodeData.amount;
-        subTotalWithDiscount.current -= promoCodeDiscount;
-      }
+  useEffect(() => {
+    if (!selectedBirthdayFreeItem?.uid) return;
+    if (!isSubscriptionConfigLoaded) return;
+    if (!canUseBirthdayFreeItem) {
+      removeFromBasket(selectedBirthdayFreeItem.uid);
+      return;
+    }
+    if (!configuredBirthdayFreeItemId) {
+      removeFromBasket(selectedBirthdayFreeItem.uid);
+      return;
+    }
+    if (
+      String(selectedBirthdayFreeItem.id || "").trim() !==
+      configuredBirthdayFreeItemId
+    ) {
+      removeFromBasket(selectedBirthdayFreeItem.uid);
+    }
+  }, [
+    canUseBirthdayFreeItem,
+    configuredBirthdayFreeItemId,
+    isSubscriptionConfigLoaded,
+    removeFromBasket,
+    selectedBirthdayFreeItem?.id,
+    selectedBirthdayFreeItem?.uid,
+  ]);
+
+  useEffect(() => {
+    if (!promoCodeAllowed) {
+      setPromoCodeData(null);
+      setPromoCodeIsValid(false);
+    }
+  }, [promoCodeAllowed]);
+
+  useEffect(() => {
+    let nextSubtotal = subTotal;
+
+    if (firstOrderDiscountAllowed) {
+      nextSubtotal = subTotal * 0.8;
+    } else if (subscriptionActive) {
+      nextSubtotal = subTotal * ((100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100);
     } else {
-      subTotalWithDiscount.current = !user?.firstOrderDiscountApplied
-        ? subTotal * 0.8
-        : subTotal;
+
+      if (promoCodeAllowed && promoCodeIsValid && promoCodeData) {
+        if (promoCodeData.type === "percent") {
+          const percent = toSafeNumber(promoCodeData.percent, 0);
+          nextSubtotal -= (nextSubtotal * percent) / 100;
+        } else if (promoCodeData.type === "amount") {
+          const amount = toSafeNumber(promoCodeData.amount, 0);
+          nextSubtotal -= amount;
+        }
+      }
     }
 
-    let tipValue = 0;
+    nextSubtotal = roundMoney(Math.max(0, nextSubtotal), 0);
+    setSubTotalWithDiscount(nextSubtotal);
+
+    let nextTip = 0;
     if (selectedTip === "other") {
-      tipValue = parseFloat(tips);
-      if (parseFloat(tips) < 0 || isNaN(parseFloat(tips))) {
-        tipValue = 0;
-      }
+      nextTip = toSafeNumber(tips, 0);
+      if (nextTip < 0) nextTip = 0;
     } else if (!selectedTip) {
-      tipValue = 0;
+      nextTip = 0;
       setTips(0);
     } else {
-      tipValue =
-        (parseFloat(subTotalWithDiscount.current) * parseFloat(selectedTip)) /
-        100;
-      setTips(tipValue);
+      nextTip = (nextSubtotal * toSafeNumber(selectedTip, 0)) / 100;
+      setTips(nextTip);
     }
-    if (deliveryMode === "delivery") {
-      const tvqValue =
-        ((parseFloat(subTotalWithDiscount.current) +
-          selectedRestaurant.settings.delivery_fee) *
-          9.975) /
-        100;
-      const tpsValue =
-        ((parseFloat(subTotalWithDiscount.current) +
-          selectedRestaurant.settings.delivery_fee) *
-          5) /
-        100;
-      setTvq(tvqValue);
-      setTps(tpsValue);
+    nextTip = roundMoney(nextTip, 0);
+    setTipAmount(nextTip);
 
+    if (deliveryMode === "delivery") {
+      const taxableAmount = nextSubtotal + effectiveDeliveryFee;
+      const nextTvq = roundMoney((taxableAmount * 9.975) / 100, 0);
+      const nextTps = roundMoney((taxableAmount * 5) / 100, 0);
+      setTvq(nextTvq);
+      setTps(nextTps);
       setTotal(
-        selectedRestaurant.settings.delivery_fee +
-          parseFloat(subTotalWithDiscount.current) +
-          tvqValue +
-          tpsValue +
-          tipValue
+        roundMoney(effectiveDeliveryFee + nextSubtotal + nextTvq + nextTps + nextTip)
       );
     } else {
-      const tvqValue = (parseFloat(subTotalWithDiscount.current) * 9.975) / 100;
-      const tpsValue = (parseFloat(subTotalWithDiscount.current) * 5) / 100;
-      setTvq(tvqValue);
-      setTps(tpsValue);
-
-      setTotal(
-        parseFloat(subTotalWithDiscount.current) +
-          tvqValue +
-          tipValue +
-          tpsValue
-      );
+      const nextTvq = roundMoney((nextSubtotal * 9.975) / 100, 0);
+      const nextTps = roundMoney((nextSubtotal * 5) / 100, 0);
+      setTvq(nextTvq);
+      setTps(nextTps);
+      setTotal(roundMoney(nextSubtotal + nextTvq + nextTps + nextTip, 0));
     }
   }, [
     deliveryMode,
-
-    selectedTip,
-    selectedRestaurant,
-    promoCodeData?.code,
-    user,
-    promoCodeIsValid,
-    subTotal,
-
-    selectedRestaurant?.settings?.delivery_fee,
+    effectiveDeliveryFee,
+    firstOrderDiscountAllowed,
+    promoCodeAllowed,
     promoCodeData,
+    promoCodeIsValid,
+    selectedTip,
+    subTotal,
+    subscriptionActive,
+    tips,
   ]);
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/connexion");
     }
-    if (!subTotal || subTotal <= 0) {
+    const hasBasketContent = toSafeNumber(basket?.size, 0) > 0;
+    let skipEmptyBasketRedirect = false;
+    if (typeof window !== "undefined") {
+      const lastSuccessRedirectAtRaw =
+        window.sessionStorage.getItem("checkout_success_redirect_at") || "";
+      const lastSuccessRedirectAt = Number(lastSuccessRedirectAtRaw);
+      if (hasBasketContent) {
+        window.sessionStorage.removeItem("checkout_success_redirect_at");
+      } else if (
+        Number.isFinite(lastSuccessRedirectAt) &&
+        Date.now() - lastSuccessRedirectAt <= 15000
+      ) {
+        skipEmptyBasketRedirect = true;
+      } else if (lastSuccessRedirectAtRaw) {
+        window.sessionStorage.removeItem("checkout_success_redirect_at");
+      }
+    }
+
+    if (!loading && user && !hasBasketContent && !skipEmptyBasketRedirect) {
       router.replace("/menu");
     }
-  }, [loading, user, router]);
+  }, [basket?.size, loading, user, router]);
 
   if (loading) {
     return (
@@ -190,21 +621,14 @@ const CheckoutContent = ({ restaurantsSettings }) => {
           <h1 className="font-inter font-semibold text-black md:text-2xl text-lg">
             Finaliser la commande
           </h1>
-          <p className="font-inter font-medium  text-[#4B5563] md:text-lg text-base">
+          <p className="font-inter font-medium text-[#4B5563] md:text-lg text-base">
             Complétez les informations ci-dessous pour confirmer votre commande
           </p>
-          <div className="rounded-md bg-white p-6 shadow-md  ">
+          <div className="rounded-md bg-white p-6 shadow-md">
             <div className="animate-pulse">
-              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
-              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
-              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
-            </div>
-          </div>
-          <div className="rounded-md bg-white p-6 shadow-md mt-4  ">
-            <div className="animate-pulse">
-              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
-              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
-              <div className="w-full h-10 bg-gray-200 dark:bg-gray-400 mb-4"></div>
+              <div className="w-full h-10 bg-gray-200 mb-4" />
+              <div className="w-full h-10 bg-gray-200 mb-4" />
+              <div className="w-full h-10 bg-gray-200 mb-4" />
             </div>
           </div>
         </div>
@@ -217,7 +641,22 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   }
 
   return (
-    <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 relative ">
+    <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 relative">
+      <MenuItemModal
+        itemId={configuredSubscriptionFreeItemId || null}
+        itemUID={selectedFreeItem?.uid || null}
+        showMenuItemModal={showSubscriptionItemModal}
+        setShowMenuItemModal={setShowSubscriptionItemModal}
+        isSubscriptionFreeItem
+      />
+      <MenuItemModal
+        itemId={configuredBirthdayFreeItemId || null}
+        itemUID={selectedBirthdayFreeItem?.uid || null}
+        showMenuItemModal={showBirthdayItemModal}
+        setShowMenuItemModal={setShowBirthdayItemModal}
+        isBirthdayFreeItem
+      />
+
       <div className="md:w-[70%] w-full mx-auto">
         {user.isBanned && (
           <div className="bg-red-500 text-white font-inter font-semibold mb-4">
@@ -227,23 +666,27 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             </p>
           </div>
         )}
+
         <WarningBanner
-          settings={selectedRestaurant.settings}
+          settings={selectedRestaurant?.settings || {}}
           deliveryMode={deliveryMode}
           setCanOrder={setCanOrder}
           addressValid={isAddressValid}
         />
+
         <h1 className="font-inter font-semibold text-black md:text-2xl text-lg">
           Finaliser la commande
         </h1>
-        <p className="font-inter font-medium  text-[#4B5563] md:text-lg text-base">
+        <p className="font-inter font-medium text-[#4B5563] md:text-lg text-base">
           Complétez les informations ci-dessous pour confirmer votre commande
         </p>
-        <section className=" mt-3">
+
+        <section className="mt-3">
           <OrderTypeBlock
             deliveryMode={deliveryMode}
             setDeliveryMode={setDeliveryMode}
           />
+
           <AddressesBlock
             address={address}
             setAddress={setAddress}
@@ -254,6 +697,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             userAddresses={user.addresses}
             deliveryMode={deliveryMode}
           />
+
           <ScheduleBlock
             scheduleOption={scheduleOption}
             setScheduleOption={setScheduleOption}
@@ -262,52 +706,215 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             scheduleError={scheduleError}
           />
 
+          {!subscriptionActive && (
+            <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
+              <h2 className="font-inter font-semibold text-black md:text-xl text-base">
+                Avec CLUB COURTEAU, vous pourriez économiser
+              </h2>
+              <p className="font-inter font-bold text-pr text-3xl mt-2">
+                {potentialSubscriptionSavings.toFixed(2)}$
+              </p>
+              <p className="font-inter text-[#6B7280] text-sm mt-1">
+                Estimation basée sur cette commande.
+              </p>
+              <div className="mt-3 rounded-md border border-gray-200 px-3 py-3 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-inter text-sm text-[#4B5563]">
+                    Rabais abonnement (-15%)
+                  </p>
+                  <p className="font-inter font-semibold text-sm text-black">
+                    {potentialSubscriptionDiscountSavings.toFixed(2)}$
+                  </p>
+                </div>
+                {deliveryMode === "delivery" && (
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-inter text-sm text-[#4B5563]">
+                      Livraison offerte
+                    </p>
+                    <p className="font-inter font-semibold text-sm text-black">
+                      {potentialSubscriptionDeliverySavings.toFixed(2)}$
+                    </p>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className="bg-pr text-black font-bebas-neue text-xl px-4 py-2 rounded-md mt-4 cursor-pointer"
+                onClick={() => router.push("/abonnement")}
+              >
+                Activer CLUB COURTEAU
+              </button>
+            </div>
+          )}
+
+          {subscriptionActive && (
+            <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
+              <h2 className="font-inter font-semibold text-black md:text-xl text-base">
+                Article gratuit mensuel
+              </h2>
+              {configuredSubscriptionFreeItemName ? (
+                <p className="font-inter text-sm text-[#6B7280] mt-1">
+                  {configuredSubscriptionFreeItemName} gratuit ce mois
+                </p>
+              ) : null}
+
+              {selectedFreeItem ? (
+                <div className="border border-gray-200 rounded-md px-3 py-3 mt-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-inter font-semibold text-sm text-black truncate">
+                      {selectedFreeItem.name}
+                    </p>
+                    <button
+                      type="button"
+                      className="text-red-600 border border-red-300 rounded-full px-3 py-1 text-xs font-semibold cursor-pointer"
+                      onClick={() => removeFromBasket(selectedFreeItem.uid)}
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                  {selectedFreeItemExtraPrice > 0 && (
+                    <p className="font-inter text-sm text-[#4B5563] mt-2">
+                      Suppléments: +{selectedFreeItemExtraPrice.toFixed(2)}$
+                    </p>
+                  )}
+                </div>
+              ) : null}
+
+              {!configuredSubscriptionFreeItemId ? (
+                <p className="font-inter text-sm text-[#6B7280] mt-3">
+                  Aucun article gratuit n&apos;est configuré pour le moment.
+                </p>
+              ) : !canUseMonthlyFreeItem ? (
+                <p className="font-inter text-sm text-[#6B7280] mt-3">
+                  Votre article gratuit mensuel a déjà été utilisé.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  className="bg-pr text-black font-bebas-neue text-xl px-4 py-2 rounded-md mt-4 cursor-pointer"
+                  onClick={() => setShowSubscriptionItemModal(true)}
+                >
+                  {selectedFreeItem ? "Configurer" : "Utiliser"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {shouldShowBirthdayFreeItemSection && (
+            <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
+            <h2 className="font-inter font-semibold text-black md:text-xl text-base">
+              Cadeau d&apos;anniversaire
+            </h2>
+            {configuredBirthdayFreeItemName ? (
+              <p className="font-inter text-sm text-[#6B7280] mt-1">
+                {configuredBirthdayFreeItemName} offert aujourd&apos;hui
+              </p>
+            ) : null}
+
+            {selectedBirthdayFreeItem ? (
+              <div className="border border-gray-200 rounded-md px-3 py-3 mt-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-inter font-semibold text-sm text-black truncate">
+                    {selectedBirthdayFreeItem.name}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="text-black border border-pr rounded-full px-3 py-1 text-xs font-semibold cursor-pointer"
+                      onClick={() => setShowBirthdayItemModal(true)}
+                    >
+                      Modifier
+                    </button>
+                    <button
+                      type="button"
+                      className="text-red-600 border border-red-300 rounded-full px-3 py-1 text-xs font-semibold cursor-pointer"
+                      onClick={() => removeFromBasket(selectedBirthdayFreeItem.uid)}
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                </div>
+                {selectedBirthdayFreeItemExtraPrice > 0 && (
+                  <p className="font-inter text-sm text-[#4B5563] mt-2">
+                    Suppléments: +{selectedBirthdayFreeItemExtraPrice.toFixed(2)}$
+                  </p>
+                )}
+              </div>
+            ) : null}
+
+            {!configuredBirthdayFreeItemId ? (
+              <p className="font-inter text-sm text-[#6B7280] mt-3">
+                Aucun article anniversaire n&apos;est configuré pour le moment.
+              </p>
+            ) : !canUseBirthdayFreeItem ? (
+              <p className="font-inter text-sm text-[#6B7280] mt-3">
+                Cadeau anniversaire indisponible pour cette commande.
+              </p>
+            ) : (
+              <button
+                type="button"
+                className="bg-pr text-black font-bebas-neue text-xl px-4 py-2 rounded-md mt-4 cursor-pointer"
+                onClick={() => setShowBirthdayItemModal(true)}
+              >
+                {selectedBirthdayFreeItem ? "Modifier" : "Utiliser"}
+              </button>
+            )}
+            </div>
+          )}
+
           <PromoCodeBlock
             userId={user._id}
             promoCodeData={promoCodeData}
             setPromoCodeData={setPromoCodeData}
             promoCodeIsValid={promoCodeIsValid}
             setPromoCodeIsValid={setPromoCodeIsValid}
-            firstOrderDiscountApplied={user.firstOrderDiscountApplied}
+            firstOrderDiscountAllowed={firstOrderDiscountAllowed}
+            promoCodeAllowed={promoCodeAllowed}
+            subTotalWithDiscount={subTotalWithDiscount}
           />
+
           <TipsBlock
             selectedTip={selectedTip}
             setSelectedTip={setSelectedTip}
             setTips={setTips}
             tips={tips}
           />
+
           <ResumeBlock
             subTotal={subTotal}
             total={total}
             tvq={tvq}
             tps={tps}
-            deliveryFee={selectedRestaurant.settings.delivery_fee}
-            tips={tips}
-            firstOrderDiscountApplied={user.firstOrderDiscountApplied}
+            deliveryFee={effectiveDeliveryFee}
+            tips={tipAmount}
+            firstOrderDiscountAllowed={firstOrderDiscountAllowed}
             promoCodeData={promoCodeData}
             promoCodeIsValid={promoCodeIsValid}
+            promoCodeAllowed={promoCodeAllowed}
             deliveryMode={deliveryMode}
-            subTotalWithDiscount={parseFloat(
-              subTotalWithDiscount.current
-            ).toFixed(2)}
+            subTotalWithDiscount={subTotalWithDiscount}
+            subscriptionActive={subscriptionActive}
+            subscriptionDiscountAmount={subscriptionDiscountAmount}
           />
+
           <ProcessPaiement
             user={user}
             total={total}
             selectedRestaurant={selectedRestaurant}
             address={address}
             deliveryMode={deliveryMode}
-            tipAmount={tips}
-            promoCode={promoCodeIsValid ? promoCodeData : null}
+            tipAmount={tipAmount}
+            promoCode={promoCodeAllowed && promoCodeIsValid ? promoCodeData : null}
             subTotal={subTotal}
-            subTotalWithDiscount={parseFloat(
-              subTotalWithDiscount.current
-            ).toFixed(2)}
-            tvq={tvq}
-            tps={tps}
+            subTotalWithDiscount={subTotalWithDiscount}
             canOrder={canOrder}
             isScheduledOrder={isScheduledOrder}
             scheduledDateTime={scheduledDateTime}
+            subscriptionBenefits={subscriptionBenefits}
+            birthdayBenefits={birthdayBenefits}
+            orderDiscountPercent={orderDiscountPercent}
+            effectiveDeliveryFee={effectiveDeliveryFee}
+            isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
           />
         </section>
       </div>

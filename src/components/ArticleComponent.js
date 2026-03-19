@@ -20,53 +20,86 @@ const getFreeLimit = (rule) => {
   return 0;
 };
 
+const normalizeCustomizationGroups = (rawGroups) => {
+  if (!rawGroups) return [];
+  const groups = Array.isArray(rawGroups) ? rawGroups : [rawGroups];
+  return groups.filter((group) => Array.isArray(group?.toppings));
+};
+
+const getSelectedIdsForGroup = (selectedIds, group) => {
+  if (!Array.isArray(selectedIds) || !group) return [];
+  const groupToppingIds = new Set((group.toppings || []).map((t) => t?._id));
+  return selectedIds.filter((id) => groupToppingIds.has(id));
+};
+
+const getSelectionSummaryText = (rule) => {
+  if (!rule) return "";
+  const minDisplay = parseRuleValue(rule.min) || 0;
+  const maxValue = rule.max;
+  const maxNumeric = parseRuleValue(maxValue);
+  const maxDisplay =
+    maxValue === null || maxValue === undefined || maxNumeric === null
+      ? "illimite"
+      : maxNumeric;
+  return `(min ${minDisplay} gratuit et maximum ${maxDisplay})`;
+};
+
 const ArticleComponent = ({ item }) => {
   const { addToBasket } = useBasket();
 
   const [selectedSize, setSelectedSize] = useState(item.prices[0]);
-
-  const customizationGroup = item?.customization_group;
-  const usingCustomizationGroup = Boolean(customizationGroup?.toppings?.length);
+  const customizationGroups = useMemo(
+    () => normalizeCustomizationGroups(item?.customization_group),
+    [item?.customization_group]
+  );
+  const usingCustomizationGroup = customizationGroups.length > 0;
   const [selectedGroupIds, setSelectedGroupIds] = useState([]);
 
-  const customizations = item?.customization || [];
-  const CustomizationList = {};
-  if (!usingCustomizationGroup) {
+  const legacyCustomizations = useMemo(() => {
+    if (usingCustomizationGroup) return {};
+    const customizations = item?.customization || [];
+    const customizationList = {};
     customizations.forEach((customization) => {
-      if (!CustomizationList[customization.category?.name]) {
-        CustomizationList[customization.category?.name] = [];
+      if (!customizationList[customization.category?.name]) {
+        customizationList[customization.category?.name] = [];
       }
 
-      CustomizationList[customization.category.name].push({
+      customizationList[customization.category.name].push({
         ...customization,
         state: false,
       });
     });
-  }
+    return customizationList;
+  }, [item?.customization, usingCustomizationGroup]);
 
   const [categorizedCustomization, setCategorizedCustomization] =
-    useState(CustomizationList);
+    useState(legacyCustomizations);
   const [comment, setComment] = useState("");
 
   const selectedGroupItems = useMemo(() => {
     if (!usingCustomizationGroup) return [];
-    const freeLimit = getFreeLimit(customizationGroup?.selectionRule);
-    const toppings = customizationGroup?.toppings || [];
+    const selectedItems = [];
 
-    return selectedGroupIds
-      .map((id, index) => {
-        const topping = toppings.find((item) => item._id === id);
-        if (!topping) return null;
-        return {
+    customizationGroups.forEach((group) => {
+      const freeLimit = getFreeLimit(group?.selectionRule);
+      const selectedIdsInGroup = getSelectedIdsForGroup(selectedGroupIds, group);
+      selectedIdsInGroup.forEach((selectedId, index) => {
+        const topping = (group?.toppings || []).find(
+          (candidate) => candidate?._id === selectedId
+        );
+        if (!topping) return;
+        selectedItems.push({
           ...topping,
           price:
             freeLimit !== Infinity && index >= freeLimit
               ? Number(topping.price) || 0
               : 0,
-        };
-      })
-      .filter(Boolean);
-  }, [usingCustomizationGroup, customizationGroup, selectedGroupIds]);
+        });
+      });
+    });
+
+    return selectedItems;
+  }, [usingCustomizationGroup, customizationGroups, selectedGroupIds]);
 
   const selectedItems = useMemo(() => {
     if (usingCustomizationGroup) return selectedGroupItems;
@@ -109,27 +142,22 @@ const ArticleComponent = ({ item }) => {
     });
   };
 
-  const selectionSummary = useMemo(() => {
-    if (!usingCustomizationGroup) return "";
-    const rule = customizationGroup?.selectionRule;
-    const minDisplay = parseRuleValue(rule?.min) || 0;
-    const maxValue = rule?.max;
-    const maxNumeric = parseRuleValue(maxValue);
-    const maxDisplay =
-      maxValue === null || maxValue === undefined || maxNumeric === null
-        ? "illimite"
-        : maxNumeric;
-
-    return `(min ${minDisplay} gratuit et maximum ${maxDisplay})`;
-  }, [usingCustomizationGroup, customizationGroup]);
-
   const handleAddToBasket = () => {
     if (usingCustomizationGroup) {
-      const rule = customizationGroup?.selectionRule;
-      const minRequired = rule?.isRequired ? parseRuleValue(rule?.min) : 0;
-      if (minRequired && selectedGroupIds.length < minRequired) {
-        toast.error(`Veuillez selectionner au moins ${minRequired} option(s).`);
-        return;
+      for (const group of customizationGroups) {
+        const rule = group?.selectionRule;
+        const minRequired = rule?.isRequired ? parseRuleValue(rule?.min) : 0;
+        if (!minRequired) continue;
+        const selectedCount = getSelectedIdsForGroup(
+          selectedGroupIds,
+          group
+        ).length;
+        if (selectedCount < minRequired) {
+          toast.error(
+            `Veuillez selectionner au moins ${minRequired} option(s) pour ${group?.name || "ce groupe"}.`
+          );
+          return;
+        }
       }
     }
 
@@ -190,44 +218,64 @@ const ArticleComponent = ({ item }) => {
         {usingCustomizationGroup ? (
           <div className="mt-4 ">
             <p className="text-base font-inter font-semibold capitalize">
-              Personnaliser {selectionSummary}
+              Personnaliser
             </p>
-            {customizationGroup?.toppings?.map((topping) => {
-              const selectedIndex = selectedGroupIds.indexOf(topping._id);
-              const isSelected = selectedIndex !== -1;
-              const freeLimit = getFreeLimit(customizationGroup?.selectionRule);
-              const isExtraSelection =
-                freeLimit !== Infinity && selectedIndex >= freeLimit;
-              const shouldShowExtraPrice =
-                topping.price > 0 &&
-                freeLimit !== Infinity &&
-                (isExtraSelection ||
-                  (!isSelected && selectedGroupIds.length >= freeLimit));
+            {customizationGroups.map((group) => {
+              const selectedIdsInGroup = getSelectedIdsForGroup(
+                selectedGroupIds,
+                group
+              );
+              const freeLimit = getFreeLimit(group?.selectionRule);
+              const selectionSummary = getSelectionSummaryText(
+                group?.selectionRule
+              );
 
               return (
-                <button
-                  key={topping._id}
-                  className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
-                  onClick={() => handleGroupCustomizationChange(topping._id)}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
-                      {isSelected && (
-                        <span className="text-pr text-sm">
-                          <FaCheck />
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm capitalize font-inter font-medium">
-                      {topping.name}
-                    </p>
-                  </div>
-                  {shouldShowExtraPrice && (
-                    <p className="font-bebas-neue text-pr md:text-xl text-base">
-                      + ${Number(topping.price).toFixed(2)}
-                    </p>
-                  )}
-                </button>
+                <div key={group?._id || group?.name} className="mt-3">
+                  <p className="text-sm font-inter font-semibold capitalize">
+                    {group?.name} {selectionSummary}
+                  </p>
+                  {(group?.toppings || []).map((topping) => {
+                    const selectedIndex = selectedIdsInGroup.indexOf(
+                      topping._id
+                    );
+                    const isSelected = selectedIndex !== -1;
+                    const isExtraSelection =
+                      freeLimit !== Infinity && selectedIndex >= freeLimit;
+                    const shouldShowExtraPrice =
+                      Number(topping?.price) > 0 &&
+                      freeLimit !== Infinity &&
+                      (isExtraSelection ||
+                        (!isSelected &&
+                          selectedIdsInGroup.length >= freeLimit));
+
+                    return (
+                      <button
+                        key={`${group?._id || group?.name}-${topping._id}`}
+                        className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
+                        onClick={() => handleGroupCustomizationChange(topping._id)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
+                            {isSelected && (
+                              <span className="text-pr text-sm">
+                                <FaCheck />
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm capitalize font-inter font-medium">
+                            {topping.name}
+                          </p>
+                        </div>
+                        {shouldShowExtraPrice && (
+                          <p className="font-bebas-neue text-pr md:text-xl text-base">
+                            + ${Number(topping.price).toFixed(2)}
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               );
             })}
           </div>

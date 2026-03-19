@@ -1,7 +1,7 @@
 import React from "react";
 
 const TipsBlock = ({ setSelectedTip, selectedTip, setTips, tips }) => {
-  const tipOptions = [0, 15, 18, 20, 25];
+  const tipOptions = [10, 13, 15, 18];
   return (
     <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
       <h2 className="font-inter font-semibold text-black md:text-xl text-base">
@@ -33,7 +33,7 @@ const TipsBlock = ({ setSelectedTip, selectedTip, setTips, tips }) => {
             : "border border-pr rounded-md items-center justify-center py-2 w-1/4 mt-4 font-semibold"
         }
       >
-        Autres
+        Autre
       </button>
       {selectedTip === "other" && (
         <input

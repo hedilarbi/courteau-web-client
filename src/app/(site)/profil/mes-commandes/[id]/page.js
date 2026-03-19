@@ -71,6 +71,149 @@ const Page = () => {
     }
   };
 
+  const toSafeNumber = (value, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const parseRuleValue = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const getFreeLimit = (rule) => {
+    if (!rule) return 0;
+    if (rule?.max === null || rule?.max === undefined) return Infinity;
+    const max = parseRuleValue(rule?.max);
+    if (max !== null) return max;
+    const min = parseRuleValue(rule?.min);
+    if (min !== null) return min;
+    return 0;
+  };
+  const normalizeCustomizationGroups = (rawGroups) => {
+    if (!rawGroups) return [];
+    const groups = Array.isArray(rawGroups) ? rawGroups : [rawGroups];
+    return groups.filter((group) => Array.isArray(group?.toppings));
+  };
+  const normalizeCustomizationSelection = (customization) => {
+    if (!customization) return null;
+    if (typeof customization === "string") {
+      const fallbackName = customization.trim();
+      if (!fallbackName) return null;
+      return { _id: fallbackName, name: fallbackName, price: 0 };
+    }
+
+    const id = String(customization?._id || "").trim();
+    const name = String(
+      customization?.name ||
+        customization?.title ||
+        customization?.label ||
+        customization?._id ||
+        "",
+    ).trim();
+    const normalizedPrice = toSafeNumber(customization?.price, 0);
+    if (!id && !name) return null;
+
+    return {
+      _id: id || name,
+      name,
+      price: normalizedPrice,
+    };
+  };
+  const getCustomizationDisplayItems = (customizations, rawGroups) => {
+    const normalizedSelections = Array.isArray(customizations)
+      ? customizations.map(normalizeCustomizationSelection).filter(Boolean)
+      : [];
+    if (!normalizedSelections.length) return [];
+
+    const normalizedGroups = normalizeCustomizationGroups(rawGroups).map(
+      (group) => {
+        const toppings = Array.isArray(group?.toppings) ? group.toppings : [];
+        const toppingsById = new Map();
+        const toppingIdSet = new Set();
+        toppings.forEach((topping) => {
+          const toppingId = String(topping?._id || "").trim();
+          if (!toppingId) return;
+          toppingsById.set(toppingId, topping);
+          toppingIdSet.add(toppingId);
+        });
+        return {
+          toppingsById,
+          toppingIdSet,
+          freeLimit: getFreeLimit(group?.selectionRule),
+        };
+      },
+    );
+
+    const groupSelectionsCount = normalizedGroups.map(() => 0);
+
+    return normalizedSelections.map((selection) => {
+      const selectionId = String(selection?._id || "").trim();
+      const matchedGroupIndex = normalizedGroups.findIndex((group) =>
+        group.toppingIdSet.has(selectionId),
+      );
+
+      if (matchedGroupIndex === -1) {
+        const fallbackPrice = toSafeNumber(selection?.price, 0);
+        return {
+          name: selection?.name || selectionId,
+          chargedPrice: fallbackPrice,
+        };
+      }
+
+      const group = normalizedGroups[matchedGroupIndex];
+      const selectionPosition = groupSelectionsCount[matchedGroupIndex];
+      groupSelectionsCount[matchedGroupIndex] += 1;
+
+      const topping = group.toppingsById.get(selectionId);
+      const toppingPrice = toSafeNumber(topping?.price, selection?.price);
+      const shouldCharge =
+        group.freeLimit !== Infinity && selectionPosition >= group.freeLimit;
+
+      return {
+        name: selection?.name || topping?.name || selectionId,
+        chargedPrice: shouldCharge ? toppingPrice : 0,
+      };
+    });
+  };
+  const formatCustomizationLabel = (displayItem) => {
+    if (!displayItem) return "";
+    const name = String(displayItem?.name || "").trim();
+    const chargedPrice = Math.max(0, toSafeNumber(displayItem?.chargedPrice, 0));
+    if (chargedPrice > 0) {
+      if (!name) return `+${chargedPrice.toFixed(2)} $`;
+      return `${name} (+${chargedPrice.toFixed(2)} $)`;
+    }
+    if (!name) return "Gratuit";
+    return `${name} (Gratuit)`;
+  };
+  const getSizeLabel = (size) => {
+    if (!size) return "";
+    if (typeof size === "string") return size;
+    return String(size?.size || size?.name || "").trim();
+  };
+  const subscriptionBenefits =
+    order?.subscriptionBenefits && typeof order.subscriptionBenefits === "object"
+      ? order.subscriptionBenefits
+      : null;
+  const subscriptionUsed = Boolean(subscriptionBenefits?.isApplied);
+  const subscriptionDiscountPercent = toSafeNumber(
+    subscriptionBenefits?.discountPercent,
+    0,
+  );
+  const orderDiscountPercent = toSafeNumber(order?.discount, 0);
+  const isFirstOrderDiscountApplied = orderDiscountPercent >= 20;
+  const showSubscriptionDiscountInfo =
+    subscriptionUsed &&
+    !isFirstOrderDiscountApplied &&
+    (subscriptionDiscountPercent > 0 || orderDiscountPercent > 0);
+  const displayedSubscriptionDiscountPercent =
+    subscriptionDiscountPercent > 0
+      ? subscriptionDiscountPercent
+      : orderDiscountPercent;
+  const orderDiscountAmount = Math.max(
+    0,
+    toSafeNumber(order?.sub_total, 0) - toSafeNumber(order?.sub_total_after_discount, 0),
+  );
+
   return (
     <div className="md:mt-28 mt-20  min-h-[80vh]  bg-[#F3F4F6] p-4 pb-20">
       {order && (
@@ -145,24 +288,54 @@ const Page = () => {
                 {order.orderItems.map((item, index) => (
                   <div
                     key={item._id}
-                    className={`flex justify-between items-center ${
+                    className={`${
                       order.orderItems.length - 1 === index
                         ? ""
                         : "border-b border-gray-200 pb-2"
                     }`}
-                  >
-                    <div>
-                      <p className="font-semibold font-inter text-pr-700">
-                        {item.item.name}{" "}
-                        <span className="text-gray-500 font-medium">
-                          {" "}
-                          ({item.size}){" "}
-                        </span>
-                      </p>
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                      <div>
+                        <p className="font-semibold font-inter text-pr-700">
+                          {item?.item?.name}
+                          {getSizeLabel(item?.size) ? (
+                            <span className="text-gray-500 font-medium">
+                              {" "}
+                              ({getSizeLabel(item.size)})
+                            </span>
+                          ) : null}
+                        </p>
+                      </div>
+                      <div className="font-inter font-semibold">
+                        {toSafeNumber(item?.price).toFixed(2)} $
+                      </div>
                     </div>
-                    <div className="font-inter font-semibold">
-                      {item.price.toFixed(2)} $
-                    </div>
+                    {(() => {
+                      const customizationDisplayItems = getCustomizationDisplayItems(
+                        item?.customizations,
+                        item?.item?.customization_group,
+                      );
+                      if (!customizationDisplayItems.length) return null;
+                      return (
+                      <div className="mt-1 ml-1">
+                        <p className="text-xs font-semibold text-gray-500">
+                          Personnalisations
+                        </p>
+                        <div className="mt-1 space-y-1">
+                            {customizationDisplayItems.map(
+                              (customizationDisplay, customIndex) => (
+                            <p
+                              key={`${item?._id || "item"}-custom-${customIndex}`}
+                              className="text-sm text-gray-700"
+                            >
+                                    • {formatCustomizationLabel(customizationDisplay)}
+                            </p>
+                              ),
+                            )}
+                        </div>
+                      </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
@@ -173,20 +346,60 @@ const Page = () => {
                 {order.offers.map((item, index) => (
                   <div
                     key={item._id}
-                    className={`flex justify-between items-center ${
+                    className={`${
                       order.offers.length - 1 === index
                         ? ""
                         : "border-b border-gray-200 pb-2"
                     }`}
                   >
-                    <div>
-                      <p className="font-semibold font-inter text-pr-700">
-                        {item.offer.name}
-                      </p>
+                    <div className="flex justify-between items-start gap-3">
+                      <div>
+                        <p className="font-semibold font-inter text-pr-700">
+                          {item?.offer?.name}
+                        </p>
+                      </div>
+                      <div className="font-inter font-semibold">
+                        {toSafeNumber(item?.price).toFixed(2)} $
+                      </div>
                     </div>
-                    <div className="font-inter font-semibold">
-                      {item.price.toFixed(2)} $
-                    </div>
+                    {Array.isArray(item?.items) && item.items.length > 0 ? (
+                      <div className="mt-2 ml-1 space-y-2">
+                        {item.items.map((offerItem, offerItemIndex) => (
+                          <div
+                            key={`${item?._id || "offer"}-item-${offerItemIndex}`}
+                          >
+                            <p className="text-sm font-semibold text-gray-700">
+                              • {offerItem?.item?.name || "Article"}
+                            </p>
+                            {(() => {
+                              const customizationDisplayItems =
+                                getCustomizationDisplayItems(
+                                  offerItem?.customizations,
+                                  offerItem?.item?.customization_group,
+                                );
+                              if (!customizationDisplayItems.length) return null;
+                              return (
+                              <div className="mt-1 ml-3 space-y-1">
+                                  {customizationDisplayItems.map(
+                                    (customizationDisplay, customIndex) => (
+                                    <p
+                                      key={`${item?._id || "offer"}-item-${offerItemIndex}-custom-${customIndex}`}
+                                      className="text-sm text-gray-700"
+                                    >
+                                        -{" "}
+                                        {formatCustomizationLabel(
+                                          customizationDisplay,
+                                        )}
+                                    </p>
+                                  ),
+                                )}
+                              </div>
+                              );
+                            })()}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -228,16 +441,24 @@ const Page = () => {
                 </span>
               </div>
 
-              {order.discount > 0 && (
+              {isFirstOrderDiscountApplied && (
                 <div className="flex justify-between">
                   <span className="font-semibold text-pr-500">
-                    Promo 1ère commande (-20%)
+                    Rabais première commande ({`-${orderDiscountPercent}%`})
                   </span>
                   <span className="text-red-600">
-                    -$
-                    {(order.sub_total - order.sub_total_after_discount).toFixed(
-                      2
-                    )}
+                    -${orderDiscountAmount.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {showSubscriptionDiscountInfo && (
+                <div className="flex justify-between">
+                  <span className="font-semibold text-pr-500">
+                    Rabais abonnement (
+                    {`-${displayedSubscriptionDiscountPercent}%`})
+                  </span>
+                  <span className="text-red-600">
+                    -${orderDiscountAmount.toFixed(2)}
                   </span>
                 </div>
               )}
@@ -253,9 +474,7 @@ const Page = () => {
                     )
                   </span>
                   <span className="text-pr-700">
-                    -$
-                    {order.sub_total -
-                      order.sub_total_after_discount.toFixed(2)}
+                    -${orderDiscountAmount.toFixed(2)}
                   </span>
                 </div>
               )}

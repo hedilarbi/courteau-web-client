@@ -202,7 +202,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                             {Object.entries(item.customization).map(
                               ([key, customArr], idx) => {
                                 const matchedItem = item.items?.find(
-                                  (i) => i.item._id === key
+                                  (i) => i.item._id === key,
                                 );
 
                                 const itemName = matchedItem
@@ -232,7 +232,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                                     ))}
                                   </div>
                                 );
-                              }
+                              },
                             )}
                           </div>
                         </div>
@@ -322,11 +322,11 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
           <div className="mt-2">
             <button
               className={`${
-                basket.size === 0 || basket.subtotal === 0
+                basket.size === 0
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-pr cursor-pointer"
               }  text-black font-semibold font-inter px-4 py-2 rounded-md mt-4 w-full`}
-              disabled={basket.size === 0 || basket.subtotal === 0}
+              disabled={basket.size === 0}
               onClick={handleNav}
             >
               Passer à la caisse

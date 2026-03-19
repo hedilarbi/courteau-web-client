@@ -6,6 +6,7 @@ import {
   catchError,
   confirmPaiment,
   createOrder,
+  createZeroTotalSubscriptionOrder,
   getPaymentIntentClientSecret,
   getPaymentMethods,
 } from "@/services/UserServices";
@@ -20,12 +21,16 @@ import Image from "next/image";
 export default function CheckoutCard({
   user,
   total,
-
   selectedRestaurant,
   address,
   deliveryMode,
   tipAmount,
   promoCode,
+  subscriptionBenefits,
+  birthdayBenefits,
+  orderDiscountPercent,
+  effectiveDeliveryFee,
+  isZeroTotalSubscriptionOrder,
   subTotalWithDiscount,
   canOrder,
   isScheduledOrder,
@@ -43,6 +48,10 @@ export default function CheckoutCard({
   const [showCardField, setShowCardField] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
   const [error, setError] = useState(null);
+  const normalizedTotal = useMemo(
+    () => Math.round(Number(total || 0) * 100) / 100,
+    [total]
+  );
   const isAddressValid =
     deliveryMode !== "delivery" ||
     (!!address?.address &&
@@ -103,10 +112,10 @@ export default function CheckoutCard({
     };
   }, [user?.stripe_id]);
 
-  const amountCents = useMemo(
-    () => Math.trunc(Number(total || 0) * 100),
-    [total]
-  );
+  const amountCents = useMemo(() => Math.round(normalizedTotal * 100), [
+    normalizedTotal,
+  ]);
+  const requiresCardPayment = amountCents > 0;
 
   async function handleNewCardFlow() {
     try {
@@ -244,9 +253,21 @@ export default function CheckoutCard({
         setError("Veuillez sélectionner un restaurant.");
         return;
       }
-      if (!amountCents || amountCents <= 0)
-        setError("Montant de paiement invalide.");
-      if (!user?.email) setError("Email requis.");
+      if (!requiresCardPayment) {
+        if (!isZeroTotalSubscriptionOrder) {
+          setError(
+            "Une commande à total 0 est possible uniquement avec un article gratuit éligible (abonnement ou anniversaire)."
+          );
+          return;
+        }
+        await handlePaymentReady(null, { zeroTotalSubscriptionFlow: true });
+        return;
+      }
+
+      if (!user?.email) {
+        setError("Email requis.");
+        return;
+      }
       if (deliveryMode === "delivery") {
         if (
           !address?.address ||
@@ -333,8 +354,9 @@ export default function CheckoutCard({
     }
   }
 
-  const handlePaymentReady = async (pi) => {
+  const handlePaymentReady = async (pi, options = {}) => {
     try {
+      const isZeroTotalFlow = Boolean(options?.zeroTotalSubscriptionFlow);
       const orderItems = [];
       const orderOffers = [];
       const orderRewards = [];
@@ -348,8 +370,11 @@ export default function CheckoutCard({
           size: item.size.size,
           customizations,
           price: item.price,
+          basePrice: item.basePrice ?? item.price,
           item: item.id,
           comment: item.comment,
+          isSubscriptionFreeItem: Boolean(item.isSubscriptionFreeItem),
+          isBirthdayFreeItem: Boolean(item.isBirthdayFreeItem),
         });
       });
 
@@ -401,23 +426,23 @@ export default function CheckoutCard({
           orderItems,
           offers: orderOffers,
           rewards: orderRewards,
-          paymentMethod: "card",
-          total: total,
-          discount: !user.firstOrderDiscountApplied ? 20 : 0,
+          paymentMethod: isZeroTotalFlow ? "subscription_free_item" : "card",
+          total: normalizedTotal,
+          discount: orderDiscountPercent,
           subTotalAfterDiscount: subTotalWithDiscount,
           tip: isNaN(parseFloat(tipAmount)) ? 0 : tipAmount,
           paymentIntentId: pi || null,
-
-          deliveryFee:
-            deliveryMode === "delivery"
-              ? parseFloat(selectedRestaurant.settings.delivery_fee).toFixed(2)
-              : 0,
+          deliveryFee: effectiveDeliveryFee,
+          platform: "web",
           promoCode: promoCode
             ? {
                 code: promoCode.code,
                 promoCodeId: promoCode._id,
               }
             : null,
+          subscriptionBenefits,
+          birthdayBenefits,
+          zeroTotalSubscriptionFlow: isZeroTotalFlow,
           scheduled: {
             isScheduled: isScheduledOrder,
             scheduledFor,
@@ -425,19 +450,32 @@ export default function CheckoutCard({
         },
       };
 
-      const response = await createOrder(order);
-      if (response.error || !response.data) {
+      const response = isZeroTotalFlow
+        ? await createZeroTotalSubscriptionOrder(order)
+        : await createOrder(order);
+      if (!response?.status || !response.data) {
         setError(
-          response.error?.message ||
+          response?.message ||
             "Erreur lors de la création de la commande."
         );
         return;
       } else {
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem(
+            "checkout_success_redirect_at",
+            String(Date.now())
+          );
+        }
         clearBasket();
         router.replace("/success?id=" + response.data.orderId);
       }
     } catch (error) {
       console.error("Erreur dans handlePaymentReady :", error);
+      setError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Erreur lors de la création de la commande."
+      );
     } finally {
       setLoading(false);
     }
@@ -453,8 +491,13 @@ export default function CheckoutCard({
 
   return (
     <div className="max-w-md w-full space-y-4">
+      {!requiresCardPayment && (
+        <div className="text-sm text-gray-600 font-inter">
+          Aucun paiement requis pour cette commande.
+        </div>
+      )}
       {/* Saved cards */}
-      {cards?.length > 0 && (
+      {requiresCardPayment && cards?.length > 0 && (
         <div className="space-y-2 mt-4">
           <div className="font-semibold">Cartes enregistrées</div>
           {cards.map((pm) => (
@@ -491,7 +534,7 @@ export default function CheckoutCard({
       )}
 
       {/* New card */}
-      {showCardField && (
+      {requiresCardPayment && showCardField && (
         <div className="space-y-2">
           <div className="font-semibold">Nouvelle carte</div>
           <div className="border rounded p-3">
@@ -516,18 +559,18 @@ export default function CheckoutCard({
         onClick={onPay}
         disabled={
           loading ||
-          (!!showCardField && !cardComplete && !selectedPmId) ||
+          (requiresCardPayment &&
+            !!showCardField &&
+            !cardComplete &&
+            !selectedPmId) ||
           !canOrder ||
           !isAddressValid ||
           user.isBanned ||
-          !stripe ||
-          !elements ||
-          !total ||
-          total <= 0
+          (requiresCardPayment && (!stripe || !elements || !total || total <= 0))
         }
         className={`w-full rounded-md bg-pr font-bebas-neue text-xl py-3 font-bold disabled:bg-gray-400 disabled:cursor-not-allowed`}
       >
-        {loading ? "Traitement..." : "Payer"}
+        {loading ? "Traitement..." : requiresCardPayment ? "Payer" : "Confirmer"}
       </button>
       {!isAddressValid && deliveryMode === "delivery" && (
         <div className="text-red-600 text-sm">

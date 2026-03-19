@@ -1,8 +1,12 @@
-import { useBasket, useSelectBasketItemWithUID } from "@/context/BasketContext";
+import {
+  useBasket,
+  useSelectBasketItemWithUID,
+  useSelectBasketItems,
+} from "@/context/BasketContext";
 import { getMenuItem } from "@/services/FoodServices";
 
 import Image from "next/image";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { AiOutlineClose } from "react-icons/ai";
 import { FaRulerCombined, FaCartPlus } from "react-icons/fa";
@@ -24,50 +28,117 @@ const getFreeLimit = (rule) => {
   if (min !== null) return min;
   return 0;
 };
+
+const normalizeCustomizationGroups = (rawGroups) => {
+  if (!rawGroups) return [];
+  const groups = Array.isArray(rawGroups) ? rawGroups : [rawGroups];
+  return groups.filter((group) => Array.isArray(group?.toppings));
+};
+
+const getSelectedIdsForGroup = (selectedIds, group) => {
+  if (!Array.isArray(selectedIds) || !group) return [];
+  const groupToppingIds = new Set(
+    (group.toppings || [])
+      .map((topping) => String(topping?._id || ""))
+      .filter(Boolean)
+  );
+  const uniqueSelectedIds = [
+    ...new Set(
+      selectedIds
+        .map((id) => String(id || ""))
+        .filter(Boolean)
+    ),
+  ];
+  return uniqueSelectedIds.filter((id) => groupToppingIds.has(id));
+};
+
+const getSelectionSummaryText = (rule) => {
+  if (!rule) return "";
+  const minDisplay = parseRuleValue(rule?.min) || 0;
+  const maxValue = rule?.max;
+  const maxNumeric = parseRuleValue(maxValue);
+  const maxDisplay =
+    maxValue === null || maxValue === undefined || maxNumeric === null
+      ? "illimite"
+      : maxNumeric;
+  return `(min ${minDisplay} gratuit et maximum ${maxDisplay})`;
+};
 const MenuItemModal = ({
   itemId,
   setShowMenuItemModal,
   itemUID,
   showMenuItemModal,
+  isSubscriptionFreeItem = false,
+  isBirthdayFreeItem = false,
 }) => {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
-  const [customizationGroup, setCustomizationGroup] = useState(null);
+  const [customizationGroups, setCustomizationGroups] = useState([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState([]);
   const [categorizedCustomization, setCategorizedCustomization] = useState({});
   const [comment, setComment] = useState("");
   const itemFromBasket = useSelectBasketItemWithUID(itemUID)[0];
-  const usingCustomizationGroup = Boolean(
-    customizationGroup?.toppings?.length
+  const basketItems = useSelectBasketItems();
+  const isExistingSubscriptionFreeItemFlow = Boolean(
+    itemFromBasket?.isSubscriptionFreeItem
   );
+  const isExistingBirthdayFreeItemFlow = Boolean(
+    itemFromBasket?.isBirthdayFreeItem
+  );
+  const isFreeItemFlow =
+    Boolean(isSubscriptionFreeItem) ||
+    isExistingSubscriptionFreeItemFlow ||
+    Boolean(isBirthdayFreeItem) ||
+    isExistingBirthdayFreeItemFlow;
+  const usingCustomizationGroup = customizationGroups.length > 0;
 
-  const { addToBasket, updateItemInBasket } = useBasket();
-  const fetchItem = async () => {
+  const { addToBasket, removeFromBasket, updateItemInBasket } = useBasket();
+  const fetchItem = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getMenuItem(itemId);
       if (response.status) {
         console.log("Menu item response:", response.data);
         setItem(response.data);
-        const groupData = response?.data?.customization_group;
-        const hasGroup = Boolean(groupData?.toppings?.length);
+        const groupsData = normalizeCustomizationGroups(
+          response?.data?.customization_group
+        );
+        const hasGroup = groupsData.length > 0;
         const basketCustomizations = itemFromBasket?.customization || [];
+        const fetchedPrices = Array.isArray(response?.data?.prices)
+          ? response.data.prices
+          : [];
 
         if (!itemFromBasket) {
-          setSelectedSize(response.data.prices[0]);
+          setSelectedSize(fetchedPrices[0] || null);
+          setComment("");
         } else {
-          setSelectedSize(itemFromBasket.size);
+          const existingSizeId = String(itemFromBasket?.size?._id || "");
+          const matchedFetchedSize = fetchedPrices.find(
+            (priceOption) => String(priceOption?._id || "") === existingSizeId
+          );
+          setSelectedSize(matchedFetchedSize || itemFromBasket.size || fetchedPrices[0] || null);
           setComment(itemFromBasket.comment || "");
         }
 
         if (hasGroup) {
-          setCustomizationGroup(groupData);
+          setCustomizationGroups(groupsData);
           setCategorizedCustomization({});
-          setSelectedGroupIds(basketCustomizations.map((custom) => custom._id));
+          setSelectedGroupIds(
+            [
+              ...new Set(
+                basketCustomizations
+                  .map((custom) =>
+                    String(typeof custom === "string" ? custom : custom?._id || "")
+                  )
+                  .filter(Boolean)
+              ),
+            ]
+          );
         } else {
-          setCustomizationGroup(null);
+          setCustomizationGroups([]);
           setSelectedGroupIds([]);
           const customizations = response?.data?.customization || [];
           const CustomizationList = {};
@@ -96,27 +167,34 @@ const MenuItemModal = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [itemFromBasket, itemId]);
 
   const selectedGroupItems = useMemo(() => {
     if (!usingCustomizationGroup) return [];
-    const freeLimit = getFreeLimit(customizationGroup?.selectionRule);
-    const toppings = customizationGroup?.toppings || [];
+    const selectedItems = [];
 
-    return selectedGroupIds
-      .map((id, index) => {
-        const topping = toppings.find((item) => item._id === id);
-        if (!topping) return null;
-        return {
+    customizationGroups.forEach((group) => {
+      const freeLimit = getFreeLimit(group?.selectionRule);
+      const selectedIdsInGroup = getSelectedIdsForGroup(selectedGroupIds, group);
+      selectedIdsInGroup.forEach((selectedId, index) => {
+        const normalizedSelectedId = String(selectedId || "");
+        const topping = (group?.toppings || []).find(
+          (candidate) =>
+            String(candidate?._id || "") === normalizedSelectedId
+        );
+        if (!topping) return;
+        selectedItems.push({
           ...topping,
           price:
             freeLimit !== Infinity && index >= freeLimit
               ? Number(topping.price) || 0
               : 0,
-        };
-      })
-      .filter(Boolean);
-  }, [usingCustomizationGroup, customizationGroup, selectedGroupIds]);
+        });
+      });
+    });
+
+    return selectedItems;
+  }, [usingCustomizationGroup, customizationGroups, selectedGroupIds]);
 
   const selectedItems = useMemo(() => {
     if (usingCustomizationGroup) return selectedGroupItems;
@@ -130,15 +208,21 @@ const MenuItemModal = ({
     }, []);
   }, [usingCustomizationGroup, selectedGroupItems, categorizedCustomization]);
 
-  const calculateTotalPrice = () => {
-    let newPrice = selectedSize?.price || 0;
-
-    if (selectedItems && selectedItems.length > 0) {
-      selectedItems.map((item) => (newPrice += item.price));
-    }
-
-    return newPrice;
-  };
+  const getCustomizationExtraTotal = useCallback(
+    () =>
+      selectedItems.reduce(
+        (sum, selectedItem) => sum + (Number(selectedItem?.price) || 0),
+        0
+      ),
+    [selectedItems]
+  );
+  const calculateTotalPrice = useCallback(() => {
+    const baseSizePrice = Number(selectedSize?.price) || 0;
+    const extraCustomizationTotal = getCustomizationExtraTotal();
+    return isFreeItemFlow
+      ? extraCustomizationTotal
+      : baseSizePrice + extraCustomizationTotal;
+  }, [getCustomizationExtraTotal, isFreeItemFlow, selectedSize?.price]);
   const handleCustomizationChange = (categoryName, itemId) => {
     let copy = { ...categorizedCustomization };
     copy[categoryName] = copy[categoryName].map((element) => {
@@ -151,44 +235,78 @@ const MenuItemModal = ({
   };
 
   const handleGroupCustomizationChange = (itemId) => {
+    const normalizedItemId = String(itemId || "");
+    if (!normalizedItemId) return;
     setSelectedGroupIds((prev) => {
-      if (prev.includes(itemId)) {
-        return prev.filter((id) => id !== itemId);
+      const normalizedPrev = prev
+        .map((id) => String(id || ""))
+        .filter(Boolean);
+      if (normalizedPrev.includes(normalizedItemId)) {
+        return normalizedPrev.filter((id) => id !== normalizedItemId);
       }
-      return [...prev, itemId];
+      return [...normalizedPrev, normalizedItemId];
     });
   };
 
-  const selectionSummary = useMemo(() => {
-    if (!usingCustomizationGroup) return "";
-    const rule = customizationGroup?.selectionRule;
-    const minDisplay = parseRuleValue(rule?.min) || 0;
-    const maxValue = rule?.max;
-    const maxNumeric = parseRuleValue(maxValue);
-    const maxDisplay =
-      maxValue === null || maxValue === undefined || maxNumeric === null
-        ? "illimite"
-        : maxNumeric;
-
-    return `(min ${minDisplay} gratuit et maximum ${maxDisplay})`;
-  }, [usingCustomizationGroup, customizationGroup]);
-
   const handleAddToBasket = () => {
     if (usingCustomizationGroup) {
-      const rule = customizationGroup?.selectionRule;
-      const minRequired = rule?.isRequired ? parseRuleValue(rule?.min) : 0;
-      if (minRequired && selectedGroupIds.length < minRequired) {
-        toast.error(`Veuillez selectionner au moins ${minRequired} option(s).`);
-        return;
+      for (const group of customizationGroups) {
+        const rule = group?.selectionRule;
+        const minRequired = rule?.isRequired ? parseRuleValue(rule?.min) : 0;
+        if (!minRequired) continue;
+        const selectedCount = getSelectedIdsForGroup(
+          selectedGroupIds,
+          group
+        ).length;
+        if (selectedCount < minRequired) {
+          toast.error(
+            `Veuillez selectionner au moins ${minRequired} option(s) pour ${group?.name || "ce groupe"}.`
+          );
+          return;
+        }
       }
     }
 
+    const extraCustomizationTotal = getCustomizationExtraTotal();
+    const baseItemPrice = Number(selectedSize?.price) || 0;
+    const totalItemPrice = baseItemPrice + extraCustomizationTotal;
+    const itemPriceForBasket = isFreeItemFlow
+      ? extraCustomizationTotal
+      : totalItemPrice;
+
     if (!itemFromBasket) {
+      if (isFreeItemFlow) {
+        if (Boolean(isSubscriptionFreeItem)) {
+          basketItems
+            .filter((basketItem) => basketItem.isSubscriptionFreeItem)
+            .forEach((basketItem) => {
+              removeFromBasket(basketItem.uid);
+            });
+        }
+        if (Boolean(isBirthdayFreeItem)) {
+          basketItems
+            .filter((basketItem) => basketItem.isBirthdayFreeItem)
+            .forEach((basketItem) => {
+              removeFromBasket(basketItem.uid);
+            });
+        }
+      }
+
       addToBasket({
         id: item._id,
         name: item.name,
         image: item.image,
-        price: calculateTotalPrice(),
+        price: itemPriceForBasket,
+        basePrice: baseItemPrice,
+        originalPrice: totalItemPrice,
+        subscriptionFreeItemExtraPrice: isFreeItemFlow
+          ? extraCustomizationTotal
+          : 0,
+        birthdayFreeItemExtraPrice: isFreeItemFlow ? extraCustomizationTotal : 0,
+        isSubscriptionFreeItem:
+          Boolean(isSubscriptionFreeItem) || isExistingSubscriptionFreeItemFlow,
+        isBirthdayFreeItem:
+          Boolean(isBirthdayFreeItem) || isExistingBirthdayFreeItemFlow,
         size: selectedSize,
         customization: selectedItems,
         comment: comment,
@@ -198,7 +316,17 @@ const MenuItemModal = ({
     } else {
       updateItemInBasket({
         uid: itemFromBasket.uid,
-        price: calculateTotalPrice(),
+        price: itemPriceForBasket,
+        basePrice: baseItemPrice,
+        originalPrice: totalItemPrice,
+        subscriptionFreeItemExtraPrice: isFreeItemFlow
+          ? extraCustomizationTotal
+          : 0,
+        birthdayFreeItemExtraPrice: isFreeItemFlow ? extraCustomizationTotal : 0,
+        isSubscriptionFreeItem:
+          Boolean(isSubscriptionFreeItem) || isExistingSubscriptionFreeItemFlow,
+        isBirthdayFreeItem:
+          Boolean(isBirthdayFreeItem) || isExistingBirthdayFreeItemFlow,
         size: selectedSize,
         customization: selectedItems,
         comment: comment,
@@ -208,10 +336,10 @@ const MenuItemModal = ({
     }
   };
   useEffect(() => {
-    if (itemId) {
+    if (itemId && showMenuItemModal) {
       fetchItem();
     }
-  }, [itemId]);
+  }, [fetchItem, itemId, showMenuItemModal]);
 
   return (
     <div
@@ -257,7 +385,9 @@ const MenuItemModal = ({
               </h2>
               <div className="flex justify-between items-center mt-2">
                 <h4 className="md:text-2xl text-xl font-bebas-neue text-pr ">
-                  ${calculateTotalPrice().toFixed(2)}
+                  {calculateTotalPrice() <= 0
+                    ? "Gratuit"
+                    : `$${calculateTotalPrice().toFixed(2)}`}
                 </h4>
                 <div className="bg-pr text-black rounded-full px-6 py-2">
                   <p className="font-bebas-neue md:text-lg text-sm">
@@ -297,51 +427,68 @@ const MenuItemModal = ({
                 {usingCustomizationGroup ? (
                   <div className="mt-4 ">
                     <p className="text-base font-inter font-semibold capitalize">
-                      Personnaliser {selectionSummary}
+                      Personnaliser
                     </p>
-                    {customizationGroup?.toppings?.map((topping) => {
-                      const selectedIndex = selectedGroupIds.indexOf(
-                        topping._id
+                    {customizationGroups.map((group) => {
+                      const selectedIdsInGroup = getSelectedIdsForGroup(
+                        selectedGroupIds,
+                        group
                       );
-                      const isSelected = selectedIndex !== -1;
-                      const freeLimit = getFreeLimit(
-                        customizationGroup?.selectionRule
+                      const freeLimit = getFreeLimit(group?.selectionRule);
+                      const selectionSummary = getSelectionSummaryText(
+                        group?.selectionRule
                       );
-                      const isExtraSelection =
-                        freeLimit !== Infinity && selectedIndex >= freeLimit;
-                      const shouldShowExtraPrice =
-                        topping.price > 0 &&
-                        freeLimit !== Infinity &&
-                        (isExtraSelection ||
-                          (!isSelected &&
-                            selectedGroupIds.length >= freeLimit));
 
                       return (
-                        <button
-                          key={topping._id}
-                          className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
-                          onClick={() =>
-                            handleGroupCustomizationChange(topping._id)
-                          }
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
-                              {isSelected && (
-                                <span className="text-pr text-sm">
-                                  <FaCheck />
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm capitalize font-inter font-medium">
-                              {topping.name}
-                            </p>
-                          </div>
-                          {shouldShowExtraPrice && (
-                            <p className="font-bebas-neue text-pr md:text-xl text-base">
-                              + ${Number(topping.price).toFixed(2)}
-                            </p>
-                          )}
-                        </button>
+                        <div key={group?._id || group?.name} className="mt-3">
+                          <p className="text-sm font-inter font-semibold capitalize">
+                            {group?.name} {selectionSummary}
+                          </p>
+                          {(group?.toppings || []).map((topping) => {
+                            const toppingId = String(topping?._id || "");
+                            const selectedIndex = selectedIdsInGroup.indexOf(
+                              toppingId
+                            );
+                            const isSelected = selectedIndex !== -1;
+                            const isExtraSelection =
+                              freeLimit !== Infinity &&
+                              selectedIndex >= freeLimit;
+                            const shouldShowExtraPrice =
+                              Number(topping?.price) > 0 &&
+                              freeLimit !== Infinity &&
+                              (isExtraSelection ||
+                                (!isSelected &&
+                                  selectedIdsInGroup.length >= freeLimit));
+
+                            return (
+                              <button
+                                key={`${group?._id || group?.name}-${topping._id}`}
+                                className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
+                                onClick={() =>
+                                  handleGroupCustomizationChange(toppingId)
+                                }
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
+                                    {isSelected && (
+                                      <span className="text-pr text-sm">
+                                        <FaCheck />
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm capitalize font-inter font-medium">
+                                    {topping.name}
+                                  </p>
+                                </div>
+                                {shouldShowExtraPrice && (
+                                  <p className="font-bebas-neue text-pr md:text-xl text-base">
+                                    + ${Number(topping.price).toFixed(2)}
+                                  </p>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       );
                     })}
                   </div>
@@ -404,7 +551,9 @@ const MenuItemModal = ({
                       Total
                     </p>
                     <p className="font-inter font-semibold md:text-xl text-base">
-                      ${calculateTotalPrice().toFixed(2)}
+                      {calculateTotalPrice() <= 0
+                        ? "Gratuit"
+                        : `$${calculateTotalPrice().toFixed(2)}`}
                     </p>
                   </div>
                   <button

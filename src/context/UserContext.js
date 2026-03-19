@@ -69,6 +69,7 @@ export function UserProvider({ children }) {
         },
       );
       if (response.status === 200) {
+        console.log(response.data);
         createUser(response.data);
 
         if (!response.data.is_profile_setup) {
@@ -79,7 +80,10 @@ export function UserProvider({ children }) {
       }
       return token ? token.value : null;
     } catch (error) {
-      console.error("Erreur lors de la récupération du token utilisateur :", error);
+      console.error(
+        "Erreur lors de la récupération du token utilisateur :",
+        error,
+      );
       await logout();
       return null;
     } finally {

@@ -5,13 +5,12 @@ import {
 import { getOffer } from "@/services/FoodServices";
 
 import Image from "next/image";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { AiOutlineClose } from "react-icons/ai";
 import { FaCartPlus } from "react-icons/fa";
 import { FaCheck } from "react-icons/fa";
 import { IoChatbubble } from "react-icons/io5";
-import Spinner from "./spinner/Spinner";
 import ItemLoadingSkeleton from "./ItemLoadingSkeleton";
 const parseRuleValue = (value) => {
   const parsed = Number(value);
@@ -26,6 +25,80 @@ const getFreeLimit = (rule) => {
   const min = parseRuleValue(rule.min);
   if (min !== null) return min;
   return 0;
+};
+
+const normalizeCustomizationGroups = (rawGroups) => {
+  if (!rawGroups) return [];
+  const groups = Array.isArray(rawGroups) ? rawGroups : [rawGroups];
+  return groups.filter((group) => Array.isArray(group?.toppings));
+};
+
+const normalizeSelectionEntries = (selectionList) => {
+  if (!Array.isArray(selectionList)) return [];
+  return selectionList
+    .map((selection) => {
+      if (typeof selection === "string") {
+        return { _id: selection, name: "", price: 0 };
+      }
+      if (!selection?._id) return null;
+      return {
+        _id: selection._id,
+        name: selection.name || "",
+        price: Number(selection.price) || 0,
+      };
+    })
+    .filter(Boolean);
+};
+
+const getSelectedIdsForGroup = (selectionList, group) => {
+  const normalizedSelections = normalizeSelectionEntries(selectionList);
+  if (!group) return [];
+  const groupToppingIds = new Set((group.toppings || []).map((t) => t?._id));
+  return normalizedSelections
+    .map((selection) => selection._id)
+    .filter((id) => groupToppingIds.has(id));
+};
+
+const buildPricedSelectionsForGroups = (selectionList, groups) => {
+  const normalizedSelections = normalizeSelectionEntries(selectionList);
+  if (!groups.length) return normalizedSelections;
+  const selectionById = new Map(
+    normalizedSelections.map((selection) => [selection._id, selection])
+  );
+  const pricedById = new Map();
+
+  groups.forEach((group) => {
+    const freeLimit = getFreeLimit(group?.selectionRule);
+    const selectedIdsInGroup = getSelectedIdsForGroup(normalizedSelections, group);
+    selectedIdsInGroup.forEach((selectedId, index) => {
+      const topping = (group?.toppings || []).find(
+        (candidate) => candidate?._id === selectedId
+      );
+      const selected = selectionById.get(selectedId);
+      const price =
+        freeLimit !== Infinity && index >= freeLimit
+          ? Number(topping?.price) || 0
+          : 0;
+      pricedById.set(selectedId, {
+        _id: selectedId,
+        name: selected?.name || topping?.name || "",
+        price,
+      });
+    });
+  });
+
+  normalizedSelections.forEach((selection) => {
+    if (pricedById.has(selection._id)) return;
+    pricedById.set(selection._id, {
+      _id: selection._id,
+      name: selection.name || "",
+      price: Number(selection.price) || 0,
+    });
+  });
+
+  return normalizedSelections
+    .map((selection) => pricedById.get(selection._id))
+    .filter(Boolean);
 };
 const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
   const [offer, setOffer] = useState(null);
@@ -71,35 +144,34 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
   };
 
   const calculateTotalPrice = () => {
-    let totalPrice = offer?.price || 0;
+    let totalPrice = Number(offer?.price) || 0;
     if (!offer?.items?.length) return totalPrice;
 
     offer.items.forEach((item) => {
       const itemCustomizations = selectedCustomizations[item.item._id] || [];
-      const customizationGroup = item.item.customization_group;
-      const hasCustomizationGroup = Boolean(
-        customizationGroup?.toppings?.length
+      const customizationGroups = normalizeCustomizationGroups(
+        item.item.customization_group
       );
+      const hasCustomizationGroup = customizationGroups.length > 0;
 
       if (hasCustomizationGroup) {
-        const freeLimit = getFreeLimit(customizationGroup?.selectionRule);
-        const toppings = customizationGroup?.toppings || [];
-
         itemCustomizations.forEach((customizations) => {
-          customizations.forEach((customization, index) => {
-            if (freeLimit === Infinity || index < freeLimit) return;
-            const topping = toppings.find((c) => c._id === customization._id);
-            totalPrice += Number(topping?.price) || 0;
+          const pricedSelections = buildPricedSelectionsForGroups(
+            customizations,
+            customizationGroups
+          );
+          pricedSelections.forEach((selection) => {
+            totalPrice += Number(selection?.price) || 0;
           });
         });
       } else {
         itemCustomizations.forEach((customizations) => {
-          customizations.forEach((customization) => {
+          normalizeSelectionEntries(customizations).forEach((customization) => {
             const itemCustomization = item.item.customization?.find(
               (c) => c._id === customization._id
             );
 
-            totalPrice += Number(itemCustomization?.price) || 0;
+            totalPrice += Number(itemCustomization?.price ?? customization?.price) || 0;
           });
         });
       }
@@ -119,13 +191,13 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
     const currentCustomizations = updatedCustomizations[itemId][index];
 
     const existingIndex = currentCustomizations.findIndex(
-      (c) => c._id === customization._id
+      (c) => (typeof c === "string" ? c : c?._id) === customization._id
     );
 
     if (existingIndex !== -1) {
       // Remove customization if already selected
       updatedCustomizations[itemId][index] = currentCustomizations.filter(
-        (c) => c._id !== customization._id
+        (c) => (typeof c === "string" ? c : c?._id) !== customization._id
       );
     } else {
       // Add customization object
@@ -156,32 +228,31 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
 
     offer.items.forEach((item) => {
       const itemCustomizations = selectedCustomizations[item.item._id] || [];
-      const customizationGroup = item.item.customization_group;
-      const hasCustomizationGroup = Boolean(
-        customizationGroup?.toppings?.length
+      const customizationGroups = normalizeCustomizationGroups(
+        item.item.customization_group
       );
+      const hasCustomizationGroup = customizationGroups.length > 0;
 
       if (hasCustomizationGroup) {
-        const freeLimit = getFreeLimit(customizationGroup?.selectionRule);
-        const toppings = customizationGroup?.toppings || [];
-
         pricedCustomizations[item.item._id] = itemCustomizations.map(
           (customizations) =>
-            customizations.map((customization, index) => {
-              const topping = toppings.find((c) => c._id === customization._id);
-              const price =
-                freeLimit !== Infinity && index >= freeLimit
-                  ? Number(topping?.price) || 0
-                  : 0;
+            buildPricedSelectionsForGroups(customizations, customizationGroups)
+        );
+      } else {
+        pricedCustomizations[item.item._id] = itemCustomizations.map(
+          (customizations) =>
+            normalizeSelectionEntries(customizations).map((customization) => {
+              const itemCustomization = item.item.customization?.find(
+                (c) => c._id === customization._id
+              );
               return {
                 _id: customization._id,
-                name: customization.name || topping?.name || "",
-                price,
+                name: customization.name || itemCustomization?.name || "",
+                price:
+                  Number(itemCustomization?.price ?? customization?.price) || 0,
               };
             })
         );
-      } else {
-        pricedCustomizations[item.item._id] = itemCustomizations;
       }
     });
 
@@ -191,20 +262,36 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
   const handleAddToBasket = () => {
     const missingSelection = offer?.items?.reduce((result, item) => {
       if (result) return result;
-      const customizationGroup = item.item.customization_group;
-      if (!customizationGroup?.selectionRule?.isRequired) return result;
-      const minRequired = parseRuleValue(customizationGroup.selectionRule.min);
-      if (!minRequired) return result;
-      const itemCustomizations = selectedCustomizations[item.item._id] || [];
-      const missingIndex = itemCustomizations.findIndex(
-        (customizations) => (customizations?.length || 0) < minRequired
+      const customizationGroups = normalizeCustomizationGroups(
+        item.item.customization_group
       );
-      if (missingIndex === -1) return result;
-      return {
-        itemName: item.item.name,
-        minRequired,
-        index: missingIndex,
-      };
+      if (!customizationGroups.length) return result;
+      const itemCustomizations = selectedCustomizations[item.item._id] || [];
+
+      for (let index = 0; index < itemCustomizations.length; index += 1) {
+        const customizations = itemCustomizations[index] || [];
+
+        for (const group of customizationGroups) {
+          const rule = group?.selectionRule;
+          if (!rule?.isRequired) continue;
+          const minRequired = parseRuleValue(rule.min);
+          if (!minRequired) continue;
+
+          const selectedCount = getSelectedIdsForGroup(
+            customizations,
+            group
+          ).length;
+          if (selectedCount < minRequired) {
+            return {
+              itemName: `${item.item.name} - ${group?.name || "Personnalisation"}`,
+              minRequired,
+              index,
+            };
+          }
+        }
+      }
+
+      return result;
     }, null);
 
     if (missingSelection) {
@@ -311,86 +398,104 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
                   return (
                     <div key={item._id} className="my-4">
                       {Array.from({ length: item.quantity }).map((_, index) => {
-                        const customizationGroup =
-                          item.item.customization_group;
-                        const hasCustomizationGroup = Boolean(
-                          customizationGroup?.toppings?.length
+                        const customizationGroups = normalizeCustomizationGroups(
+                          item.item.customization_group
                         );
-                        const selectionSummary = hasCustomizationGroup
-                          ? getSelectionSummaryText(
-                              customizationGroup?.selectionRule
-                            )
-                          : "";
-                        const selectedIds =
-                          selectedCustomizations[item.item._id]?.[index]?.map(
-                            (selection) => selection._id
-                          ) || [];
-                        const freeLimit = hasCustomizationGroup
-                          ? getFreeLimit(customizationGroup?.selectionRule)
-                          : 0;
+                        const hasCustomizationGroup =
+                          customizationGroups.length > 0;
+                        const currentSelections =
+                          selectedCustomizations[item.item._id]?.[index] || [];
+                        const selectedEntries =
+                          normalizeSelectionEntries(currentSelections);
+                        const selectedIds = selectedEntries.map(
+                          (selection) => selection._id
+                        );
 
                         return (
                           <div key={index} className="my-2">
                             <p className="font-inter font-semibold text-lg">
                               {item.item.name} ({index + 1})
-                              {selectionSummary ? ` ${selectionSummary}` : ""}
                             </p>
                             {hasCustomizationGroup
-                              ? customizationGroup?.toppings?.map((topping) => {
-                                  const selectedIndex = selectedIds.indexOf(
-                                    topping._id
+                              ? customizationGroups.map((group) => {
+                                  const selectedIdsInGroup =
+                                    getSelectedIdsForGroup(
+                                      selectedEntries,
+                                      group
+                                    );
+                                  const freeLimit = getFreeLimit(
+                                    group?.selectionRule
                                   );
-                                  const isSelected = selectedIndex !== -1;
-                                  const isExtraSelection =
-                                    freeLimit !== Infinity &&
-                                    selectedIndex >= freeLimit;
-                                  const shouldShowExtraPrice =
-                                    topping.price > 0 &&
-                                    freeLimit !== Infinity &&
-                                    (isExtraSelection ||
-                                      (!isSelected &&
-                                        selectedIds.length >= freeLimit));
+                                  const selectionSummary =
+                                    getSelectionSummaryText(
+                                      group?.selectionRule
+                                    );
 
                                   return (
-                                    <button
-                                      key={topping._id}
-                                      type="button"
-                                      className={`w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2`}
-                                      onClick={() =>
-                                        handleCustomizationChange(
-                                          item.item._id,
-                                          topping,
-                                          index
-                                        )
-                                      }
+                                    <div
+                                      key={group?._id || group?.name}
+                                      className="mt-2"
                                     >
-                                      <div className="flex items-center gap-2">
-                                        <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
-                                          {isSelected && (
-                                            <span className="text-pr text-sm">
-                                              <FaCheck />
-                                            </span>
-                                          )}
-                                        </div>
-                                        <p className="text-sm capitalize font-inter font-medium">
-                                          {topping.name}
-                                        </p>
-                                      </div>
-                                      {shouldShowExtraPrice && (
-                                        <p className="font-bebas-neue text-pr md:text-xl text-base">
-                                          + ${Number(topping.price).toFixed(2)}
-                                        </p>
-                                      )}
-                                    </button>
+                                      <p className="font-inter font-semibold text-base">
+                                        {group?.name}{" "}
+                                        {selectionSummary ? selectionSummary : ""}
+                                      </p>
+                                      {(group?.toppings || []).map((topping) => {
+                                        const selectedIndex =
+                                          selectedIdsInGroup.indexOf(topping._id);
+                                        const isSelected = selectedIndex !== -1;
+                                        const isExtraSelection =
+                                          freeLimit !== Infinity &&
+                                          selectedIndex >= freeLimit;
+                                        const shouldShowExtraPrice =
+                                          Number(topping?.price) > 0 &&
+                                          freeLimit !== Infinity &&
+                                          (isExtraSelection ||
+                                            (!isSelected &&
+                                              selectedIdsInGroup.length >=
+                                                freeLimit));
+
+                                        return (
+                                          <button
+                                            key={`${group?._id || group?.name}-${topping._id}`}
+                                            type="button"
+                                            className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
+                                            onClick={() =>
+                                              handleCustomizationChange(
+                                                item.item._id,
+                                                topping,
+                                                index
+                                              )
+                                            }
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
+                                                {isSelected && (
+                                                  <span className="text-pr text-sm">
+                                                    <FaCheck />
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <p className="text-sm capitalize font-inter font-medium">
+                                                {topping.name}
+                                              </p>
+                                            </div>
+                                            {shouldShowExtraPrice && (
+                                              <p className="font-bebas-neue text-pr md:text-xl text-base">
+                                                + $
+                                                {Number(topping.price).toFixed(
+                                                  2
+                                                )}
+                                              </p>
+                                            )}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
                                   );
                                 })
                               : (item.item.customization || []).map((c) => {
-                                  const isSelected =
-                                    selectedCustomizations[item.item._id]?.[
-                                      index
-                                    ]?.some(
-                                      (selected) => selected._id === c._id
-                                    ) || false;
+                                  const isSelected = selectedIds.includes(c._id);
                                   return (
                                     <button
                                       key={c._id}

@@ -8,7 +8,6 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 const ProcessPaiement = ({
   user,
   total,
-
   selectedRestaurant,
   address,
   deliveryMode,
@@ -16,11 +15,14 @@ const ProcessPaiement = ({
   promoCode,
   subTotal,
   subTotalWithDiscount,
-  tvq,
-  tps,
   canOrder,
   isScheduledOrder,
   scheduledDateTime,
+  subscriptionBenefits,
+  birthdayBenefits,
+  orderDiscountPercent,
+  effectiveDeliveryFee,
+  isZeroTotalSubscriptionOrder,
 }) => {
   const [processPaiement, setProcessPaiement] = useState(false);
 
@@ -68,19 +70,38 @@ const ProcessPaiement = ({
             deliveryMode={deliveryMode}
             tipAmount={tipAmount}
             promoCode={promoCode}
+            subscriptionBenefits={subscriptionBenefits}
+            birthdayBenefits={birthdayBenefits}
+            orderDiscountPercent={orderDiscountPercent}
+            effectiveDeliveryFee={effectiveDeliveryFee}
+            isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
             subTotal={subTotal}
             subTotalWithDiscount={subTotalWithDiscount}
-            tvq={tvq}
-            tps={tps}
             canOrder={canOrder}
             isScheduledOrder={isScheduledOrder}
             scheduledDateTime={scheduledDateTime}
           />
         </Elements>
       ) : (
-        <div className="mt-4 text-sm text-gray-600 font-inter">
-          Calcul du total en cours...
-        </div>
+        <CheckoutCard
+          user={user}
+          total={total}
+          selectedRestaurant={selectedRestaurant}
+          address={address}
+          deliveryMode={deliveryMode}
+          tipAmount={tipAmount}
+          promoCode={promoCode}
+          subscriptionBenefits={subscriptionBenefits}
+          birthdayBenefits={birthdayBenefits}
+          orderDiscountPercent={orderDiscountPercent}
+          effectiveDeliveryFee={effectiveDeliveryFee}
+          isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
+          subTotal={subTotal}
+          subTotalWithDiscount={subTotalWithDiscount}
+          canOrder={canOrder}
+          isScheduledOrder={isScheduledOrder}
+          scheduledDateTime={scheduledDateTime}
+        />
       )}
     </div>
   );

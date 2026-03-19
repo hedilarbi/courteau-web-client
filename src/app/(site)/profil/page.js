@@ -5,10 +5,28 @@ import Link from "next/link";
 import React, { useEffect } from "react";
 import { FaClockRotateLeft } from "react-icons/fa6";
 import { FaHeart } from "react-icons/fa";
-import { MdLocationPin } from "react-icons/md";
+import { MdLocationPin, MdWorkspacePremium } from "react-icons/md";
 import { IoChevronForwardOutline } from "react-icons/io5";
 import { useRouter } from "next/navigation";
 import { GiTrophyCup } from "react-icons/gi";
+
+const isUserSubscriptionActive = (user) => {
+  if (!user) return false;
+
+  const status = String(user?.subscriptionStatus || "")
+    .toLowerCase()
+    .trim();
+  const statusActive = status === "active" || status === "trialing";
+  const periodEnd = user?.subscriptionCurrentPeriodEnd
+    ? new Date(user.subscriptionCurrentPeriodEnd)
+    : null;
+  const hasValidPeriodEnd =
+    periodEnd instanceof Date && !Number.isNaN(periodEnd.getTime());
+  const notExpired = !hasValidPeriodEnd || periodEnd.getTime() > Date.now();
+
+  return Boolean(user?.subscriptionIsActive) || (statusActive && notExpired);
+};
+
 const Page = () => {
   const { user, loading } = useUser();
 
@@ -18,7 +36,7 @@ const Page = () => {
     if (!loading && !user) {
       router.push("/connexion");
     }
-  }, [loading, user]);
+  }, [loading, router, user]);
 
   if (loading) {
     return (
@@ -30,6 +48,9 @@ const Page = () => {
   if (!user && !loading) {
     return null;
   }
+
+  const shouldShowMySubscriptionEntry = isUserSubscriptionActive(user);
+
   return (
     <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-2 pb-20 relative ">
       <div className="bg-black rounded-xl shadow-md p-4 flex flex-col items-center">
@@ -99,6 +120,22 @@ const Page = () => {
             <IoChevronForwardOutline />
           </div>
         </Link>
+        {shouldShowMySubscriptionEntry && (
+          <Link
+            href="/profil/mes-abonnements"
+            className="flex items-center gap-2 p-3 border-t border-gray-300"
+          >
+            <div className="md:w-10 md:h-10 h-8 w-8 text-[#7c3aed] rounded-md overflow-hidden flex items-center justify-center bg-[#ede9fe]">
+              <MdWorkspacePremium />
+            </div>
+            <p className="text-sm font-bold text-black font-inter flex-1 ">
+              Mes abonnements
+            </p>
+            <div className="text-[#9ca3af] ">
+              <IoChevronForwardOutline />
+            </div>
+          </Link>
+        )}
       </div>
     </div>
   );

@@ -7,7 +7,9 @@ const PromoCodeBlock = ({
   setPromoCodeData,
   promoCodeIsValid,
   setPromoCodeIsValid,
-  firstOrderDiscountApplied,
+  firstOrderDiscountAllowed,
+  promoCodeAllowed,
+  subTotalWithDiscount,
 }) => {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -17,10 +19,19 @@ const PromoCodeBlock = ({
       setIsLoading(true);
       setPromoCodeError(null);
       setPromoCodeIsValid(false);
-      if (!firstOrderDiscountApplied) {
+
+      if (!promoCodeAllowed) {
+        setPromoCodeError(
+          "Un abonnement actif est déjà appliqué. Les codes promo ne sont pas cumulables."
+        );
+        return;
+      }
+
+      if (firstOrderDiscountAllowed) {
         setPromoCodeError("Une autre réduction est déjà appliquée.");
         return;
       }
+
       const response = await verifyPromoCode(code, userId);
 
       if (response.status) {
@@ -53,6 +64,12 @@ const PromoCodeBlock = ({
       <h2 className="font-inter font-semibold text-black md:text-xl text-base">
         Code Promo
       </h2>
+      {!promoCodeAllowed && (
+        <p className="text-sm font-inter text-[#6B7280] mt-2">
+          Un abonnement actif est déjà appliqué. Les codes promo ne sont pas
+          cumulables.
+        </p>
+      )}
       <div className="flex items-center gap-2 mt-4 w-full">
         <input
           type="text"
@@ -60,6 +77,7 @@ const PromoCodeBlock = ({
           onChange={(e) => setCode(e.target.value)}
           placeholder="COURTEAU2024"
           className=" border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-pr flex-1"
+          disabled={!promoCodeAllowed}
         />
         {promoCodeIsValid ? (
           <button
@@ -75,8 +93,8 @@ const PromoCodeBlock = ({
         ) : (
           <button
             onClick={handleVerifyPromoCode}
-            disabled={isLoading}
-            className="bg-pr text-black px-4 py-2 rounded-md hover:bg-pr/90 transition font-semibold  "
+            disabled={isLoading || !promoCodeAllowed}
+            className="bg-pr text-black px-4 py-2 rounded-md hover:bg-pr/90 transition font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {isLoading ? "Vérification..." : "Appliquer"}
           </button>
