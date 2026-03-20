@@ -126,6 +126,8 @@ function basketReducer(state, action) {
         birthdayFreeItemExtraPrice:
           action.payload.birthdayFreeItemExtraPrice ??
           old.birthdayFreeItemExtraPrice,
+        category: action.payload.category ?? old.category,
+        categoryName: action.payload.categoryName ?? old.categoryName,
         isSubscriptionFreeItem:
           action.payload.isSubscriptionFreeItem ?? old.isSubscriptionFreeItem,
         isBirthdayFreeItem:

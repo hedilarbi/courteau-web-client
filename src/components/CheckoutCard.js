@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import {
   catchError,
@@ -48,6 +48,7 @@ export default function CheckoutCard({
   const [showCardField, setShowCardField] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
   const [error, setError] = useState(null);
+  const paymentFlowLockRef = useRef(false);
   const normalizedTotal = useMemo(
     () => Math.round(Number(total || 0) * 100) / 100,
     [total]
@@ -238,7 +239,8 @@ export default function CheckoutCard({
   }
 
   async function onPay() {
-    if (loading) return;
+    if (paymentFlowLockRef.current || loading) return;
+    paymentFlowLockRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -350,6 +352,7 @@ export default function CheckoutCard({
       setError(e?.message || "Erreur lors du traitement du paiement.");
       await catchError(user?._id || "", e?.message || "unknown", "CheckoutWeb");
     } finally {
+      paymentFlowLockRef.current = false;
       setLoading(false);
     }
   }

@@ -15,6 +15,7 @@ const ResumeBlock = ({
   deliveryMode,
   subscriptionActive,
   subscriptionDiscountAmount,
+  promoDiscountAmount,
 }) => {
   return (
     <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
@@ -49,7 +50,9 @@ const ResumeBlock = ({
           </div>
         )}
 
-        {(firstOrderDiscountAllowed || subscriptionActive) && (
+        {(firstOrderDiscountAllowed ||
+          subscriptionActive ||
+          (promoCodeAllowed && promoCodeData && promoCodeIsValid)) && (
           <div className="flex justify-between">
             <span className="font-inter text-gray-700">
               Sous total après remise
@@ -68,15 +71,15 @@ const ResumeBlock = ({
                 : promoCodeData.type === "amount"
                 ? "-" + promoCodeData.amount + "$"
                 : promoCodeData.type === "free_item"
-                ? promoCodeData.freeItem.name
+                ? promoCodeData?.freeItem?.name || "Article"
                 : ""}
               ){" "}
             </span>
             <span className="font-inter font-semibold text-gray-900">
               {promoCodeData.type === "percent"
-                ? "-$" + ((promoCodeData.percent / 100) * subTotal).toFixed(2)
+                ? "-$" + Number(promoDiscountAmount || 0).toFixed(2)
                 : promoCodeData.type === "amount"
-                ? "-$" + promoCodeData.amount.toFixed(2)
+                ? "-$" + Number(promoDiscountAmount || 0).toFixed(2)
                 : promoCodeData.type === "free_item"
                 ? "Offert"
                 : ""}

@@ -22,7 +22,6 @@ import {
   createUserSubscription,
   getSubscriptionConfig,
   refreshUserSubscription,
-  setUserSubscriptionAutoRenew,
 } from "@/services/SubscriptionServices";
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 15;
@@ -189,6 +188,38 @@ const resolveStripePaymentErrorMessage = (
   return resolvePaymentMessageFromText(error?.message, fallback);
 };
 
+const toSafeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getSubscriptionPricing = (source) => {
+  const subtotal = toSafeNumber(
+    source?.pricing?.subtotal ?? source?.monthlyPrice,
+    11.99
+  );
+  const tpsAmount = toSafeNumber(source?.pricing?.tpsAmount, subtotal * 0.05);
+  const tvqAmount = toSafeNumber(source?.pricing?.tvqAmount, subtotal * 0.09975);
+  const total = toSafeNumber(
+    source?.pricing?.total,
+    subtotal + tpsAmount + tvqAmount
+  );
+
+  return {
+    subtotal,
+    tpsAmount,
+    tvqAmount,
+    total,
+  };
+};
+
+const getSubscriptionCycleLabel = (source) => {
+  const interval = String(source?.recurring?.interval || "")
+    .trim()
+    .toLowerCase();
+  return interval === "day" ? "jour" : "mois";
+};
+
 const SubscriptionContentInner = ({ mode = "offer" }) => {
   const isOfferMode = mode === "offer";
   const stripe = useStripe();
@@ -205,23 +236,30 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
   const [selectedPmId, setSelectedPmId] = useState(null);
   const [showCardField, setShowCardField] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
-  const [autoRenew, setAutoRenew] = useState(true);
   const [showActivationForm, setShowActivationForm] = useState(false);
 
   const isSubscriptionActive = isSummarySubscriptionActive(summary);
   const autoRenewEnabled =
-    typeof summary?.autoRenew === "boolean" ? summary.autoRenew : autoRenew;
+    typeof summary?.autoRenew === "boolean" ? summary.autoRenew : true;
+  const isScheduledForCancellation = isSubscriptionActive && !autoRenewEnabled;
   const shouldShowInlineSubscribeError =
-    !isSubscriptionActive && showActivationForm && Boolean(errorMessage);
+    showActivationForm && Boolean(errorMessage);
 
   const freeItemRemaining = Math.max(0, Number(summary?.freeItemRemaining ?? 0));
   const freeItemAvailabilityLabel = freeItemRemaining > 0 ? "Disponible" : "Utilisé";
   const savingsTotal = Number(summary?.savingsTotal || 0);
+  const pricing = useMemo(
+    () => getSubscriptionPricing(config || summary || null),
+    [config, summary]
+  );
+  const cycleLabel = useMemo(
+    () => getSubscriptionCycleLabel(config || summary || null),
+    [config, summary]
+  );
 
   const priceLabel = useMemo(() => {
-    const price = Number(config?.monthlyPrice ?? 11.99);
-    return `${price.toFixed(2)}$ / mois`;
-  }, [config]);
+    return `${pricing.subtotal.toFixed(2)}$ / ${cycleLabel}`;
+  }, [cycleLabel, pricing.subtotal]);
 
   const refreshUserFromToken = async () => {
     const token = await getToken();
@@ -255,7 +293,6 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
 
       if (subscriptionResponse.status) {
         setSummary(subscriptionResponse.data);
-        setAutoRenew(Boolean(subscriptionResponse.data?.autoRenew));
       } else {
         setSummary(null);
       }
@@ -299,10 +336,10 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
   }, [loading, user?._id]);
 
   useEffect(() => {
-    if (isSubscriptionActive) {
+    if (isSubscriptionActive && !isScheduledForCancellation) {
       setShowActivationForm(false);
     }
-  }, [isSubscriptionActive]);
+  }, [isSubscriptionActive, isScheduledForCancellation]);
 
   const runThreeDSAuthentication = async (clientSecret) => {
     if (!stripe || !clientSecret) {
@@ -382,6 +419,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
 
   const handleSubscribe = async () => {
     if (!user?._id) return;
+    const isReactivationFlow = isScheduledForCancellation;
 
     setIsSubmitting(true);
     setErrorMessage("");
@@ -430,8 +468,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
 
       const createResponse = await createUserSubscription(
         user._id,
-        paymentMethodId,
-        autoRenew
+        paymentMethodId
       );
       if (!createResponse.status) {
         setErrorMessage(
@@ -554,7 +591,11 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
         return;
       }
 
-      setSuccessMessage("Félicitations, vous êtes maintenant abonné à CLUB COURTEAU.");
+      setSuccessMessage(
+        isReactivationFlow
+          ? "Votre abonnement a été réactivé. Le renouvellement automatique est de nouveau actif."
+          : "Félicitations, vous êtes maintenant abonné à CLUB COURTEAU."
+      );
       await refreshUserFromToken();
       await loadScreenData();
     } catch (error) {
@@ -569,31 +610,11 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
     }
   };
 
-  const handleAutoRenewChange = async (nextValue) => {
-    setAutoRenew(nextValue);
-    if (!isSubscriptionActive) return;
-
-    setIsSubmitting(true);
-    setErrorMessage("");
-    try {
-      const response = await setUserSubscriptionAutoRenew(user._id, nextValue);
-      if (!response.status) {
-        setErrorMessage(response.message);
-        setAutoRenew(!nextValue);
-        return;
-      }
-
-      setSummary(response.data);
-      setAutoRenew(Boolean(response.data?.autoRenew));
-      setSuccessMessage("Renouvellement automatique mis à jour.");
-      await refreshUserFromToken();
-    } catch (error) {
-      setAutoRenew(!nextValue);
-      setErrorMessage(error?.message || "Erreur lors de la mise à jour.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const activationButtonLabel = showActivationForm
+    ? "Masquer le paiement"
+    : isScheduledForCancellation
+      ? "Réactiver mon abonnement"
+      : "Activer mon abonnement";
 
   const handleCancelSubscription = async () => {
     if (!isSubscriptionActive || !user?._id) return;
@@ -608,7 +629,6 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
       }
 
       setSummary(response.data);
-      setAutoRenew(Boolean(response.data?.autoRenew));
       setSuccessMessage(
         "L'abonnement sera annulé à la fin de la période en cours."
       );
@@ -662,14 +682,9 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
           </p>
           <ul className="mt-4 text-white/90 font-inter text-sm space-y-2">
             <li>• -{SUBSCRIPTION_DISCOUNT_PERCENT}% sur toutes les commandes</li>
-            <li>• 0 frais de livraison</li>
+            <li>• Livraison gratuit</li>
             <li>• 1 article gratuit par mois</li>
           </ul>
-          {isOfferMode && (
-            <p className="text-white/70 font-inter text-xs mt-3">
-              Offre mensuelle. Résiliable selon votre option de renouvellement.
-            </p>
-          )}
         </div>
 
         {!isOfferMode && (
@@ -690,18 +705,24 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
             </div>
             <div className="mt-3 text-sm font-inter text-gray-700 space-y-1">
               <p>
-                Prix mensuel: <span className="font-semibold">{priceLabel}</span>
+                Sous-total abonnement: <span className="font-semibold">{priceLabel}</span>
+              </p>
+              <p>
+                TPS (5%):{" "}
+                <span className="font-semibold">{pricing.tpsAmount.toFixed(2)}$</span>
+              </p>
+              <p>
+                TVQ (9.975%):{" "}
+                <span className="font-semibold">{pricing.tvqAmount.toFixed(2)}$</span>
+              </p>
+              <p>
+                Total du mois:{" "}
+                <span className="font-semibold">{pricing.total.toFixed(2)}$</span>
               </p>
               <p>
                 Date d&apos;échéance:{" "}
                 <span className="font-semibold">
                   {formatDate(summary?.currentPeriodEnd)}
-                </span>
-              </p>
-              <p>
-                Renouvellement auto:{" "}
-                <span className="font-semibold">
-                  {autoRenewEnabled ? "Oui" : "Non"}
                 </span>
               </p>
               <p>
@@ -716,37 +737,31 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
           </div>
         )}
 
-        {!isSubscriptionActive && (
+        {(!isSubscriptionActive || isScheduledForCancellation) && (
           <div className="bg-white rounded-xl p-5 shadow-md mt-4">
+            {isScheduledForCancellation ? (
+              <div className="rounded-xl border border-[#E3B341] bg-[#FFF8EA] px-4 py-4 mb-4">
+                <p className="font-inter font-semibold text-sm text-[#7A4D00]">
+                  Abonnement désactivé pour le prochain mois
+                </p>
+                <p className="font-inter text-sm text-[#7A4D00] mt-2">
+                  Votre abonnement reste actif jusqu&apos;au {formatDate(summary?.currentPeriodEnd)}.
+                </p>
+                <p className="font-inter text-sm text-[#7A4D00] mt-2">
+                  Choisissez une carte pour réactiver le renouvellement automatique.
+                </p>
+              </div>
+            ) : null}
             <button
               type="button"
               className="bg-pr text-black font-bebas-neue text-xl px-4 py-3 rounded-md w-full cursor-pointer"
               onClick={() => setShowActivationForm((prev) => !prev)}
             >
-              {showActivationForm ? "Masquer le paiement" : "Activer mon abonnement"}
+              {activationButtonLabel}
             </button>
 
             {showActivationForm && (
               <>
-                <div className="mt-4 flex items-center justify-between">
-                  <p className="font-inter font-semibold text-sm">
-                    Renouvellement automatique
-                  </p>
-                  <button
-                    type="button"
-                    className={`relative h-7 w-14 rounded-full transition ${
-                      autoRenew ? "bg-pr" : "bg-gray-300"
-                    }`}
-                    onClick={() => setAutoRenew((prev) => !prev)}
-                  >
-                    <span
-                      className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
-                        autoRenew ? "left-8" : "left-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-
                 {cards?.length > 0 && (
                   <div className="mt-4 space-y-2">
                     <p className="font-inter font-semibold text-sm">Cartes enregistrées</p>
@@ -807,13 +822,49 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
                   </div>
                 ) : null}
 
+                <div className="mt-4 rounded-xl border border-gray-200 p-4">
+                  <p className="font-inter font-semibold text-sm text-black">
+                    Récapitulatif du paiement
+                  </p>
+                  <div className="mt-3 space-y-2 text-sm font-inter text-gray-700">
+                    <div className="flex items-center justify-between gap-4">
+                      <span>Sous-total</span>
+                      <span className="font-semibold text-black">
+                        {pricing.subtotal.toFixed(2)}$
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span>TPS (5%)</span>
+                      <span className="font-semibold text-black">
+                        {pricing.tpsAmount.toFixed(2)}$
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span>TVQ (9.975%)</span>
+                      <span className="font-semibold text-black">
+                        {pricing.tvqAmount.toFixed(2)}$
+                      </span>
+                    </div>
+                    <div className="border-t border-gray-200 pt-2 flex items-center justify-between gap-4">
+                      <span className="font-semibold text-black">Total</span>
+                      <span className="font-semibold text-black">
+                        {pricing.total.toFixed(2)}$
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   className="bg-pr text-black font-bebas-neue text-xl px-4 py-3 rounded-md w-full cursor-pointer mt-4 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   disabled={isSubmitting}
                   onClick={handleSubscribe}
                 >
-                  {isSubmitting ? "Traitement..." : "S'abonner maintenant"}
+                  {isSubmitting
+                    ? "Traitement..."
+                    : isScheduledForCancellation
+                      ? "Réactiver mon abonnement"
+                      : "S'abonner maintenant"}
                 </button>
               </>
             )}
@@ -822,44 +873,26 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
 
         {isSubscriptionActive && !isOfferMode && (
           <div className="bg-white rounded-xl p-5 shadow-md mt-4">
-            <div className="flex items-center justify-between">
-              <p className="font-inter font-semibold text-sm">
-                Renouvellement automatique
-              </p>
+            {!isScheduledForCancellation && (
               <button
                 type="button"
-                className={`relative h-7 w-14 rounded-full transition ${
-                  autoRenewEnabled ? "bg-pr" : "bg-gray-300"
-                }`}
-                onClick={() => handleAutoRenewChange(!autoRenewEnabled)}
+                className="bg-black text-white font-bebas-neue text-xl px-4 py-3 rounded-md w-full cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed"
                 disabled={isSubmitting}
+                onClick={handleCancelSubscription}
               >
-                <span
-                  className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
-                    autoRenewEnabled ? "left-8" : "left-1"
-                  }`}
-                />
+                Désactiver mon abonnement
               </button>
-            </div>
-
-            <button
-              type="button"
-              className="bg-black text-white font-bebas-neue text-xl px-4 py-3 rounded-md w-full cursor-pointer mt-4 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              disabled={isSubmitting}
-              onClick={handleCancelSubscription}
-            >
-              Désactiver mon abonnement
-            </button>
+            )}
           </div>
         )}
 
-        {isSubscriptionActive && isOfferMode && (
+        {isSubscriptionActive && isOfferMode && !isScheduledForCancellation && (
           <div className="bg-white rounded-xl p-5 shadow-md mt-4">
             <p className="font-inter font-semibold text-black text-sm">
               Votre abonnement est déjà actif.
             </p>
             <p className="font-inter text-gray-600 text-sm mt-2">
-              Pour gérer le renouvellement et vos détails, ouvrez Mes abonnements
+              Pour voir les détails de votre abonnement, ouvrez Mon abonnement
               depuis votre profil.
             </p>
             <Link

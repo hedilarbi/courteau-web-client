@@ -47,14 +47,13 @@ const getUserSubscription = async (userId) => {
   }
 };
 
-const createUserSubscription = async (userId, paymentMethodId, autoRenew) => {
+const createUserSubscription = async (userId, paymentMethodId) => {
   try {
     const response = await axios.post(
       `${API_URL}/subscriptions/create`,
       {
         userId,
         paymentMethodId,
-        autoRenew,
       },
       {
         timeout: 15000,
@@ -90,27 +89,6 @@ const confirmUserSubscriptionPayment = async (
     return mapErrorResponse(
       error,
       "Erreur lors de la confirmation du paiement abonnement."
-    );
-  }
-};
-
-const setUserSubscriptionAutoRenew = async (userId, autoRenew) => {
-  try {
-    const response = await axios.post(
-      `${API_URL}/subscriptions/auto-renew`,
-      {
-        userId,
-        autoRenew,
-      },
-      {
-        timeout: 15000,
-      }
-    );
-    return mapSuccessResponse(response);
-  } catch (error) {
-    return mapErrorResponse(
-      error,
-      "Erreur lors de la mise à jour du renouvellement automatique."
     );
   }
 };
@@ -153,7 +131,6 @@ export {
   getUserSubscription,
   createUserSubscription,
   confirmUserSubscriptionPayment,
-  setUserSubscriptionAutoRenew,
   cancelUserSubscription,
   refreshUserSubscription,
 };

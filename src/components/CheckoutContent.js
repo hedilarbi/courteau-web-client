@@ -71,6 +71,12 @@ const roundMoney = (value, fallback = 0) => {
   return Math.round(normalized * 100) / 100;
 };
 
+const getPromoCategoryId = (promoCode) =>
+  String(promoCode?.category?._id || promoCode?.category || "").trim();
+
+const getBasketItemCategoryId = (basketItem) =>
+  String(basketItem?.category?._id || basketItem?.category || "").trim();
+
 const getMonthCycleKey = (date = new Date()) => {
   const target = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(target.getTime())) {
@@ -326,6 +332,41 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const subscriptionDiscountAmount = shouldApplySubscriptionDiscount
     ? roundMoney(subTotal * (SUBSCRIPTION_DISCOUNT_PERCENT / 100), 0)
     : 0;
+  const promoCategoryId = getPromoCategoryId(promoCodeData);
+  const promoEligibleSubtotal = useMemo(() => {
+    if (!(promoCodeAllowed && promoCodeData)) {
+      return roundMoney(subTotal, 0);
+    }
+
+    if (!promoCategoryId) {
+      return roundMoney(subTotal, 0);
+    }
+
+    return roundMoney(
+      basketItems.reduce((sum, item) => {
+        if (getBasketItemCategoryId(item) !== promoCategoryId) {
+          return sum;
+        }
+
+        return sum + toSafeNumber(item?.price, 0);
+      }, 0),
+      0
+    );
+  }, [basketItems, promoCategoryId, promoCodeAllowed, promoCodeData, subTotal]);
+  const promoDiscountAmount =
+    promoCodeAllowed && promoCodeIsValid && promoCodeData
+      ? promoCodeData.type === "percent"
+        ? roundMoney(
+            promoEligibleSubtotal * (toSafeNumber(promoCodeData.percent, 0) / 100),
+            0
+          )
+        : promoCodeData.type === "amount"
+        ? roundMoney(
+            Math.min(toSafeNumber(promoCodeData.amount, 0), promoEligibleSubtotal),
+            0
+          )
+        : 0
+      : 0;
   const subscriptionFreeItemAmount = shouldApplyFreeItemDiscount
     ? roundMoney(selectedFreeItemBasePrice, 0)
     : 0;
@@ -522,6 +563,32 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   }, [promoCodeAllowed]);
 
   useEffect(() => {
+    if (!(promoCodeAllowed && promoCodeIsValid && promoCodeData)) return;
+
+    if (
+      (promoCodeData.type === "amount" || promoCodeData.type === "percent") &&
+      promoEligibleSubtotal <= 0
+    ) {
+      setPromoCodeIsValid(false);
+      setPromoCodeData(null);
+      return;
+    }
+
+    if (
+      promoCodeData.type === "amount" &&
+      toSafeNumber(promoCodeData.amount, 0) > promoEligibleSubtotal
+    ) {
+      setPromoCodeIsValid(false);
+      setPromoCodeData(null);
+    }
+  }, [
+    promoCodeAllowed,
+    promoCodeData,
+    promoCodeIsValid,
+    promoEligibleSubtotal,
+  ]);
+
+  useEffect(() => {
     let nextSubtotal = subTotal;
 
     if (firstOrderDiscountAllowed) {
@@ -529,15 +596,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     } else if (subscriptionActive) {
       nextSubtotal = subTotal * ((100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100);
     } else {
-
       if (promoCodeAllowed && promoCodeIsValid && promoCodeData) {
-        if (promoCodeData.type === "percent") {
-          const percent = toSafeNumber(promoCodeData.percent, 0);
-          nextSubtotal -= (nextSubtotal * percent) / 100;
-        } else if (promoCodeData.type === "amount") {
-          const amount = toSafeNumber(promoCodeData.amount, 0);
-          nextSubtotal -= amount;
-        }
+        nextSubtotal -= promoDiscountAmount;
       }
     }
 
@@ -580,6 +640,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     firstOrderDiscountAllowed,
     promoCodeAllowed,
     promoCodeData,
+    promoDiscountAmount,
     promoCodeIsValid,
     selectedTip,
     subTotal,
@@ -729,7 +790,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
                 {deliveryMode === "delivery" && (
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-inter text-sm text-[#4B5563]">
-                      Livraison offerte
+                      Livraison gratuit
                     </p>
                     <p className="font-inter font-semibold text-sm text-black">
                       {potentialSubscriptionDeliverySavings.toFixed(2)}$
@@ -864,13 +925,14 @@ const CheckoutContent = ({ restaurantsSettings }) => {
 
           <PromoCodeBlock
             userId={user._id}
+            basketItems={basketItems}
             promoCodeData={promoCodeData}
             setPromoCodeData={setPromoCodeData}
             promoCodeIsValid={promoCodeIsValid}
             setPromoCodeIsValid={setPromoCodeIsValid}
             firstOrderDiscountAllowed={firstOrderDiscountAllowed}
             promoCodeAllowed={promoCodeAllowed}
-            subTotalWithDiscount={subTotalWithDiscount}
+            subTotal={subTotal}
           />
 
           <TipsBlock
@@ -895,6 +957,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             subTotalWithDiscount={subTotalWithDiscount}
             subscriptionActive={subscriptionActive}
             subscriptionDiscountAmount={subscriptionDiscountAmount}
+            promoDiscountAmount={promoDiscountAmount}
           />
 
           <ProcessPaiement

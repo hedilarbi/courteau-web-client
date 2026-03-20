@@ -299,6 +299,8 @@ const MenuItemModal = ({
         price: itemPriceForBasket,
         basePrice: baseItemPrice,
         originalPrice: totalItemPrice,
+        category: item?.category?._id || item?.category || null,
+        categoryName: item?.category?.name || "",
         subscriptionFreeItemExtraPrice: isFreeItemFlow
           ? extraCustomizationTotal
           : 0,
@@ -319,6 +321,8 @@ const MenuItemModal = ({
         price: itemPriceForBasket,
         basePrice: baseItemPrice,
         originalPrice: totalItemPrice,
+        category: item?.category?._id || item?.category || null,
+        categoryName: item?.category?.name || "",
         subscriptionFreeItemExtraPrice: isFreeItemFlow
           ? extraCustomizationTotal
           : 0,

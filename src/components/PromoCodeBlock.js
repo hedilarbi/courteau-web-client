@@ -1,15 +1,35 @@
 import { verifyPromoCode } from "@/services/FoodServices";
 import React, { useState } from "react";
 
+const toSafeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const roundMoney = (value, fallback = 0) => {
+  const normalized = toSafeNumber(value, fallback);
+  return Math.round(normalized * 100) / 100;
+};
+
+const getPromoCategoryId = (promoCode) =>
+  String(promoCode?.category?._id || promoCode?.category || "").trim();
+
+const getPromoCategoryName = (promoCode) =>
+  String(promoCode?.category?.name || "").trim();
+
+const getBasketItemCategoryId = (basketItem) =>
+  String(basketItem?.category?._id || basketItem?.category || "").trim();
+
 const PromoCodeBlock = ({
   userId,
+  basketItems,
   promoCodeData,
   setPromoCodeData,
   promoCodeIsValid,
   setPromoCodeIsValid,
   firstOrderDiscountAllowed,
   promoCodeAllowed,
-  subTotalWithDiscount,
+  subTotal,
 }) => {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -35,12 +55,37 @@ const PromoCodeBlock = ({
       const response = await verifyPromoCode(code, userId);
 
       if (response.status) {
+        const promoCategoryId = getPromoCategoryId(response.data);
+        const eligibleSubtotal = promoCategoryId
+          ? roundMoney(
+              (basketItems || []).reduce((sum, item) => {
+                if (getBasketItemCategoryId(item) !== promoCategoryId) {
+                  return sum;
+                }
+
+                return sum + toSafeNumber(item?.price, 0);
+              }, 0),
+              0
+            )
+          : roundMoney(subTotal, 0);
+
         if (
-          response.data.type === "amount" &&
-          response.data.amount > subTotalWithDiscount
+          (response.data.type === "amount" || response.data.type === "percent") &&
+          eligibleSubtotal <= 0
         ) {
           setPromoCodeError(
-            "Le montant du code promo ne peut pas être supérieur au total de la commande."
+            "Ce code promo ne s'applique à aucun article de votre panier."
+          );
+          setPromoCodeIsValid(false);
+          return;
+        }
+
+        if (
+          response.data.type === "amount" &&
+          response.data.amount > eligibleSubtotal
+        ) {
+          setPromoCodeError(
+            "Le montant du code promo ne peut pas être supérieur au total des articles éligibles."
           );
           setPromoCodeIsValid(false);
           return;
@@ -107,11 +152,21 @@ const PromoCodeBlock = ({
         <p className="text-green-500 text-sm mt-2">
           Code promo appliqué:{" "}
           {promoCodeData.type === "percent" &&
-            "Remise de " + promoCodeData.percent + "%"}
+            "Remise de " +
+              promoCodeData.percent +
+              "%" +
+              (getPromoCategoryName(promoCodeData)
+                ? ` sur ${getPromoCategoryName(promoCodeData)}`
+                : "")}
           {promoCodeData.type === "amount" &&
-            "Remise de " + promoCodeData.amount + "$"}{" "}
+            "Remise de " +
+              promoCodeData.amount +
+              "$" +
+              (getPromoCategoryName(promoCodeData)
+                ? ` sur ${getPromoCategoryName(promoCodeData)}`
+                : "")}{" "}
           {promoCodeData.type === "free_item" &&
-            promoCodeData.freeItem.name + " offert"}
+            (promoCodeData?.freeItem?.name || "Article") + " offert"}
         </p>
       )}
     </div>
