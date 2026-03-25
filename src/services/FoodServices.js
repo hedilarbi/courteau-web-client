@@ -259,6 +259,44 @@ const getRestaurantOffer = async (id, restaurantId) => {
   }
 };
 
+const checkRestaurantOrderAvailability = async (
+  restaurantId,
+  items = [],
+  offers = []
+) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/restaurants/${restaurantId}/check-availability`,
+      { items, offers },
+      {
+        timeout: 10000,
+      }
+    );
+
+    if (response?.status === 200) {
+      return {
+        status: true,
+        message: "availability checked",
+        data: response?.data,
+      };
+    }
+
+    return {
+      status: false,
+      message: "Impossible de vérifier la disponibilité.",
+    };
+  } catch (error) {
+    return {
+      status: false,
+      message:
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Impossible de vérifier la disponibilité.",
+    };
+  }
+};
+
 const getVedettes = async () => {
   try {
     let vedettesResponse = await axios.get(`${API_URL}/vedettes/`, {
@@ -388,7 +426,11 @@ const verifyPromoCode = async (code, userId) => {
   } catch (error) {
     return {
       status: false,
-      message: error.response.data.error,
+      message:
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Erreur lors de la vérification du code promo.",
     };
   }
 };
@@ -408,4 +450,5 @@ export {
   getOffer,
   getItemBySlug,
   verifyPromoCode,
+  checkRestaurantOrderAvailability,
 };

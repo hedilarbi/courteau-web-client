@@ -11,14 +11,12 @@ const parseRuleValue = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const getFreeLimit = (rule) => {
-  if (!rule) return 0;
+const getMaxSelectionLimit = (rule) => {
+  if (!rule) return Infinity;
   if (rule.max === null || rule.max === undefined) return Infinity;
   const max = parseRuleValue(rule.max);
-  if (max !== null) return max;
-  const min = parseRuleValue(rule.min);
-  if (min !== null) return min;
-  return 0;
+  if (max !== null) return Math.max(0, max);
+  return Infinity;
 };
 
 const normalizeCustomizationGroups = (rawGroups) => {
@@ -47,9 +45,11 @@ const normalizeSelectionEntries = (selectionList) => {
 const getSelectedIdsForGroup = (selectionList, group) => {
   const normalizedSelections = normalizeSelectionEntries(selectionList);
   if (!group) return [];
-  const groupToppingIds = new Set((group.toppings || []).map((t) => t?._id));
+  const groupToppingIds = new Set(
+    (group.toppings || []).map((t) => String(t?._id || ""))
+  );
   return normalizedSelections
-    .map((selection) => selection._id)
+    .map((selection) => String(selection._id || ""))
     .filter((id) => groupToppingIds.has(id));
 };
 
@@ -62,21 +62,16 @@ const buildPricedSelectionsForGroups = (selectionList, groups) => {
   const pricedById = new Map();
 
   groups.forEach((group) => {
-    const freeLimit = getFreeLimit(group?.selectionRule);
     const selectedIdsInGroup = getSelectedIdsForGroup(normalizedSelections, group);
-    selectedIdsInGroup.forEach((selectedId, index) => {
+    selectedIdsInGroup.forEach((selectedId) => {
       const topping = (group?.toppings || []).find(
-        (candidate) => candidate?._id === selectedId
+        (candidate) => String(candidate?._id || "") === String(selectedId || "")
       );
       const selected = selectionById.get(selectedId);
-      const price =
-        freeLimit !== Infinity && index >= freeLimit
-          ? Number(topping?.price) || 0
-          : 0;
       pricedById.set(selectedId, {
         _id: selectedId,
         name: selected?.name || topping?.name || "",
-        price,
+        price: Number(topping?.price) || 0,
       });
     });
   });
@@ -148,6 +143,17 @@ const OfferComponent = ({ offer }) => {
   };
 
   const handleCustomizationChange = (itemId, customization, index) => {
+    const targetOfferItem = offer?.items?.find(
+      (entry) => entry?.item?._id === itemId
+    );
+    const customizationGroups = normalizeCustomizationGroups(
+      targetOfferItem?.item?.customization_group
+    );
+    const targetGroup = customizationGroups.find((group) =>
+      (group?.toppings || []).some(
+        (topping) => topping?._id === customization?._id
+      )
+    );
     const updatedCustomizations = { ...selectedCustomizations };
     if (!updatedCustomizations[itemId]) {
       updatedCustomizations[itemId] = [];
@@ -167,6 +173,23 @@ const OfferComponent = ({ offer }) => {
         (c) => (typeof c === "string" ? c : c?._id) !== customization._id
       );
     } else {
+      if (targetGroup) {
+        const selectedIdsInGroup = getSelectedIdsForGroup(
+          currentCustomizations,
+          targetGroup
+        );
+        const maxSelections = getMaxSelectionLimit(targetGroup?.selectionRule);
+
+        if (
+          maxSelections !== Infinity &&
+          selectedIdsInGroup.length >= maxSelections
+        ) {
+          toast.error(
+            `Vous pouvez sélectionner au maximum ${maxSelections} option(s) pour ${targetGroup?.name || "ce groupe"}.`
+          );
+          return;
+        }
+      }
       // Add customization object
       updatedCustomizations[itemId][index].push({
         _id: customization._id,
@@ -184,9 +207,9 @@ const OfferComponent = ({ offer }) => {
     const maxNumeric = parseRuleValue(maxValue);
     const maxDisplay =
       maxValue === null || maxValue === undefined || maxNumeric === null
-        ? "illimite"
+        ? "illimité"
         : maxNumeric;
-    return `(min ${minDisplay} gratuit et maximum ${maxDisplay})`;
+    return `(min ${minDisplay} et max ${maxDisplay})`;
   };
 
   const buildPricedCustomizations = () => {
@@ -255,11 +278,28 @@ const OfferComponent = ({ offer }) => {
               index,
             };
           }
+          const maxSelections = getMaxSelectionLimit(group?.selectionRule);
+          if (maxSelections !== Infinity && selectedCount > maxSelections) {
+            return {
+              itemName: `${item.item.name} - ${group?.name || "Personnalisation"}`,
+              maxSelections,
+              index,
+            };
+          }
         }
       }
 
       return result;
     }, null);
+
+    if (missingSelection?.maxSelections) {
+      toast.error(
+        `Vous pouvez sélectionner au maximum ${missingSelection.maxSelections} option(s) pour ${missingSelection.itemName} (${
+          missingSelection.index + 1
+        }).`
+      );
+      return;
+    }
 
     if (missingSelection) {
       toast.error(
@@ -341,7 +381,9 @@ const OfferComponent = ({ offer }) => {
                             selectedEntries,
                             group
                           );
-                          const freeLimit = getFreeLimit(group?.selectionRule);
+                          const maxSelections = getMaxSelectionLimit(
+                            group?.selectionRule
+                          );
                           const selectionSummary = getSelectionSummaryText(
                             group?.selectionRule
                           );
@@ -356,25 +398,24 @@ const OfferComponent = ({ offer }) => {
                                 {selectionSummary ? selectionSummary : ""}
                               </p>
                               {(group?.toppings || []).map((topping) => {
-                                const selectedIndex = selectedIdsInGroup.indexOf(
+                                const isSelected = selectedIdsInGroup.includes(
                                   topping._id
                                 );
-                                const isSelected = selectedIndex !== -1;
-                                const isExtraSelection =
-                                  freeLimit !== Infinity &&
-                                  selectedIndex >= freeLimit;
-                                const shouldShowExtraPrice =
-                                  Number(topping?.price) > 0 &&
-                                  freeLimit !== Infinity &&
-                                  (isExtraSelection ||
-                                    (!isSelected &&
-                                      selectedIdsInGroup.length >= freeLimit));
+                                const maxSelectionReached =
+                                  maxSelections !== Infinity &&
+                                  selectedIdsInGroup.length >= maxSelections;
+                                const isSelectionDisabled =
+                                  !isSelected && maxSelectionReached;
 
                                 return (
                                   <button
                                     key={`${group?._id || group?.name}-${topping._id}`}
                                     type="button"
-                                    className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
+                                    className={`w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2 ${
+                                      isSelectionDisabled
+                                        ? "opacity-60 cursor-not-allowed"
+                                        : ""
+                                    }`}
                                     onClick={() =>
                                       handleCustomizationChange(
                                         item.item._id,
@@ -395,11 +436,9 @@ const OfferComponent = ({ offer }) => {
                                         {topping.name}
                                       </p>
                                     </div>
-                                    {shouldShowExtraPrice && (
-                                      <p className="font-bebas-neue text-pr md:text-xl text-base">
-                                        + ${Number(topping.price).toFixed(2)}
-                                      </p>
-                                    )}
+                                    <p className="font-bebas-neue text-pr md:text-xl text-base">
+                                      + ${Number(topping.price).toFixed(2)}
+                                    </p>
                                   </button>
                                 );
                               })}

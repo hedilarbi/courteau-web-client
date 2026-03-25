@@ -10,14 +10,12 @@ const parseRuleValue = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const getFreeLimit = (rule) => {
-  if (!rule) return 0;
+const getMaxSelectionLimit = (rule) => {
+  if (!rule) return Infinity;
   if (rule.max === null || rule.max === undefined) return Infinity;
   const max = parseRuleValue(rule.max);
-  if (max !== null) return max;
-  const min = parseRuleValue(rule.min);
-  if (min !== null) return min;
-  return 0;
+  if (max !== null) return Math.max(0, max);
+  return Infinity;
 };
 
 const normalizeCustomizationGroups = (rawGroups) => {
@@ -28,8 +26,12 @@ const normalizeCustomizationGroups = (rawGroups) => {
 
 const getSelectedIdsForGroup = (selectedIds, group) => {
   if (!Array.isArray(selectedIds) || !group) return [];
-  const groupToppingIds = new Set((group.toppings || []).map((t) => t?._id));
-  return selectedIds.filter((id) => groupToppingIds.has(id));
+  const groupToppingIds = new Set(
+    (group.toppings || []).map((t) => String(t?._id || ""))
+  );
+  return selectedIds
+    .map((id) => String(id || ""))
+    .filter((id) => groupToppingIds.has(id));
 };
 
 const getSelectionSummaryText = (rule) => {
@@ -39,9 +41,9 @@ const getSelectionSummaryText = (rule) => {
   const maxNumeric = parseRuleValue(maxValue);
   const maxDisplay =
     maxValue === null || maxValue === undefined || maxNumeric === null
-      ? "illimite"
+      ? "illimité"
       : maxNumeric;
-  return `(min ${minDisplay} gratuit et maximum ${maxDisplay})`;
+  return `(min ${minDisplay} et max ${maxDisplay})`;
 };
 
 const ArticleComponent = ({ item }) => {
@@ -81,19 +83,15 @@ const ArticleComponent = ({ item }) => {
     const selectedItems = [];
 
     customizationGroups.forEach((group) => {
-      const freeLimit = getFreeLimit(group?.selectionRule);
       const selectedIdsInGroup = getSelectedIdsForGroup(selectedGroupIds, group);
-      selectedIdsInGroup.forEach((selectedId, index) => {
+      selectedIdsInGroup.forEach((selectedId) => {
         const topping = (group?.toppings || []).find(
-          (candidate) => candidate?._id === selectedId
+          (candidate) => String(candidate?._id || "") === String(selectedId || "")
         );
         if (!topping) return;
         selectedItems.push({
           ...topping,
-          price:
-            freeLimit !== Infinity && index >= freeLimit
-              ? Number(topping.price) || 0
-              : 0,
+          price: Number(topping.price) || 0,
         });
       });
     });
@@ -135,10 +133,34 @@ const ArticleComponent = ({ item }) => {
 
   const handleGroupCustomizationChange = (itemId) => {
     setSelectedGroupIds((prev) => {
-      if (prev.includes(itemId)) {
-        return prev.filter((id) => id !== itemId);
+      const normalizedItemId = String(itemId || "");
+      const normalizedPrev = prev.map((id) => String(id || ""));
+
+      if (normalizedPrev.includes(normalizedItemId)) {
+        return normalizedPrev.filter((id) => id !== normalizedItemId);
       }
-      return [...prev, itemId];
+      const targetGroup = customizationGroups.find((group) =>
+        (group?.toppings || []).some(
+          (topping) => String(topping?._id || "") === normalizedItemId
+        )
+      );
+      const maxSelections = getMaxSelectionLimit(targetGroup?.selectionRule);
+      const selectedIdsInGroup = getSelectedIdsForGroup(
+        normalizedPrev,
+        targetGroup
+      );
+
+      if (
+        maxSelections !== Infinity &&
+        selectedIdsInGroup.length >= maxSelections
+      ) {
+        toast.error(
+          `Vous pouvez sélectionner au maximum ${maxSelections} option(s) pour ${targetGroup?.name || "ce groupe"}.`
+        );
+        return normalizedPrev;
+      }
+
+      return [...normalizedPrev, normalizedItemId];
     });
   };
 
@@ -155,6 +177,13 @@ const ArticleComponent = ({ item }) => {
         if (selectedCount < minRequired) {
           toast.error(
             `Veuillez selectionner au moins ${minRequired} option(s) pour ${group?.name || "ce groupe"}.`
+          );
+          return;
+        }
+        const maxSelections = getMaxSelectionLimit(group?.selectionRule);
+        if (maxSelections !== Infinity && selectedCount > maxSelections) {
+          toast.error(
+            `Vous pouvez sélectionner au maximum ${maxSelections} option(s) pour ${group?.name || "ce groupe"}.`
           );
           return;
         }
@@ -227,7 +256,7 @@ const ArticleComponent = ({ item }) => {
                 selectedGroupIds,
                 group
               );
-              const freeLimit = getFreeLimit(group?.selectionRule);
+              const maxSelections = getMaxSelectionLimit(group?.selectionRule);
               const selectionSummary = getSelectionSummaryText(
                 group?.selectionRule
               );
@@ -238,24 +267,24 @@ const ArticleComponent = ({ item }) => {
                     {group?.name} {selectionSummary}
                   </p>
                   {(group?.toppings || []).map((topping) => {
-                    const selectedIndex = selectedIdsInGroup.indexOf(
-                      topping._id
+                    const toppingId = String(topping?._id || "");
+                    const isSelected = selectedIdsInGroup.includes(
+                      toppingId
                     );
-                    const isSelected = selectedIndex !== -1;
-                    const isExtraSelection =
-                      freeLimit !== Infinity && selectedIndex >= freeLimit;
-                    const shouldShowExtraPrice =
-                      Number(topping?.price) > 0 &&
-                      freeLimit !== Infinity &&
-                      (isExtraSelection ||
-                        (!isSelected &&
-                          selectedIdsInGroup.length >= freeLimit));
+                    const maxSelectionReached =
+                      maxSelections !== Infinity &&
+                      selectedIdsInGroup.length >= maxSelections;
+                    const isSelectionDisabled =
+                      !isSelected && maxSelectionReached;
 
                     return (
                       <button
-                        key={`${group?._id || group?.name}-${topping._id}`}
-                        className="w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2"
-                        onClick={() => handleGroupCustomizationChange(topping._id)}
+                        key={`${group?._id || group?.name}-${toppingId}`}
+                        type="button"
+                        className={`w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2 ${
+                          isSelectionDisabled ? "opacity-60 cursor-not-allowed" : ""
+                        }`}
+                        onClick={() => handleGroupCustomizationChange(toppingId)}
                       >
                         <div className="flex items-center gap-2">
                           <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
@@ -269,11 +298,9 @@ const ArticleComponent = ({ item }) => {
                             {topping.name}
                           </p>
                         </div>
-                        {shouldShowExtraPrice && (
-                          <p className="font-bebas-neue text-pr md:text-xl text-base">
-                            + ${Number(topping.price).toFixed(2)}
-                          </p>
-                        )}
+                        <p className="font-bebas-neue text-pr md:text-xl text-base">
+                          + ${Number(topping.price).toFixed(2)}
+                        </p>
                       </button>
                     );
                   })}

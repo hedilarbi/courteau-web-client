@@ -23,6 +23,9 @@ const ProcessPaiement = ({
   orderDiscountPercent,
   effectiveDeliveryFee,
   isZeroTotalSubscriptionOrder,
+  setPromoCodeData,
+  setPromoCodeIsValid,
+  setPromoCodeError,
 }) => {
   const [processPaiement, setProcessPaiement] = useState(false);
 
@@ -75,6 +78,9 @@ const ProcessPaiement = ({
             orderDiscountPercent={orderDiscountPercent}
             effectiveDeliveryFee={effectiveDeliveryFee}
             isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
+            setPromoCodeData={setPromoCodeData}
+            setPromoCodeIsValid={setPromoCodeIsValid}
+            setPromoCodeError={setPromoCodeError}
             subTotal={subTotal}
             subTotalWithDiscount={subTotalWithDiscount}
             canOrder={canOrder}
@@ -96,6 +102,9 @@ const ProcessPaiement = ({
           orderDiscountPercent={orderDiscountPercent}
           effectiveDeliveryFee={effectiveDeliveryFee}
           isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
+          setPromoCodeData={setPromoCodeData}
+          setPromoCodeIsValid={setPromoCodeIsValid}
+          setPromoCodeError={setPromoCodeError}
           subTotal={subTotal}
           subTotalWithDiscount={subTotalWithDiscount}
           canOrder={canOrder}

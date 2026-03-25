@@ -148,6 +148,7 @@ function basketReducer(state, action) {
       const offers = [...state.offers];
       offers[idx] = {
         ...old,
+        customization: action.payload.customizations ?? old.customization,
         customizations: action.payload.customizations,
         price: action.payload.price,
         comment: action.payload.comment,

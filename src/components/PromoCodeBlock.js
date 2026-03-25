@@ -11,14 +11,37 @@ const roundMoney = (value, fallback = 0) => {
   return Math.round(normalized * 100) / 100;
 };
 
-const getPromoCategoryId = (promoCode) =>
-  String(promoCode?.category?._id || promoCode?.category || "").trim();
+const getPromoExcludedCategoryIds = (promoCode) => {
+  if (!Array.isArray(promoCode?.excludedCategories)) return [];
 
-const getPromoCategoryName = (promoCode) =>
-  String(promoCode?.category?.name || "").trim();
+  return [
+    ...new Set(
+      promoCode.excludedCategories
+        .map((entry) => String(entry?._id || entry || "").trim())
+        .filter(Boolean)
+    ),
+  ];
+};
+
+const getPromoLegacyCategoryId = (promoCode) =>
+  String(promoCode?.category?._id || promoCode?.category || "").trim();
 
 const getBasketItemCategoryId = (basketItem) =>
   String(basketItem?.category?._id || basketItem?.category || "").trim();
+
+const buildPromoExcludedItemsLabel = (items = []) => {
+  const counts = new Map();
+
+  items.forEach((item) => {
+    const name = String(item?.name || "").trim();
+    if (!name) return;
+    counts.set(name, (counts.get(name) || 0) + 1);
+  });
+
+  return [...counts.entries()]
+    .map(([name, count]) => (count > 1 ? `${name} x${count}` : name))
+    .join(", ");
+};
 
 const PromoCodeBlock = ({
   userId,
@@ -30,10 +53,17 @@ const PromoCodeBlock = ({
   firstOrderDiscountAllowed,
   promoCodeAllowed,
   subTotal,
+  promoCodeError,
+  setPromoCodeError,
 }) => {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [promoCodeError, setPromoCodeError] = useState(null);
+  const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCodeData);
+  const promoExcludedItemsLabel = buildPromoExcludedItemsLabel(
+    (basketItems || []).filter((item) =>
+      promoExcludedCategoryIds.includes(getBasketItemCategoryId(item))
+    )
+  );
   const handleVerifyPromoCode = async () => {
     try {
       setIsLoading(true);
@@ -55,19 +85,32 @@ const PromoCodeBlock = ({
       const response = await verifyPromoCode(code, userId);
 
       if (response.status) {
-        const promoCategoryId = getPromoCategoryId(response.data);
-        const eligibleSubtotal = promoCategoryId
-          ? roundMoney(
-              (basketItems || []).reduce((sum, item) => {
-                if (getBasketItemCategoryId(item) !== promoCategoryId) {
-                  return sum;
-                }
+        const nextPromoExcludedCategoryIds =
+          getPromoExcludedCategoryIds(response.data);
+        const nextPromoLegacyCategoryId = getPromoLegacyCategoryId(
+          response.data
+        );
+        const eligibleSubtotal =
+          nextPromoExcludedCategoryIds.length || nextPromoLegacyCategoryId
+            ? roundMoney(
+                (basketItems || []).reduce((sum, item) => {
+                  const basketItemCategoryId = getBasketItemCategoryId(item);
 
-                return sum + toSafeNumber(item?.price, 0);
-              }, 0),
-              0
-            )
-          : roundMoney(subTotal, 0);
+                  if (nextPromoExcludedCategoryIds.length) {
+                    if (
+                      nextPromoExcludedCategoryIds.includes(basketItemCategoryId)
+                    ) {
+                      return sum;
+                    }
+                  } else if (basketItemCategoryId !== nextPromoLegacyCategoryId) {
+                    return sum;
+                  }
+
+                  return sum + toSafeNumber(item?.price, 0);
+                }, 0),
+                0
+              )
+            : roundMoney(subTotal, 0);
 
         if (
           (response.data.type === "amount" || response.data.type === "percent") &&
@@ -129,6 +172,7 @@ const PromoCodeBlock = ({
             onClick={() => {
               setPromoCodeIsValid(false);
               setPromoCodeData(null);
+              setPromoCodeError(null);
               setCode("");
             }}
             className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-500/90 transition font-semibold  "
@@ -149,25 +193,24 @@ const PromoCodeBlock = ({
         <p className="text-red-500 text-sm mt-2">{promoCodeError}</p>
       )}
       {promoCodeIsValid && (
-        <p className="text-green-500 text-sm mt-2">
+        <div className="mt-2">
+        <p className="text-green-500 text-sm">
           Code promo appliqué:{" "}
           {promoCodeData.type === "percent" &&
             "Remise de " +
               promoCodeData.percent +
-              "%" +
-              (getPromoCategoryName(promoCodeData)
-                ? ` sur ${getPromoCategoryName(promoCodeData)}`
-                : "")}
+              "%"}
           {promoCodeData.type === "amount" &&
-            "Remise de " +
-              promoCodeData.amount +
-              "$" +
-              (getPromoCategoryName(promoCodeData)
-                ? ` sur ${getPromoCategoryName(promoCodeData)}`
-                : "")}{" "}
+            "Remise de " + promoCodeData.amount + "$"}{" "}
           {promoCodeData.type === "free_item" &&
             (promoCodeData?.freeItem?.name || "Article") + " offert"}
         </p>
+        {promoExcludedItemsLabel ? (
+          <p className="text-[#6B7280] text-xs mt-1">
+            Rabais non appliqué sur: {promoExcludedItemsLabel}
+          </p>
+        ) : null}
+        </div>
       )}
     </div>
   );

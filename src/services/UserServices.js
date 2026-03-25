@@ -613,6 +613,39 @@ const confirmPaiment = async (paymentIntentId) => {
     };
   }
 };
+
+const cancelPaymentIntent = async (paymentIntentId) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/payments/cancel-payment-intent`,
+      { paymentIntentId },
+      {
+        timeout: 15000,
+      }
+    );
+
+    if (response.status === 200) {
+      return {
+        status: true,
+        message: "payment intent canceled",
+        data: response.data,
+      };
+    }
+
+    return {
+      status: false,
+      message: "Erreur lors de l'annulation du paiement.",
+    };
+  } catch (error) {
+    return {
+      status: false,
+      message:
+        error?.response?.data?.error ||
+        error?.message ||
+        "Erreur lors de l'annulation du paiement.",
+    };
+  }
+};
 export {
   createUserService,
   removeFromFavorites,
@@ -634,4 +667,5 @@ export {
   createOrder,
   createZeroTotalSubscriptionOrder,
   confirmPaiment,
+  cancelPaymentIntent,
 };

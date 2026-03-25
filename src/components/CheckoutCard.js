@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import {
+  cancelPaymentIntent,
   catchError,
   confirmPaiment,
   createOrder,
@@ -10,13 +11,138 @@ import {
   getPaymentIntentClientSecret,
   getPaymentMethods,
 } from "@/services/UserServices";
+import {
+  checkRestaurantOrderAvailability,
+  verifyPromoCode,
+} from "@/services/FoodServices";
 
 import { calculateDistance } from "@/utils/locationHandlers";
 import { getScheduleValidationError } from "@/utils/dateHandlers";
-import { useBasket, useSelectBasket } from "@/context/BasketContext";
+import {
+  useBasket,
+  useSelectBasket,
+  useSelectBasketItems,
+  useSelectBasketOffers,
+} from "@/context/BasketContext";
 import { useRouter } from "next/navigation";
 import Spinner from "./spinner/Spinner";
 import Image from "next/image";
+
+const toSafeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const roundMoney = (value, fallback = 0) => {
+  const normalized = toSafeNumber(value, fallback);
+  return Math.round(normalized * 100) / 100;
+};
+
+const getPromoExcludedCategoryIds = (promoCode) => {
+  if (!Array.isArray(promoCode?.excludedCategories)) return [];
+
+  return [
+    ...new Set(
+      promoCode.excludedCategories
+        .map((entry) => String(entry?._id || entry || "").trim())
+        .filter(Boolean)
+    ),
+  ];
+};
+
+const getPromoLegacyCategoryId = (promoCode) =>
+  String(promoCode?.category?._id || promoCode?.category || "").trim();
+
+const getBasketItemCategoryId = (basketItem) =>
+  String(basketItem?.category?._id || basketItem?.category || "").trim();
+
+const calculatePromoEligibleSubtotalForBasket = ({
+  basketItems = [],
+  subTotal = 0,
+  promoCode = null,
+}) => {
+  const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCode);
+  const promoLegacyCategoryId = getPromoLegacyCategoryId(promoCode);
+
+  if (!promoCode) {
+    return roundMoney(subTotal, 0);
+  }
+
+  if (!promoExcludedCategoryIds.length && !promoLegacyCategoryId) {
+    return roundMoney(subTotal, 0);
+  }
+
+  return roundMoney(
+    (basketItems || []).reduce((sum, item) => {
+      const basketItemCategoryId = getBasketItemCategoryId(item);
+
+      if (promoExcludedCategoryIds.length) {
+        if (promoExcludedCategoryIds.includes(basketItemCategoryId)) {
+          return sum;
+        }
+      } else if (basketItemCategoryId !== promoLegacyCategoryId) {
+        return sum;
+      }
+
+      return sum + toSafeNumber(item?.price, 0);
+    }, 0),
+    0
+  );
+};
+
+const calculatePromoDiscountAmountForPromo = (promoCode, eligibleSubtotal) => {
+  if (!promoCode) return 0;
+
+  if (promoCode.type === "percent") {
+    return roundMoney(
+      eligibleSubtotal * (toSafeNumber(promoCode?.percent, 0) / 100),
+      0
+    );
+  }
+
+  if (promoCode.type === "amount") {
+    return roundMoney(
+      Math.min(toSafeNumber(promoCode?.amount, 0), eligibleSubtotal),
+      0
+    );
+  }
+
+  return 0;
+};
+
+const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
+  const unavailableItems = Array.isArray(availabilityData?.unavailableItems)
+    ? availabilityData.unavailableItems
+    : [];
+  const unavailableOffers = Array.isArray(availabilityData?.unavailableOffers)
+    ? availabilityData.unavailableOffers
+    : [];
+  const parts = [];
+
+  if (unavailableItems.length > 0) {
+    parts.push(
+      `Articles indisponibles: ${unavailableItems
+        .map((item) => item?.name)
+        .filter(Boolean)
+        .join(", ")}`
+    );
+  }
+
+  if (unavailableOffers.length > 0) {
+    parts.push(
+      `Offres indisponibles: ${unavailableOffers
+        .map((offer) => offer?.name)
+        .filter(Boolean)
+        .join(", ")}`
+    );
+  }
+
+  if (!parts.length) {
+    return "Impossible de vérifier la disponibilité des articles.";
+  }
+
+  return parts.join(" | ");
+};
 
 export default function CheckoutCard({
   user,
@@ -35,12 +161,17 @@ export default function CheckoutCard({
   canOrder,
   isScheduledOrder,
   scheduledDateTime,
+  setPromoCodeData,
+  setPromoCodeIsValid,
+  setPromoCodeError,
 }) {
   const { clearBasket } = useBasket();
   const router = useRouter();
   const stripe = useStripe();
   const elements = useElements();
   const basket = useSelectBasket();
+  const basketItems = useSelectBasketItems();
+  const basketOffers = useSelectBasketOffers();
   const [cardsLoading, setCardsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [cards, setCards] = useState([]);
@@ -49,6 +180,11 @@ export default function CheckoutCard({
   const [cardComplete, setCardComplete] = useState(false);
   const [error, setError] = useState(null);
   const paymentFlowLockRef = useRef(false);
+  const checkoutAttemptRef = useRef(null);
+  const basketSubtotal = useMemo(
+    () => roundMoney(basket?.subtotal, 0),
+    [basket?.subtotal]
+  );
   const normalizedTotal = useMemo(
     () => Math.round(Number(total || 0) * 100) / 100,
     [total]
@@ -117,6 +253,241 @@ export default function CheckoutCard({
     normalizedTotal,
   ]);
   const requiresCardPayment = amountCents > 0;
+
+  const invalidatePromoCode = (message) => {
+    setPromoCodeIsValid?.(false);
+    setPromoCodeData?.(null);
+    setPromoCodeError?.(message);
+  };
+
+  const validatePromoCodeAgainstBasket = (nextPromoData) => {
+    const eligibleSubtotal = calculatePromoEligibleSubtotalForBasket({
+      basketItems,
+      subTotal: basketSubtotal,
+      promoCode: nextPromoData,
+    });
+
+    if (
+      (nextPromoData?.type === "amount" || nextPromoData?.type === "percent") &&
+      eligibleSubtotal <= 0
+    ) {
+      return {
+        isValid: false,
+        message: "Ce code promo ne s'applique à aucun article de votre panier.",
+        eligibleSubtotal,
+        promoDiscountAmount: 0,
+      };
+    }
+
+    if (
+      nextPromoData?.type === "amount" &&
+      toSafeNumber(nextPromoData?.amount, 0) > eligibleSubtotal
+    ) {
+      return {
+        isValid: false,
+        message:
+          "Le montant du code promo ne peut pas être supérieur au total des articles éligibles.",
+        eligibleSubtotal,
+        promoDiscountAmount: 0,
+      };
+    }
+
+    return {
+      isValid: true,
+      message: "",
+      eligibleSubtotal,
+      promoDiscountAmount: calculatePromoDiscountAmountForPromo(
+        nextPromoData,
+        eligibleSubtotal
+      ),
+    };
+  };
+
+  const revalidatePromoCodeBeforeCheckout = async () => {
+    if (!promoCode) {
+      return {
+        status: true,
+        promoCodeData: null,
+      };
+    }
+
+    const response = await verifyPromoCode(String(promoCode?.code || "").trim(), user._id);
+
+    if (!response?.status || !response?.data) {
+      const nextMessage = response?.message || "Code promo invalide.";
+      invalidatePromoCode(nextMessage);
+      return {
+        status: false,
+        message: nextMessage,
+      };
+    }
+
+    const validation = validatePromoCodeAgainstBasket(response.data);
+    if (!validation.isValid) {
+      invalidatePromoCode(validation.message);
+      return {
+        status: false,
+        message: validation.message,
+      };
+    }
+
+    const currentPromoId = String(promoCode?._id || "").trim();
+    const nextPromoId = String(response.data?._id || "").trim();
+    const currentEligibleSubtotal = roundMoney(
+      calculatePromoEligibleSubtotalForBasket({
+        basketItems,
+        subTotal: basketSubtotal,
+        promoCode,
+      }),
+      0
+    );
+    const nextEligibleSubtotal = roundMoney(validation.eligibleSubtotal, 0);
+    const currentDiscountAmount = roundMoney(
+      calculatePromoDiscountAmountForPromo(promoCode, currentEligibleSubtotal),
+      0
+    );
+    const nextDiscountAmount = roundMoney(validation.promoDiscountAmount, 0);
+
+    const hasPromoChanged =
+      currentPromoId !== nextPromoId ||
+      currentEligibleSubtotal !== nextEligibleSubtotal ||
+      currentDiscountAmount !== nextDiscountAmount ||
+      String(promoCode?.type || "") !== String(response.data?.type || "") ||
+      roundMoney(promoCode?.amount, 0) !== roundMoney(response.data?.amount, 0) ||
+      roundMoney(promoCode?.percent, 0) !==
+        roundMoney(response.data?.percent, 0);
+
+    setPromoCodeData?.(response.data);
+    setPromoCodeIsValid?.(true);
+    setPromoCodeError?.(null);
+
+    if (hasPromoChanged) {
+      return {
+        status: false,
+        message:
+          "Le code promo a été mis à jour. Vérifiez le montant avant de poursuivre.",
+      };
+    }
+
+    return {
+      status: true,
+      promoCodeData: response.data,
+    };
+  };
+
+  const cloneOrderPayload = (payload) =>
+    payload ? JSON.parse(JSON.stringify(payload)) : null;
+
+  const buildOrderPayload = (paymentIntentId, options = {}) => {
+    const isZeroTotalFlow = Boolean(options?.zeroTotalSubscriptionFlow);
+    const resolvedPromoCodeData = options?.promoCodeDataOverride ?? promoCode;
+    const resolvedSubTotalAfterDiscount = roundMoney(
+      options?.subTotalAfterDiscountOverride,
+      subTotalWithDiscount
+    );
+    const resolvedTotal = roundMoney(options?.totalOverride, total);
+    const resolvedTip = roundMoney(options?.tipAmountOverride, tipAmount);
+
+    const orderItems = [];
+    const orderOffers = [];
+    const orderRewards = [];
+
+    basket.items.forEach((item) => {
+      const customizations = item.customization
+        ? item.customization.map((customizationItem) => customizationItem._id)
+        : [];
+
+      orderItems.push({
+        size: item.size?.size || item.size,
+        customizations,
+        price: roundMoney(item.price, 0),
+        basePrice: roundMoney(item.basePrice ?? item.price, 0),
+        item: item.id,
+        comment: item.comment,
+        isSubscriptionFreeItem: Boolean(item.isSubscriptionFreeItem),
+        isBirthdayFreeItem: Boolean(item.isBirthdayFreeItem),
+      });
+    });
+
+    basket.offers.forEach((offer) => {
+      const items = [];
+      const offerCustomizationMap =
+        offer.customization || offer.customizations || {};
+
+      if (offerCustomizationMap) {
+        Object.keys(offerCustomizationMap).forEach((itemId) => {
+          offerCustomizationMap[itemId].forEach((customizationArray) => {
+            const customizationIds = Array.isArray(customizationArray)
+              ? customizationArray
+                  .map((selection) =>
+                    typeof selection === "string"
+                      ? selection
+                      : selection?._id || null
+                  )
+                  .filter(Boolean)
+              : [];
+
+            items.push({
+              item: itemId,
+              customizations: customizationIds,
+            });
+          });
+        });
+      }
+
+      orderOffers.push({
+        offer: offer.id,
+        price: roundMoney(offer.price, 0),
+        items,
+      });
+    });
+
+    basket.rewards.forEach((item) => {
+      orderRewards.push({ id: item._id, points: item.points });
+    });
+
+    const scheduledFor =
+      isScheduledOrder &&
+      scheduledDateTime &&
+      !Number.isNaN(scheduledDateTime.getTime())
+        ? scheduledDateTime.toISOString()
+        : null;
+
+    return {
+      type: deliveryMode,
+      address: address.address,
+      coords: address.coords,
+      restaurant: selectedRestaurant._id,
+      order: {
+        subTotal: roundMoney(basket.subtotal, 0),
+        user_id: user._id,
+        orderItems,
+        offers: orderOffers,
+        rewards: orderRewards,
+        paymentMethod: isZeroTotalFlow ? "subscription_free_item" : "card",
+        total: resolvedTotal,
+        discount: orderDiscountPercent,
+        subTotalAfterDiscount: resolvedSubTotalAfterDiscount,
+        tip: resolvedTip,
+        paymentIntentId: paymentIntentId || null,
+        deliveryFee: roundMoney(effectiveDeliveryFee, 0),
+        platform: "web",
+        promoCode: resolvedPromoCodeData
+          ? {
+              code: resolvedPromoCodeData.code,
+              promoCodeId: resolvedPromoCodeData._id,
+            }
+          : null,
+        subscriptionBenefits,
+        birthdayBenefits,
+        zeroTotalSubscriptionFlow: isZeroTotalFlow,
+        scheduled: {
+          isScheduled: isScheduledOrder,
+          scheduledFor,
+        },
+      },
+    };
+  };
 
   async function handleNewCardFlow() {
     try {
@@ -321,12 +692,57 @@ export default function CheckoutCard({
         }
       }
 
-      if (!stripe || !elements) {
-        setError("Stripe non initialisé.");
+      const availabilityResponse = await checkRestaurantOrderAvailability(
+        selectedRestaurant._id,
+        basketItems.map((item) => ({ item: item.id })),
+        basketOffers.map((offer) => ({ offer: offer.id }))
+      );
+
+      if (!availabilityResponse?.status) {
+        setError(
+          availabilityResponse?.message ||
+            "Impossible de vérifier la disponibilité des articles."
+        );
         return;
       }
 
+      if (availabilityResponse?.data?.isValid === false) {
+        setError(buildOrderAvailabilityErrorMessage(availabilityResponse.data));
+        return;
+      }
+
+      const promoRevalidation = await revalidatePromoCodeBeforeCheckout();
+      if (!promoRevalidation?.status) {
+        setError(
+          promoRevalidation?.message ||
+            "Le code promo doit être revérifié avant le paiement."
+        );
+        return;
+      }
+
+      const draftOrderPayload = buildOrderPayload(null, {
+        zeroTotalSubscriptionFlow: false,
+        promoCodeDataOverride: promoRevalidation?.promoCodeData ?? promoCode,
+      });
+
+      if (!stripe || !elements) {
+        if (!isZeroTotalSubscriptionOrder) {
+          setError("Stripe non initialisé.");
+          return;
+        }
+      }
+
       let pi;
+      checkoutAttemptRef.current = {
+        zeroTotalSubscriptionFlow: isZeroTotalSubscriptionOrder,
+        orderPayload: cloneOrderPayload(draftOrderPayload),
+      };
+
+      if (isZeroTotalSubscriptionOrder) {
+        await handlePaymentReady(null, { zeroTotalSubscriptionFlow: true });
+        return;
+      }
+
       if (selectedPmId) {
         const response = await handleSavedCardFlow(selectedPmId);
 
@@ -359,110 +775,35 @@ export default function CheckoutCard({
 
   const handlePaymentReady = async (pi, options = {}) => {
     try {
-      const isZeroTotalFlow = Boolean(options?.zeroTotalSubscriptionFlow);
-      const orderItems = [];
-      const orderOffers = [];
-      const orderRewards = [];
-
-      basket.items.map((item) => {
-        const customizations = item.customization
-          ? item.customization.map((customizationItem) => customizationItem._id)
-          : [];
-
-        orderItems.push({
-          size: item.size.size,
-          customizations,
-          price: item.price,
-          basePrice: item.basePrice ?? item.price,
-          item: item.id,
-          comment: item.comment,
-          isSubscriptionFreeItem: Boolean(item.isSubscriptionFreeItem),
-          isBirthdayFreeItem: Boolean(item.isBirthdayFreeItem),
-        });
-      });
-
-      basket.offers.forEach((offer) => {
-        const items = [];
-
-        // Check if the offer has customizations
-        if (offer.customization) {
-          // Iterate over the keys in the customization object (item IDs)
-          Object.keys(offer.customization).forEach((itemId) => {
-            // Iterate over each customization array for this item
-            offer.customization[itemId].forEach((customizationArray) => {
-              // Add each customization as a separate item object
-              items.push({
-                item: itemId,
-                customizations: customizationArray,
-              });
-            });
-          });
-        }
-
-        // Push the offer with the processed items into the orderOffers array
-        orderOffers.push({
-          offer: offer.id, // Offer ID
-          price: offer.price, // Price of the offer
-          items, // Processed items with customizations
-        });
-      });
-
-      basket.rewards.map((item) =>
-        orderRewards.push({ id: item._id, points: item.points })
+      const isZeroTotalFlow = Boolean(
+        options?.zeroTotalSubscriptionFlow ||
+          checkoutAttemptRef.current?.zeroTotalSubscriptionFlow
       );
-
-      const scheduledFor =
-        isScheduledOrder &&
-        scheduledDateTime &&
-        !Number.isNaN(scheduledDateTime.getTime())
-          ? scheduledDateTime.toISOString()
-          : null;
-
-      const order = {
-        type: deliveryMode,
-        address: address.address,
-        coords: address.coords,
-        restaurant: selectedRestaurant._id,
-        order: {
-          subTotal: parseFloat(basket.subtotal).toFixed(2),
-          user_id: user._id,
-          orderItems,
-          offers: orderOffers,
-          rewards: orderRewards,
-          paymentMethod: isZeroTotalFlow ? "subscription_free_item" : "card",
-          total: normalizedTotal,
-          discount: orderDiscountPercent,
-          subTotalAfterDiscount: subTotalWithDiscount,
-          tip: isNaN(parseFloat(tipAmount)) ? 0 : tipAmount,
-          paymentIntentId: pi || null,
-          deliveryFee: effectiveDeliveryFee,
-          platform: "web",
-          promoCode: promoCode
-            ? {
-                code: promoCode.code,
-                promoCodeId: promoCode._id,
-              }
-            : null,
-          subscriptionBenefits,
-          birthdayBenefits,
+      const order =
+        cloneOrderPayload(checkoutAttemptRef.current?.orderPayload) ||
+        buildOrderPayload(pi, {
           zeroTotalSubscriptionFlow: isZeroTotalFlow,
-          scheduled: {
-            isScheduled: isScheduledOrder,
-            scheduledFor,
-          },
-        },
-      };
+        });
+
+      if (order?.order) {
+        order.order.paymentIntentId = pi || null;
+      }
 
       const response = isZeroTotalFlow
         ? await createZeroTotalSubscriptionOrder(order)
         : await createOrder(order);
       if (!response?.status || !response.data) {
+        if (pi && !isZeroTotalFlow) {
+          await cancelPaymentIntent(pi);
+        }
+        checkoutAttemptRef.current = null;
         setError(
           response?.message ||
             "Erreur lors de la création de la commande."
         );
         return;
       } else {
+        checkoutAttemptRef.current = null;
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem(
             "checkout_success_redirect_at",
@@ -473,6 +814,10 @@ export default function CheckoutCard({
         router.replace("/success?id=" + response.data.orderId);
       }
     } catch (error) {
+      if (pi && !options?.zeroTotalSubscriptionFlow) {
+        await cancelPaymentIntent(pi);
+      }
+      checkoutAttemptRef.current = null;
       console.error("Erreur dans handlePaymentReady :", error);
       setError(
         error?.response?.data?.message ||

@@ -48,6 +48,25 @@ async function fetchOffers() {
   }
   return res.json();
 }
+
+function sortItemsByOrder(items = []) {
+  if (!Array.isArray(items)) return [];
+
+  return [...items].sort((a, b) => {
+    const orderA = Number.isFinite(Number(a?.order))
+      ? Number(a.order)
+      : Number.POSITIVE_INFINITY;
+    const orderB = Number.isFinite(Number(b?.order))
+      ? Number(b.order)
+      : Number.POSITIVE_INFINITY;
+
+    if (orderA !== orderB) return orderA - orderB;
+
+    return String(a?.name || "").localeCompare(String(b?.name || ""), "fr", {
+      sensitivity: "base",
+    });
+  });
+}
 export default async function Page({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   let categories = [
@@ -88,6 +107,7 @@ export default async function Page({ searchParams }) {
       ? await fetchItemsByCategory(urlCategory)
       : await fetchItemsByCategory(firstCategorySlug);
   }
+  items = sortItemsByOrder(items);
 
   const selectedCategorySlug = isKnownCategory
     ? urlCategory

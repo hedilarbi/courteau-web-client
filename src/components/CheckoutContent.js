@@ -71,11 +71,108 @@ const roundMoney = (value, fallback = 0) => {
   return Math.round(normalized * 100) / 100;
 };
 
-const getPromoCategoryId = (promoCode) =>
+const getPromoExcludedCategoryIds = (promoCode) => {
+  if (!Array.isArray(promoCode?.excludedCategories)) return [];
+
+  return [
+    ...new Set(
+      promoCode.excludedCategories
+        .map((entry) => String(entry?._id || entry || "").trim())
+        .filter(Boolean)
+    ),
+  ];
+};
+
+const getPromoLegacyCategoryId = (promoCode) =>
   String(promoCode?.category?._id || promoCode?.category || "").trim();
 
 const getBasketItemCategoryId = (basketItem) =>
   String(basketItem?.category?._id || basketItem?.category || "").trim();
+
+const calculatePromoEligibleSubtotalForBasket = ({
+  basketItems = [],
+  subTotal = 0,
+  promoCode = null,
+}) => {
+  const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCode);
+  const promoLegacyCategoryId = getPromoLegacyCategoryId(promoCode);
+
+  if (!promoCode) {
+    return roundMoney(subTotal, 0);
+  }
+
+  if (!promoExcludedCategoryIds.length && !promoLegacyCategoryId) {
+    return roundMoney(subTotal, 0);
+  }
+
+  return roundMoney(
+    (basketItems || []).reduce((sum, item) => {
+      const basketItemCategoryId = getBasketItemCategoryId(item);
+
+      if (promoExcludedCategoryIds.length) {
+        if (promoExcludedCategoryIds.includes(basketItemCategoryId)) {
+          return sum;
+        }
+      } else if (basketItemCategoryId !== promoLegacyCategoryId) {
+        return sum;
+      }
+
+      return sum + toSafeNumber(item?.price, 0);
+    }, 0),
+    0
+  );
+};
+
+const calculatePromoDiscountAmountForPromo = (promoCode, eligibleSubtotal) => {
+  if (!promoCode) return 0;
+
+  if (promoCode.type === "percent") {
+    return roundMoney(
+      eligibleSubtotal * (toSafeNumber(promoCode?.percent, 0) / 100),
+      0
+    );
+  }
+
+  if (promoCode.type === "amount") {
+    return roundMoney(
+      Math.min(toSafeNumber(promoCode?.amount, 0), eligibleSubtotal),
+      0
+    );
+  }
+
+  return 0;
+};
+
+const calculateDiscountedSubtotal = ({
+  subTotal = 0,
+  firstOrderDiscountAllowed = false,
+  subscriptionActive = false,
+  promoCodeAllowed = false,
+  promoCodeIsValid = false,
+  promoCodeData = null,
+  basketItems = [],
+}) => {
+  let nextSubtotal = toSafeNumber(subTotal, 0);
+
+  if (firstOrderDiscountAllowed) {
+    nextSubtotal *= 0.8;
+  } else if (subscriptionActive) {
+    nextSubtotal *= (100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100;
+  } else if (promoCodeAllowed && promoCodeIsValid && promoCodeData) {
+    const eligibleSubtotal = calculatePromoEligibleSubtotalForBasket({
+      basketItems,
+      subTotal,
+      promoCode: promoCodeData,
+    });
+    const promoDiscountAmount = calculatePromoDiscountAmountForPromo(
+      promoCodeData,
+      eligibleSubtotal
+    );
+    nextSubtotal -= promoDiscountAmount;
+  }
+
+  return roundMoney(Math.max(0, nextSubtotal), 0);
+};
 
 const getMonthCycleKey = (date = new Date()) => {
   const target = date instanceof Date ? date : new Date(date);
@@ -137,6 +234,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const [deliveryMode, setDeliveryMode] = useState("delivery");
   const [promoCodeData, setPromoCodeData] = useState(null);
   const [promoCodeIsValid, setPromoCodeIsValid] = useState(false);
+  const [promoCodeError, setPromoCodeError] = useState(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState(
     restaurantsSettings && restaurantsSettings.length > 0
       ? restaurantsSettings[0]
@@ -332,40 +430,24 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const subscriptionDiscountAmount = shouldApplySubscriptionDiscount
     ? roundMoney(subTotal * (SUBSCRIPTION_DISCOUNT_PERCENT / 100), 0)
     : 0;
-  const promoCategoryId = getPromoCategoryId(promoCodeData);
   const promoEligibleSubtotal = useMemo(() => {
-    if (!(promoCodeAllowed && promoCodeData)) {
-      return roundMoney(subTotal, 0);
-    }
-
-    if (!promoCategoryId) {
-      return roundMoney(subTotal, 0);
-    }
-
-    return roundMoney(
-      basketItems.reduce((sum, item) => {
-        if (getBasketItemCategoryId(item) !== promoCategoryId) {
-          return sum;
-        }
-
-        return sum + toSafeNumber(item?.price, 0);
-      }, 0),
-      0
-    );
-  }, [basketItems, promoCategoryId, promoCodeAllowed, promoCodeData, subTotal]);
+    return calculatePromoEligibleSubtotalForBasket({
+      basketItems,
+      subTotal,
+      promoCode: promoCodeAllowed ? promoCodeData : null,
+    });
+  }, [
+    basketItems,
+    promoCodeAllowed,
+    promoCodeData,
+    subTotal,
+  ]);
   const promoDiscountAmount =
     promoCodeAllowed && promoCodeIsValid && promoCodeData
-      ? promoCodeData.type === "percent"
-        ? roundMoney(
-            promoEligibleSubtotal * (toSafeNumber(promoCodeData.percent, 0) / 100),
-            0
-          )
-        : promoCodeData.type === "amount"
-        ? roundMoney(
-            Math.min(toSafeNumber(promoCodeData.amount, 0), promoEligibleSubtotal),
-            0
-          )
-        : 0
+      ? calculatePromoDiscountAmountForPromo(
+          promoCodeData,
+          promoEligibleSubtotal
+        )
       : 0;
   const subscriptionFreeItemAmount = shouldApplyFreeItemDiscount
     ? roundMoney(selectedFreeItemBasePrice, 0)
@@ -559,8 +641,16 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     if (!promoCodeAllowed) {
       setPromoCodeData(null);
       setPromoCodeIsValid(false);
+      setPromoCodeError(
+        "Un abonnement actif est déjà appliqué. Les codes promo ne sont pas cumulables."
+      );
+    } else if (
+      promoCodeError ===
+      "Un abonnement actif est déjà appliqué. Les codes promo ne sont pas cumulables."
+    ) {
+      setPromoCodeError(null);
     }
-  }, [promoCodeAllowed]);
+  }, [promoCodeAllowed, promoCodeError]);
 
   useEffect(() => {
     if (!(promoCodeAllowed && promoCodeIsValid && promoCodeData)) return;
@@ -571,6 +661,9 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     ) {
       setPromoCodeIsValid(false);
       setPromoCodeData(null);
+      setPromoCodeError(
+        "Ce code promo ne s'applique à aucun article de votre panier."
+      );
       return;
     }
 
@@ -580,6 +673,9 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     ) {
       setPromoCodeIsValid(false);
       setPromoCodeData(null);
+      setPromoCodeError(
+        "Le montant du code promo ne peut pas être supérieur au total des articles éligibles."
+      );
     }
   }, [
     promoCodeAllowed,
@@ -589,19 +685,15 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   ]);
 
   useEffect(() => {
-    let nextSubtotal = subTotal;
-
-    if (firstOrderDiscountAllowed) {
-      nextSubtotal = subTotal * 0.8;
-    } else if (subscriptionActive) {
-      nextSubtotal = subTotal * ((100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100);
-    } else {
-      if (promoCodeAllowed && promoCodeIsValid && promoCodeData) {
-        nextSubtotal -= promoDiscountAmount;
-      }
-    }
-
-    nextSubtotal = roundMoney(Math.max(0, nextSubtotal), 0);
+    let nextSubtotal = calculateDiscountedSubtotal({
+      subTotal,
+      firstOrderDiscountAllowed,
+      subscriptionActive,
+      promoCodeAllowed,
+      promoCodeIsValid,
+      promoCodeData,
+      basketItems,
+    });
     setSubTotalWithDiscount(nextSubtotal);
 
     let nextTip = 0;
@@ -638,6 +730,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     deliveryMode,
     effectiveDeliveryFee,
     firstOrderDiscountAllowed,
+    basketItems,
     promoCodeAllowed,
     promoCodeData,
     promoDiscountAmount,
@@ -933,6 +1026,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             firstOrderDiscountAllowed={firstOrderDiscountAllowed}
             promoCodeAllowed={promoCodeAllowed}
             subTotal={subTotal}
+            promoCodeError={promoCodeError}
+            setPromoCodeError={setPromoCodeError}
           />
 
           <TipsBlock
@@ -978,6 +1073,9 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             orderDiscountPercent={orderDiscountPercent}
             effectiveDeliveryFee={effectiveDeliveryFee}
             isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
+            setPromoCodeData={setPromoCodeData}
+            setPromoCodeIsValid={setPromoCodeIsValid}
+            setPromoCodeError={setPromoCodeError}
           />
         </section>
       </div>

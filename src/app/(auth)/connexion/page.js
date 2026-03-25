@@ -34,7 +34,8 @@ export default function ConnexionPage() {
         phoneNumber === "12312355" ||
         phoneNumber === "12312366" ||
         phoneNumber === "12312377" ||
-        phoneNumber === "1231231111"
+        phoneNumber === "1231231111" ||
+        phoneNumber === "1231231616"
       ) {
         router.push(`/otp?phoneNumber=${phoneNumber}`);
       } else {

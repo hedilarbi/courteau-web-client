@@ -63,27 +63,29 @@ const ResumeBlock = ({
           </div>
         )}
         {promoCodeAllowed && promoCodeData && promoCodeIsValid && (
-          <div className="flex justify-between">
-            <span className="font-inter text-gray-700">
-              Code promo (
-              {promoCodeData.type === "percent"
-                ? "-" + promoCodeData.percent + "%"
-                : promoCodeData.type === "amount"
-                ? "-" + promoCodeData.amount + "$"
-                : promoCodeData.type === "free_item"
-                ? promoCodeData?.freeItem?.name || "Article"
-                : ""}
-              ){" "}
-            </span>
-            <span className="font-inter font-semibold text-gray-900">
-              {promoCodeData.type === "percent"
-                ? "-$" + Number(promoDiscountAmount || 0).toFixed(2)
-                : promoCodeData.type === "amount"
-                ? "-$" + Number(promoDiscountAmount || 0).toFixed(2)
-                : promoCodeData.type === "free_item"
-                ? "Offert"
-                : ""}
-            </span>
+          <div>
+            <div className="flex justify-between">
+              <span className="font-inter text-gray-700">
+                Code promo (
+                {promoCodeData.type === "percent"
+                  ? "-" + promoCodeData.percent + "%"
+                  : promoCodeData.type === "amount"
+                  ? "-" + promoCodeData.amount + "$"
+                  : promoCodeData.type === "free_item"
+                  ? promoCodeData?.freeItem?.name || "Article"
+                  : ""}
+                ){" "}
+              </span>
+              <span className="font-inter font-semibold text-gray-900">
+                {promoCodeData.type === "percent"
+                  ? "-$" + Number(promoDiscountAmount || 0).toFixed(2)
+                  : promoCodeData.type === "amount"
+                  ? "-$" + Number(promoDiscountAmount || 0).toFixed(2)
+                  : promoCodeData.type === "free_item"
+                  ? "Offert"
+                  : ""}
+              </span>
+            </div>
           </div>
         )}
         {deliveryMode === "delivery" && Number(deliveryFee || 0) > 0 && (
