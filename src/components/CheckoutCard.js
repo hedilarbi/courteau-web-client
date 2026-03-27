@@ -56,6 +56,12 @@ const getPromoLegacyCategoryId = (promoCode) =>
 const getBasketItemCategoryId = (basketItem) =>
   String(basketItem?.category?._id || basketItem?.category || "").trim();
 
+const buildBasketItemsSubtotal = (basketItems = []) =>
+  roundMoney(
+    (basketItems || []).reduce((sum, item) => sum + toSafeNumber(item?.price, 0), 0),
+    0
+  );
+
 const calculatePromoEligibleSubtotalForBasket = ({
   basketItems = [],
   subTotal = 0,
@@ -69,7 +75,7 @@ const calculatePromoEligibleSubtotalForBasket = ({
   }
 
   if (!promoExcludedCategoryIds.length && !promoLegacyCategoryId) {
-    return roundMoney(subTotal, 0);
+    return buildBasketItemsSubtotal(basketItems);
   }
 
   return roundMoney(
