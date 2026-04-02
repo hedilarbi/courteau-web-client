@@ -1,5 +1,13 @@
 // app/menu/page.jsx
 export const dynamic = "force-dynamic";
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
 
 import MenuContent from "@/components/MenuContent";
 import Script from "next/script";
