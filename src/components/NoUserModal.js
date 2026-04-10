@@ -2,7 +2,14 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import { AiOutlineClose } from "react-icons/ai";
 
-const NoUserModal = ({ showNoUserModal, setShowNoUserModal }) => {
+const NoUserModal = ({
+  showNoUserModal,
+  setShowNoUserModal,
+  title = "Vous devez être connecté pour valider votre commande.",
+  description = "",
+  loginHref = "/connexion",
+  signupHref = "/inscription",
+}) => {
   const router = useRouter();
   return (
     <div
@@ -20,14 +27,19 @@ const NoUserModal = ({ showNoUserModal, setShowNoUserModal }) => {
           </button>
         </div>
         <h4 className="text-center text-lg font-inter font-semibold">
-          Vous devez être connecté pour valider votre commande.
+          {title}
         </h4>
+        {description ? (
+          <p className="text-center text-sm text-gray-600 font-inter mt-3">
+            {description}
+          </p>
+        ) : null}
         <div className=" flex flex-col gap-3 font-semibold font-inter mt-6">
           <button
             className="px-4 py-2 bg-pr text-black rounded-md hover:bg-[#e69500] transition"
             onClick={() => {
               setShowNoUserModal(false);
-              router.push("/connexion");
+              router.push(loginHref);
             }}
           >
             Se connecter
@@ -36,7 +48,7 @@ const NoUserModal = ({ showNoUserModal, setShowNoUserModal }) => {
             className="px-4 py-2 border-pr border text-black rounded-md hover:bg-[#e69500] transition"
             onClick={() => {
               setShowNoUserModal(false);
-              router.push("/inscription");
+              router.push(signupHref);
             }}
           >
             S&apos;inscrire

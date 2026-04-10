@@ -23,6 +23,7 @@ import {
   getSubscriptionConfig,
   refreshUserSubscription,
 } from "@/services/SubscriptionServices";
+import NoUserModal from "./NoUserModal";
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 15;
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
@@ -237,6 +238,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
   const [showCardField, setShowCardField] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
   const [showActivationForm, setShowActivationForm] = useState(false);
+  const [showNoUserModal, setShowNoUserModal] = useState(false);
 
   const isSubscriptionActive = isSummarySubscriptionActive(summary);
   const autoRenewEnabled =
@@ -273,53 +275,56 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
   };
 
   const loadScreenData = async () => {
-    if (!user?._id) {
-      setSummary(null);
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setErrorMessage("");
     try {
-      const [configResponse, subscriptionResponse] = await Promise.all([
-        getSubscriptionConfig(),
-        refreshUserSubscription(user._id),
-      ]);
+      const configResponse = await getSubscriptionConfig();
 
       if (configResponse.status) {
         setConfig(configResponse.data);
       }
 
-      if (subscriptionResponse.status) {
-        setSummary(subscriptionResponse.data);
+      if (user?._id) {
+        const subscriptionResponse = await refreshUserSubscription(user._id);
+
+        if (subscriptionResponse.status) {
+          setSummary(subscriptionResponse.data);
+        } else {
+          setSummary(null);
+        }
       } else {
         setSummary(null);
+        setCards([]);
+        setSelectedPmId(null);
+        setShowCardField(true);
       }
 
-      let stripeCustomerId = user?.stripe_id || "";
-      if (!stripeCustomerId) {
-        const latestUser = await refreshUserFromToken();
-        stripeCustomerId = latestUser?.stripe_id || "";
-      }
+      if (user?._id) {
+        let stripeCustomerId = user?.stripe_id || "";
+        if (!stripeCustomerId) {
+          const latestUser = await refreshUserFromToken();
+          stripeCustomerId = latestUser?.stripe_id || "";
+        }
 
-      if (stripeCustomerId) {
-        const cardsResponse = await getPaymentMethods(stripeCustomerId);
-        if (cardsResponse.status) {
-          const nextCards = cardsResponse.data || [];
-          setCards(nextCards);
-          if (nextCards.length > 0) {
-            setSelectedPmId((prev) => prev || nextCards[0]?.id || null);
-            setShowCardField(false);
+        if (stripeCustomerId) {
+          const cardsResponse = await getPaymentMethods(stripeCustomerId);
+          if (cardsResponse.status) {
+            const nextCards = cardsResponse.data || [];
+            setCards(nextCards);
+            if (nextCards.length > 0) {
+              setSelectedPmId((prev) => prev || nextCards[0]?.id || null);
+              setShowCardField(false);
+            } else {
+              setShowCardField(true);
+            }
           } else {
             setShowCardField(true);
           }
         } else {
+          setCards([]);
+          setSelectedPmId(null);
           setShowCardField(true);
         }
-      } else {
-        setCards([]);
-        setShowCardField(true);
       }
     } catch (error) {
       setErrorMessage(error?.message || "Erreur lors du chargement.");
@@ -418,7 +423,10 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
   };
 
   const handleSubscribe = async () => {
-    if (!user?._id) return;
+    if (!user?._id) {
+      setShowNoUserModal(true);
+      return;
+    }
     const isReactivationFlow = isScheduledForCancellation;
 
     setIsSubmitting(true);
@@ -652,28 +660,14 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
     );
   }
 
-  if (!user && !loading) {
-    return (
-      <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 min-h-screen">
-        <div className="max-w-3xl mx-auto bg-white rounded-xl p-6 shadow-md">
-          <p className="font-inter font-semibold text-black">
-            {isOfferMode
-              ? "Connectez-vous pour activer CLUB COURTEAU."
-              : "Connectez-vous pour gérer votre abonnement."}
-          </p>
-          <Link
-            href="/connexion"
-            className="inline-block mt-4 bg-pr text-black font-bebas-neue text-xl px-5 py-2 rounded-md"
-          >
-            Se connecter
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 min-h-screen">
+      <NoUserModal
+        showNoUserModal={showNoUserModal}
+        setShowNoUserModal={setShowNoUserModal}
+        title="Vous devez être connecté pour activer CLUB COURTEAU."
+        description="Connectez-vous ou créez votre compte pour activer votre abonnement."
+      />
       <div className="max-w-3xl mx-auto">
         <div className="rounded-xl border border-[#0F172A] bg-[#111827] p-6 shadow-md">
           <h1 className="font-bebas-neue text-4xl text-white">CLUB COURTEAU</h1>
@@ -755,12 +749,18 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
             <button
               type="button"
               className="bg-pr text-black font-bebas-neue text-xl px-4 py-3 rounded-md w-full cursor-pointer"
-              onClick={() => setShowActivationForm((prev) => !prev)}
+              onClick={() => {
+                if (!user?._id) {
+                  setShowNoUserModal(true);
+                  return;
+                }
+                setShowActivationForm((prev) => !prev);
+              }}
             >
               {activationButtonLabel}
             </button>
 
-            {showActivationForm && (
+            {showActivationForm && user?._id && (
               <>
                 {cards?.length > 0 && (
                   <div className="mt-4 space-y-2">
