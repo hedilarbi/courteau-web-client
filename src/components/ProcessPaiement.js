@@ -11,6 +11,8 @@ const ProcessPaiement = ({
   selectedRestaurant,
   address,
   deliveryMode,
+  paymentMethod,
+  setPaymentMethod,
   tipAmount,
   promoCode,
   subTotal,
@@ -49,12 +51,14 @@ const ProcessPaiement = ({
       <h2 className="font-inter font-semibold text-black md:text-xl text-base">
         Paiement
       </h2>
-      <div className="bg-yellow-100 border-l-4 border-yellow-500 p-3 mt-2 rounded-md flex items-center gap-2">
-        <FaCircleInfo color="#F7A600" size={42} />
-        <p className="text-[#7a5d00] font-inter text-sm">
-          Nous n&apos;acceptons pas les cartes cadeaux pour le paiement.
-        </p>
-      </div>
+      {paymentMethod === "card" ? (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 p-3 mt-2 rounded-md flex items-center gap-2">
+          <FaCircleInfo color="#F7A600" size={42} />
+          <p className="text-[#7a5d00] font-inter text-sm">
+            Nous n&apos;acceptons pas les cartes cadeaux pour le paiement.
+          </p>
+        </div>
+      ) : null}
       {hasValidAmount ? (
         <Elements
           stripe={stripePromise}
@@ -71,6 +75,8 @@ const ProcessPaiement = ({
             selectedRestaurant={selectedRestaurant}
             address={address}
             deliveryMode={deliveryMode}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
             tipAmount={tipAmount}
             promoCode={promoCode}
             subscriptionBenefits={subscriptionBenefits}
@@ -95,6 +101,8 @@ const ProcessPaiement = ({
           selectedRestaurant={selectedRestaurant}
           address={address}
           deliveryMode={deliveryMode}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
           tipAmount={tipAmount}
           promoCode={promoCode}
           subscriptionBenefits={subscriptionBenefits}

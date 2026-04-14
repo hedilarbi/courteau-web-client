@@ -238,6 +238,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const [scheduledDateTime, setScheduledDateTime] = useState(null);
   const [scheduleError, setScheduleError] = useState("");
   const [deliveryMode, setDeliveryMode] = useState("delivery");
+  const [paymentMethod, setPaymentMethod] = useState("card");
   const [promoCodeData, setPromoCodeData] = useState(null);
   const [promoCodeIsValid, setPromoCodeIsValid] = useState(false);
   const [promoCodeError, setPromoCodeError] = useState(null);
@@ -261,6 +262,12 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const [showSubscriptionItemModal, setShowSubscriptionItemModal] =
     useState(false);
   const [showBirthdayItemModal, setShowBirthdayItemModal] = useState(false);
+  const [isSuccessRedirecting, setIsSuccessRedirecting] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.sessionStorage.getItem("checkout_success_redirecting") === "1"
+    );
+  });
 
   const isScheduledOrder = scheduleOption === "later";
   const isAddressValid =
@@ -576,6 +583,12 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   }, [deliveryMode]);
 
   useEffect(() => {
+    if (deliveryMode === "delivery" && paymentMethod !== "card") {
+      setPaymentMethod("card");
+    }
+  }, [deliveryMode, paymentMethod]);
+
+  useEffect(() => {
     if (scheduleOption === "now") {
       setScheduledDateTime(null);
       setScheduleError("");
@@ -754,18 +767,27 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     const hasBasketContent = toSafeNumber(basket?.size, 0) > 0;
     let skipEmptyBasketRedirect = false;
     if (typeof window !== "undefined") {
+      const isRedirectingFlag =
+        window.sessionStorage.getItem("checkout_success_redirecting") === "1";
       const lastSuccessRedirectAtRaw =
         window.sessionStorage.getItem("checkout_success_redirect_at") || "";
       const lastSuccessRedirectAt = Number(lastSuccessRedirectAtRaw);
       if (hasBasketContent) {
+        window.sessionStorage.removeItem("checkout_success_redirecting");
         window.sessionStorage.removeItem("checkout_success_redirect_at");
+        setIsSuccessRedirecting(false);
       } else if (
         Number.isFinite(lastSuccessRedirectAt) &&
         Date.now() - lastSuccessRedirectAt <= 15000
       ) {
         skipEmptyBasketRedirect = true;
+        setIsSuccessRedirecting(true);
       } else if (lastSuccessRedirectAtRaw) {
+        window.sessionStorage.removeItem("checkout_success_redirecting");
         window.sessionStorage.removeItem("checkout_success_redirect_at");
+        setIsSuccessRedirecting(false);
+      } else if (!isRedirectingFlag) {
+        setIsSuccessRedirecting(false);
       }
     }
 
@@ -784,6 +806,22 @@ const CheckoutContent = ({ restaurantsSettings }) => {
           <p className="font-inter font-medium text-[#4B5563] md:text-lg text-base">
             Complétez les informations ci-dessous pour confirmer votre commande
           </p>
+          <div className="rounded-md bg-white p-6 shadow-md">
+            <div className="animate-pulse">
+              <div className="w-full h-10 bg-gray-200 mb-4" />
+              <div className="w-full h-10 bg-gray-200 mb-4" />
+              <div className="w-full h-10 bg-gray-200 mb-4" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSuccessRedirecting) {
+    return (
+      <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 min-h-screen">
+        <div className="md:w-[70%] w-full mx-auto">
           <div className="rounded-md bg-white p-6 shadow-md">
             <div className="animate-pulse">
               <div className="w-full h-10 bg-gray-200 mb-4" />
@@ -1067,6 +1105,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             selectedRestaurant={selectedRestaurant}
             address={address}
             deliveryMode={deliveryMode}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
             tipAmount={tipAmount}
             promoCode={promoCodeAllowed && promoCodeIsValid ? promoCodeData : null}
             subTotal={subTotal}

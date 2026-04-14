@@ -45,7 +45,7 @@ const getPromoExcludedCategoryIds = (promoCode) => {
     ...new Set(
       promoCode.excludedCategories
         .map((entry) => String(entry?._id || entry || "").trim())
-        .filter(Boolean)
+        .filter(Boolean),
     ),
   ];
 };
@@ -58,8 +58,11 @@ const getBasketItemCategoryId = (basketItem) =>
 
 const buildBasketItemsSubtotal = (basketItems = []) =>
   roundMoney(
-    (basketItems || []).reduce((sum, item) => sum + toSafeNumber(item?.price, 0), 0),
-    0
+    (basketItems || []).reduce(
+      (sum, item) => sum + toSafeNumber(item?.price, 0),
+      0,
+    ),
+    0,
   );
 
 const calculatePromoEligibleSubtotalForBasket = ({
@@ -92,7 +95,7 @@ const calculatePromoEligibleSubtotalForBasket = ({
 
       return sum + toSafeNumber(item?.price, 0);
     }, 0),
-    0
+    0,
   );
 };
 
@@ -102,14 +105,14 @@ const calculatePromoDiscountAmountForPromo = (promoCode, eligibleSubtotal) => {
   if (promoCode.type === "percent") {
     return roundMoney(
       eligibleSubtotal * (toSafeNumber(promoCode?.percent, 0) / 100),
-      0
+      0,
     );
   }
 
   if (promoCode.type === "amount") {
     return roundMoney(
       Math.min(toSafeNumber(promoCode?.amount, 0), eligibleSubtotal),
-      0
+      0,
     );
   }
 
@@ -130,7 +133,7 @@ const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
       `Articles indisponibles: ${unavailableItems
         .map((item) => item?.name)
         .filter(Boolean)
-        .join(", ")}`
+        .join(", ")}`,
     );
   }
 
@@ -139,7 +142,7 @@ const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
       `Offres indisponibles: ${unavailableOffers
         .map((offer) => offer?.name)
         .filter(Boolean)
-        .join(", ")}`
+        .join(", ")}`,
     );
   }
 
@@ -156,6 +159,8 @@ export default function CheckoutCard({
   selectedRestaurant,
   address,
   deliveryMode,
+  paymentMethod = "card",
+  setPaymentMethod,
   tipAmount,
   promoCode,
   subscriptionBenefits,
@@ -189,12 +194,15 @@ export default function CheckoutCard({
   const checkoutAttemptRef = useRef(null);
   const basketSubtotal = useMemo(
     () => roundMoney(basket?.subtotal, 0),
-    [basket?.subtotal]
+    [basket?.subtotal],
   );
   const normalizedTotal = useMemo(
     () => Math.round(Number(total || 0) * 100) / 100,
-    [total]
+    [total],
   );
+  const hasPositiveTotal = normalizedTotal > 0;
+  const showPickupCounterPaymentOption =
+    deliveryMode === "pickup" && hasPositiveTotal;
   const isAddressValid =
     deliveryMode !== "delivery" ||
     (!!address?.address &&
@@ -255,10 +263,11 @@ export default function CheckoutCard({
     };
   }, [user?.stripe_id]);
 
-  const amountCents = useMemo(() => Math.round(normalizedTotal * 100), [
-    normalizedTotal,
-  ]);
-  const requiresCardPayment = amountCents > 0;
+  const amountCents = useMemo(
+    () => Math.round(normalizedTotal * 100),
+    [normalizedTotal],
+  );
+  const requiresCardPayment = amountCents > 0 && paymentMethod === "card";
 
   const invalidatePromoCode = (message) => {
     setPromoCodeIsValid?.(false);
@@ -304,7 +313,7 @@ export default function CheckoutCard({
       eligibleSubtotal,
       promoDiscountAmount: calculatePromoDiscountAmountForPromo(
         nextPromoData,
-        eligibleSubtotal
+        eligibleSubtotal,
       ),
     };
   };
@@ -317,7 +326,10 @@ export default function CheckoutCard({
       };
     }
 
-    const response = await verifyPromoCode(String(promoCode?.code || "").trim(), user._id);
+    const response = await verifyPromoCode(
+      String(promoCode?.code || "").trim(),
+      user._id,
+    );
 
     if (!response?.status || !response?.data) {
       const nextMessage = response?.message || "Code promo invalide.";
@@ -345,12 +357,12 @@ export default function CheckoutCard({
         subTotal: basketSubtotal,
         promoCode,
       }),
-      0
+      0,
     );
     const nextEligibleSubtotal = roundMoney(validation.eligibleSubtotal, 0);
     const currentDiscountAmount = roundMoney(
       calculatePromoDiscountAmountForPromo(promoCode, currentEligibleSubtotal),
-      0
+      0,
     );
     const nextDiscountAmount = roundMoney(validation.promoDiscountAmount, 0);
 
@@ -359,7 +371,8 @@ export default function CheckoutCard({
       currentEligibleSubtotal !== nextEligibleSubtotal ||
       currentDiscountAmount !== nextDiscountAmount ||
       String(promoCode?.type || "") !== String(response.data?.type || "") ||
-      roundMoney(promoCode?.amount, 0) !== roundMoney(response.data?.amount, 0) ||
+      roundMoney(promoCode?.amount, 0) !==
+        roundMoney(response.data?.amount, 0) ||
       roundMoney(promoCode?.percent, 0) !==
         roundMoney(response.data?.percent, 0);
 
@@ -389,7 +402,7 @@ export default function CheckoutCard({
     const resolvedPromoCodeData = options?.promoCodeDataOverride ?? promoCode;
     const resolvedSubTotalAfterDiscount = roundMoney(
       options?.subTotalAfterDiscountOverride,
-      subTotalWithDiscount
+      subTotalWithDiscount,
     );
     const resolvedTotal = roundMoney(options?.totalOverride, total);
     const resolvedTip = roundMoney(options?.tipAmountOverride, tipAmount);
@@ -428,7 +441,7 @@ export default function CheckoutCard({
                   .map((selection) =>
                     typeof selection === "string"
                       ? selection
-                      : selection?._id || null
+                      : selection?._id || null,
                   )
                   .filter(Boolean)
               : [];
@@ -470,7 +483,11 @@ export default function CheckoutCard({
         orderItems,
         offers: orderOffers,
         rewards: orderRewards,
-        paymentMethod: isZeroTotalFlow ? "subscription_free_item" : "card",
+        paymentMethod: isZeroTotalFlow
+          ? "subscription_free_item"
+          : paymentMethod === "cash_at_counter"
+            ? "cash_at_counter"
+            : "card",
         total: resolvedTotal,
         discount: orderDiscountPercent,
         subTotalAfterDiscount: resolvedSubTotalAfterDiscount,
@@ -525,7 +542,7 @@ export default function CheckoutCard({
       if (pmRes.error || !pmRes.paymentMethod?.id) {
         setError(
           pmRes.error?.message ||
-            "Erreur lors de la création du moyen de paiement."
+            "Erreur lors de la création du moyen de paiement.",
         );
         return;
       }
@@ -536,7 +553,7 @@ export default function CheckoutCard({
         amountCents,
         user.email.trim(),
         pmRes.paymentMethod.id,
-        false
+        false,
       );
     } catch (e) {
       setError(e?.message || "Erreur lors de la création du paiement.");
@@ -552,7 +569,7 @@ export default function CheckoutCard({
         amountCents,
         user.email.trim(),
         pmId,
-        true
+        true,
       );
     } catch (e) {
       setError(e?.message || "Erreur lors de la création du paiement.");
@@ -576,7 +593,8 @@ export default function CheckoutCard({
           return;
         }
         setError(
-          result.error.message || "Erreur lors de l'authentification 3D Secure."
+          result.error.message ||
+            "Erreur lors de l'authentification 3D Secure.",
         );
         return;
       }
@@ -585,7 +603,7 @@ export default function CheckoutCard({
 
       if (!response.status) {
         setError(
-          response.message || "Erreur lors de la confirmation du paiement."
+          response.message || "Erreur lors de la confirmation du paiement.",
         );
         return;
       }
@@ -624,7 +642,7 @@ export default function CheckoutCard({
     try {
       if (user?.isBanned) {
         setError(
-          "Votre compte a été désactivé. Veuillez contacter le support."
+          "Votre compte a été désactivé. Veuillez contacter le support.",
         );
         return;
       }
@@ -632,17 +650,6 @@ export default function CheckoutCard({
         setError("Veuillez sélectionner un restaurant.");
         return;
       }
-      if (!requiresCardPayment) {
-        if (!isZeroTotalSubscriptionOrder) {
-          setError(
-            "Une commande à total 0 est possible uniquement avec un article gratuit éligible (abonnement ou anniversaire)."
-          );
-          return;
-        }
-        await handlePaymentReady(null, { zeroTotalSubscriptionFlow: true });
-        return;
-      }
-
       if (!user?.email) {
         setError("Email requis.");
         return;
@@ -672,7 +679,7 @@ export default function CheckoutCard({
         const radius = selectedRestaurant?.settings?.delivery_range || 6;
         const distance = calculateDistance(
           address.coords,
-          selectedRestaurant.location
+          selectedRestaurant.location,
         );
 
         if (distance > radius) {
@@ -684,13 +691,13 @@ export default function CheckoutCard({
       if (isScheduledOrder) {
         if (!scheduledDateTime) {
           setError(
-            "Veuillez sélectionner une date et une heure pour la commande programmée."
+            "Veuillez sélectionner une date et une heure pour la commande programmée.",
           );
           return;
         }
         const validationError = getScheduleValidationError(
           scheduledDateTime,
-          selectedRestaurant
+          selectedRestaurant,
         );
         if (validationError) {
           setError(validationError);
@@ -701,13 +708,13 @@ export default function CheckoutCard({
       const availabilityResponse = await checkRestaurantOrderAvailability(
         selectedRestaurant._id,
         basketItems.map((item) => ({ item: item.id })),
-        basketOffers.map((offer) => ({ offer: offer.id }))
+        basketOffers.map((offer) => ({ offer: offer.id })),
       );
 
       if (!availabilityResponse?.status) {
         setError(
           availabilityResponse?.message ||
-            "Impossible de vérifier la disponibilité des articles."
+            "Impossible de vérifier la disponibilité des articles.",
         );
         return;
       }
@@ -721,8 +728,39 @@ export default function CheckoutCard({
       if (!promoRevalidation?.status) {
         setError(
           promoRevalidation?.message ||
-            "Le code promo doit être revérifié avant le paiement."
+            "Le code promo doit être revérifié avant le paiement.",
         );
+        return;
+      }
+
+      if (!requiresCardPayment) {
+        if (!hasPositiveTotal) {
+          if (!isZeroTotalSubscriptionOrder) {
+            setError(
+              "Une commande à total 0 est possible uniquement avec un article gratuit éligible (abonnement ou anniversaire).",
+            );
+            return;
+          }
+          await handlePaymentReady(null, { zeroTotalSubscriptionFlow: true });
+          return;
+        }
+
+        if (paymentMethod === "cash_at_counter") {
+          checkoutAttemptRef.current = {
+            zeroTotalSubscriptionFlow: false,
+            orderPayload: cloneOrderPayload(
+              buildOrderPayload(null, {
+                zeroTotalSubscriptionFlow: false,
+                promoCodeDataOverride:
+                  promoRevalidation?.promoCodeData ?? promoCode,
+              }),
+            ),
+          };
+          await handlePaymentReady(null);
+          return;
+        }
+
+        setError("Veuillez sélectionner un mode de paiement valide.");
         return;
       }
 
@@ -783,7 +821,7 @@ export default function CheckoutCard({
     try {
       const isZeroTotalFlow = Boolean(
         options?.zeroTotalSubscriptionFlow ||
-          checkoutAttemptRef.current?.zeroTotalSubscriptionFlow
+        checkoutAttemptRef.current?.zeroTotalSubscriptionFlow,
       );
       const order =
         cloneOrderPayload(checkoutAttemptRef.current?.orderPayload) ||
@@ -804,8 +842,7 @@ export default function CheckoutCard({
         }
         checkoutAttemptRef.current = null;
         setError(
-          response?.message ||
-            "Erreur lors de la création de la commande."
+          response?.message || "Erreur lors de la création de la commande.",
         );
         return;
       } else {
@@ -813,8 +850,9 @@ export default function CheckoutCard({
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem(
             "checkout_success_redirect_at",
-            String(Date.now())
+            String(Date.now()),
           );
+          window.sessionStorage.setItem("checkout_success_redirecting", "1");
         }
         clearBasket();
         router.replace("/success?id=" + response.data.orderId);
@@ -828,7 +866,7 @@ export default function CheckoutCard({
       setError(
         error?.response?.data?.message ||
           error?.message ||
-          "Erreur lors de la création de la commande."
+          "Erreur lors de la création de la commande.",
       );
     } finally {
       setLoading(false);
@@ -845,9 +883,92 @@ export default function CheckoutCard({
 
   return (
     <div className="max-w-md w-full space-y-4">
-      {!requiresCardPayment && (
+      {!requiresCardPayment && !hasPositiveTotal && (
         <div className="text-sm text-gray-600 font-inter">
           Aucun paiement requis pour cette commande.
+        </div>
+      )}
+      {hasPositiveTotal && (
+        <div className="space-y-3 mt-4 rounded-2xl border border-[#E5E7EB] bg-[#FFF9EC] p-4 shadow-sm">
+          <div>
+            <div className="font-inter text-xs font-semibold uppercase tracking-[0.18em] text-[#B45309]">
+              Mode de paiement
+            </div>
+            <div className="mt-1 font-inter text-lg font-semibold text-[#111827]">
+              Choisissez comment régler cette commande
+            </div>
+            <p className="mt-1 font-inter text-sm text-[#6B7280]">
+              {showPickupCounterPaymentOption
+                ? "Pour une commande à ramasser, vous pouvez payer en ligne ou directement au comptoir."
+                : "Le paiement en ligne est requis pour cette commande."}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setPaymentMethod?.("card")}
+            className={`w-full rounded-2xl border p-4 text-left transition ${
+              paymentMethod === "card"
+                ? "border-pr bg-white ring-2 ring-pr shadow-md"
+                : "border-[#D1D5DB] bg-white hover:border-[#F59E0B]"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="font-inter text-base font-semibold text-[#111827]">
+                  Paiement en ligne
+                </div>
+              </div>
+              <div
+                className={`mt-1 flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                  paymentMethod === "card"
+                    ? "border-pr bg-pr"
+                    : "border-[#D1D5DB] bg-white"
+                }`}
+              >
+                <div
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    paymentMethod === "card" ? "bg-white" : "bg-transparent"
+                  }`}
+                />
+              </div>
+            </div>
+          </button>
+
+          {showPickupCounterPaymentOption && (
+            <button
+              type="button"
+              onClick={() => setPaymentMethod?.("cash_at_counter")}
+              className={`w-full rounded-2xl border p-4 text-left transition ${
+                paymentMethod === "cash_at_counter"
+                  ? "border-pr bg-white ring-2 ring-pr shadow-md"
+                  : "border-[#D1D5DB] bg-white hover:border-[#F59E0B]"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="font-inter text-base font-semibold text-[#111827]">
+                    Paiement au comptoir
+                  </div>
+                </div>
+                <div
+                  className={`mt-1 flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                    paymentMethod === "cash_at_counter"
+                      ? "border-pr bg-pr"
+                      : "border-[#D1D5DB] bg-white"
+                  }`}
+                >
+                  <div
+                    className={`h-2.5 w-2.5 rounded-full ${
+                      paymentMethod === "cash_at_counter"
+                        ? "bg-white"
+                        : "bg-transparent"
+                    }`}
+                  />
+                </div>
+              </div>
+            </button>
+          )}
         </div>
       )}
       {/* Saved cards */}
@@ -920,11 +1041,16 @@ export default function CheckoutCard({
           !canOrder ||
           !isAddressValid ||
           user.isBanned ||
-          (requiresCardPayment && (!stripe || !elements || !total || total <= 0))
+          (requiresCardPayment &&
+            (!stripe || !elements || !total || total <= 0))
         }
         className={`w-full rounded-md bg-pr font-bebas-neue text-xl py-3 font-bold disabled:bg-gray-400 disabled:cursor-not-allowed`}
       >
-        {loading ? "Traitement..." : requiresCardPayment ? "Payer" : "Confirmer"}
+        {loading
+          ? "Traitement..."
+          : requiresCardPayment
+            ? "Payer"
+            : "Passer la commande"}
       </button>
       {!isAddressValid && deliveryMode === "delivery" && (
         <div className="text-red-600 text-sm">

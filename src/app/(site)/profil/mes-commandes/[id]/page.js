@@ -71,6 +71,23 @@ const Page = () => {
     }
   };
 
+  const getPaymentMethodLabel = (paymentMethod) => {
+    const normalizedPaymentMethod = String(paymentMethod || "")
+      .trim()
+      .toLowerCase();
+
+    switch (normalizedPaymentMethod) {
+      case "cash_at_counter":
+        return "Paiement au comptoir";
+      case "card":
+        return "Paiement en ligne";
+      case "subscription_free_item":
+        return "Article gratuit";
+      default:
+        return "Non disponible";
+    }
+  };
+
   const toSafeNumber = (value, fallback = 0) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
@@ -239,6 +256,16 @@ const Page = () => {
                     {order.type === "pick up" ? "À emporter" : "Livraison"}
                   </span>
                 </div>
+                {order.type === "pick up" && (
+                  <div>
+                    <span className="font-semibold text-pr-500">
+                      Mode de paiement :
+                    </span>{" "}
+                    <span className="text-pr-700">
+                      {getPaymentMethodLabel(order.payment_method)}
+                    </span>
+                  </div>
+                )}
                 {order.promoCode && (
                   <div>
                     <span className="font-semibold text-pr-500">
