@@ -16,8 +16,14 @@ import {
   verifyPromoCode,
 } from "@/services/FoodServices";
 
-import { calculateDistance } from "@/utils/locationHandlers";
+import { calculateDistance, hasValidCoords } from "@/utils/locationHandlers";
 import { getScheduleValidationError } from "@/utils/dateHandlers";
+import {
+  calculatePromoDiscountAmountForPromo,
+  calculatePromoEligibleSubtotalForBasket,
+  roundMoney,
+  toSafeNumber,
+} from "@/utils/promoCodeHelpers";
 import {
   useBasket,
   useSelectBasket,
@@ -27,97 +33,6 @@ import {
 import { useRouter } from "next/navigation";
 import Spinner from "./spinner/Spinner";
 import Image from "next/image";
-
-const toSafeNumber = (value, fallback = 0) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const roundMoney = (value, fallback = 0) => {
-  const normalized = toSafeNumber(value, fallback);
-  return Math.round(normalized * 100) / 100;
-};
-
-const getPromoExcludedCategoryIds = (promoCode) => {
-  if (!Array.isArray(promoCode?.excludedCategories)) return [];
-
-  return [
-    ...new Set(
-      promoCode.excludedCategories
-        .map((entry) => String(entry?._id || entry || "").trim())
-        .filter(Boolean),
-    ),
-  ];
-};
-
-const getPromoLegacyCategoryId = (promoCode) =>
-  String(promoCode?.category?._id || promoCode?.category || "").trim();
-
-const getBasketItemCategoryId = (basketItem) =>
-  String(basketItem?.category?._id || basketItem?.category || "").trim();
-
-const buildBasketItemsSubtotal = (basketItems = []) =>
-  roundMoney(
-    (basketItems || []).reduce(
-      (sum, item) => sum + toSafeNumber(item?.price, 0),
-      0,
-    ),
-    0,
-  );
-
-const calculatePromoEligibleSubtotalForBasket = ({
-  basketItems = [],
-  subTotal = 0,
-  promoCode = null,
-}) => {
-  const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCode);
-  const promoLegacyCategoryId = getPromoLegacyCategoryId(promoCode);
-
-  if (!promoCode) {
-    return roundMoney(subTotal, 0);
-  }
-
-  if (!promoExcludedCategoryIds.length && !promoLegacyCategoryId) {
-    return buildBasketItemsSubtotal(basketItems);
-  }
-
-  return roundMoney(
-    (basketItems || []).reduce((sum, item) => {
-      const basketItemCategoryId = getBasketItemCategoryId(item);
-
-      if (promoExcludedCategoryIds.length) {
-        if (promoExcludedCategoryIds.includes(basketItemCategoryId)) {
-          return sum;
-        }
-      } else if (basketItemCategoryId !== promoLegacyCategoryId) {
-        return sum;
-      }
-
-      return sum + toSafeNumber(item?.price, 0);
-    }, 0),
-    0,
-  );
-};
-
-const calculatePromoDiscountAmountForPromo = (promoCode, eligibleSubtotal) => {
-  if (!promoCode) return 0;
-
-  if (promoCode.type === "percent") {
-    return roundMoney(
-      eligibleSubtotal * (toSafeNumber(promoCode?.percent, 0) / 100),
-      0,
-    );
-  }
-
-  if (promoCode.type === "amount") {
-    return roundMoney(
-      Math.min(toSafeNumber(promoCode?.amount, 0), eligibleSubtotal),
-      0,
-    );
-  }
-
-  return 0;
-};
 
 const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
   const unavailableItems = Array.isArray(availabilityData?.unavailableItems)
@@ -205,9 +120,7 @@ export default function CheckoutCard({
     deliveryMode === "pickup" && hasPositiveTotal;
   const isAddressValid =
     deliveryMode !== "delivery" ||
-    (!!address?.address &&
-      !!address?.coords?.latitude &&
-      !!address?.coords?.longitude);
+    !!String(address?.address || "").trim();
 
   const brandIcon = (brand) => {
     switch (brand) {
@@ -278,6 +191,7 @@ export default function CheckoutCard({
   const validatePromoCodeAgainstBasket = (nextPromoData) => {
     const eligibleSubtotal = calculatePromoEligibleSubtotalForBasket({
       basketItems,
+      basketOffers,
       subTotal: basketSubtotal,
       promoCode: nextPromoData,
     });
@@ -288,7 +202,8 @@ export default function CheckoutCard({
     ) {
       return {
         isValid: false,
-        message: "Ce code promo ne s'applique à aucun article de votre panier.",
+        message:
+          "Ce code promo ne s'applique à aucun article ou offre de votre panier.",
         eligibleSubtotal,
         promoDiscountAmount: 0,
       };
@@ -354,6 +269,7 @@ export default function CheckoutCard({
     const currentEligibleSubtotal = roundMoney(
       calculatePromoEligibleSubtotalForBasket({
         basketItems,
+        basketOffers,
         subTotal: basketSubtotal,
         promoCode,
       }),
@@ -396,6 +312,36 @@ export default function CheckoutCard({
 
   const cloneOrderPayload = (payload) =>
     payload ? JSON.parse(JSON.stringify(payload)) : null;
+
+  const buildDetailedAddressPayload = () => ({
+    street_address:
+      address?.street_address ||
+      address?.detailedAddress?.street_address ||
+      address?.detailed_address?.street_address ||
+      "",
+    city:
+      address?.city ||
+      address?.detailedAddress?.city ||
+      address?.detailed_address?.city ||
+      "",
+    state:
+      address?.state ||
+      address?.detailedAddress?.state ||
+      address?.detailed_address?.state ||
+      "",
+    postal_code:
+      address?.postal_code ||
+      address?.postalCode ||
+      address?.zipCode ||
+      address?.detailedAddress?.postal_code ||
+      address?.detailed_address?.postal_code ||
+      "",
+    country:
+      address?.country ||
+      address?.detailedAddress?.country ||
+      address?.detailed_address?.country ||
+      "",
+  });
 
   const buildOrderPayload = (paymentIntentId, options = {}) => {
     const isZeroTotalFlow = Boolean(options?.zeroTotalSubscriptionFlow);
@@ -471,11 +417,16 @@ export default function CheckoutCard({
       !Number.isNaN(scheduledDateTime.getTime())
         ? scheduledDateTime.toISOString()
         : null;
+    const addressId = String(
+      address?._id || address?.id || address?.addressId || "",
+    ).trim();
 
     return {
       type: deliveryMode,
-      address: address.address,
-      coords: address.coords,
+      address: address?.address || "",
+      addressId: deliveryMode === "delivery" && addressId ? addressId : undefined,
+      coords: hasValidCoords(address?.coords) ? address.coords : undefined,
+      detailedAddress: buildDetailedAddressPayload(),
       restaurant: selectedRestaurant._id,
       order: {
         subTotal: roundMoney(basket.subtotal, 0),
@@ -655,36 +606,25 @@ export default function CheckoutCard({
         return;
       }
       if (deliveryMode === "delivery") {
-        if (
-          !address?.address ||
-          !address?.coords.latitude ||
-          !address?.coords.longitude
-        ) {
-          setError("Veuillez sélectionner une adresse de livraison valide.");
-          return;
-        }
-      }
-
-      if (deliveryMode === "delivery") {
-        if (
-          !address?.address ||
-          !address?.coords ||
-          !address?.coords.latitude ||
-          !address?.coords.longitude
-        ) {
+        if (!String(address?.address || "").trim()) {
           setError("Veuillez sélectionner une adresse de livraison valide.");
           return;
         }
 
-        const radius = selectedRestaurant?.settings?.delivery_range || 6;
-        const distance = calculateDistance(
-          address.coords,
-          selectedRestaurant.location,
-        );
+        if (
+          hasValidCoords(address?.coords) &&
+          hasValidCoords(selectedRestaurant?.location)
+        ) {
+          const radius = selectedRestaurant?.settings?.delivery_range || 6;
+          const distance = calculateDistance(
+            address.coords,
+            selectedRestaurant.location,
+          );
 
-        if (distance > radius) {
-          setError(`L'adresse est hors de la zone de livraison .`);
-          return;
+          if (distance > radius) {
+            setError(`L'adresse est hors de la zone de livraison .`);
+            return;
+          }
         }
       }
 

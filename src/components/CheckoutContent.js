@@ -6,12 +6,19 @@ import {
   useBasket,
   useSelectBasket,
   useSelectBasketItems,
+  useSelectBasketOffers,
   useSelectBasketTotal,
 } from "@/context/BasketContext";
 
-import { getClosestRestaurant } from "@/utils/locationHandlers";
+import { getClosestRestaurant, hasValidCoords } from "@/utils/locationHandlers";
 import { getScheduleValidationError } from "@/utils/dateHandlers";
 import { getSubscriptionConfig } from "@/services/SubscriptionServices";
+import {
+  calculatePromoDiscountAmountForPromo,
+  calculatePromoEligibleSubtotalForBasket,
+  roundMoney,
+  toSafeNumber,
+} from "@/utils/promoCodeHelpers";
 import WarningBanner from "./WarningBanner";
 import OrderTypeBlock from "./OrderTypeBlock";
 import AddressesBlock from "./AddressesBlock";
@@ -61,94 +68,6 @@ const getBirthUtcParts = (value) => {
   };
 };
 
-const toSafeNumber = (value, fallback = 0) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const roundMoney = (value, fallback = 0) => {
-  const normalized = toSafeNumber(value, fallback);
-  return Math.round(normalized * 100) / 100;
-};
-
-const getPromoExcludedCategoryIds = (promoCode) => {
-  if (!Array.isArray(promoCode?.excludedCategories)) return [];
-
-  return [
-    ...new Set(
-      promoCode.excludedCategories
-        .map((entry) => String(entry?._id || entry || "").trim())
-        .filter(Boolean)
-    ),
-  ];
-};
-
-const getPromoLegacyCategoryId = (promoCode) =>
-  String(promoCode?.category?._id || promoCode?.category || "").trim();
-
-const getBasketItemCategoryId = (basketItem) =>
-  String(basketItem?.category?._id || basketItem?.category || "").trim();
-
-const buildBasketItemsSubtotal = (basketItems = []) =>
-  roundMoney(
-    (basketItems || []).reduce((sum, item) => sum + toSafeNumber(item?.price, 0), 0),
-    0
-  );
-
-const calculatePromoEligibleSubtotalForBasket = ({
-  basketItems = [],
-  subTotal = 0,
-  promoCode = null,
-}) => {
-  const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCode);
-  const promoLegacyCategoryId = getPromoLegacyCategoryId(promoCode);
-
-  if (!promoCode) {
-    return roundMoney(subTotal, 0);
-  }
-
-  if (!promoExcludedCategoryIds.length && !promoLegacyCategoryId) {
-    return buildBasketItemsSubtotal(basketItems);
-  }
-
-  return roundMoney(
-    (basketItems || []).reduce((sum, item) => {
-      const basketItemCategoryId = getBasketItemCategoryId(item);
-
-      if (promoExcludedCategoryIds.length) {
-        if (promoExcludedCategoryIds.includes(basketItemCategoryId)) {
-          return sum;
-        }
-      } else if (basketItemCategoryId !== promoLegacyCategoryId) {
-        return sum;
-      }
-
-      return sum + toSafeNumber(item?.price, 0);
-    }, 0),
-    0
-  );
-};
-
-const calculatePromoDiscountAmountForPromo = (promoCode, eligibleSubtotal) => {
-  if (!promoCode) return 0;
-
-  if (promoCode.type === "percent") {
-    return roundMoney(
-      eligibleSubtotal * (toSafeNumber(promoCode?.percent, 0) / 100),
-      0
-    );
-  }
-
-  if (promoCode.type === "amount") {
-    return roundMoney(
-      Math.min(toSafeNumber(promoCode?.amount, 0), eligibleSubtotal),
-      0
-    );
-  }
-
-  return 0;
-};
-
 const calculateDiscountedSubtotal = ({
   subTotal = 0,
   firstOrderDiscountAllowed = false,
@@ -157,6 +76,7 @@ const calculateDiscountedSubtotal = ({
   promoCodeIsValid = false,
   promoCodeData = null,
   basketItems = [],
+  basketOffers = [],
 }) => {
   let nextSubtotal = toSafeNumber(subTotal, 0);
 
@@ -167,6 +87,7 @@ const calculateDiscountedSubtotal = ({
   } else if (promoCodeAllowed && promoCodeIsValid && promoCodeData) {
     const eligibleSubtotal = calculatePromoEligibleSubtotalForBasket({
       basketItems,
+      basketOffers,
       subTotal,
       promoCode: promoCodeData,
     });
@@ -229,6 +150,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const { removeFromBasket } = useBasket();
   const basket = useSelectBasket();
   const basketItems = useSelectBasketItems();
+  const basketOffers = useSelectBasketOffers();
   const subTotal = useSelectBasketTotal();
   const router = useRouter();
 
@@ -272,9 +194,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const isScheduledOrder = scheduleOption === "later";
   const isAddressValid =
     deliveryMode !== "delivery" ||
-    (!!address?.address &&
-      !!address?.coords?.latitude &&
-      !!address?.coords?.longitude);
+    !!String(address?.address || "").trim();
 
   const subscriptionActive = isUserSubscriptionActive(user);
   const firstOrderDiscountAllowed =
@@ -446,10 +366,12 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const promoEligibleSubtotal = useMemo(() => {
     return calculatePromoEligibleSubtotalForBasket({
       basketItems,
+      basketOffers,
       subTotal,
       promoCode: promoCodeAllowed ? promoCodeData : null,
     });
   }, [
+    basketOffers,
     basketItems,
     promoCodeAllowed,
     promoCodeData,
@@ -563,16 +485,29 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   }, [user?._id]);
 
   useEffect(() => {
-    if (user && user.addresses && user.addresses.length > 0 && !loading) {
-      setAddress(user.addresses[0]);
-      const restaurantIndex = getClosestRestaurant(
-        user.addresses[0].coords,
-        restaurantsSettings
-      );
-      const closestRestaurant = restaurantsSettings[restaurantIndex];
-      setSelectedRestaurant(closestRestaurant);
+    const hasSelectedAddress = !!String(address?.address || "").trim();
+    if (
+      user &&
+      user.addresses &&
+      user.addresses.length > 0 &&
+      !loading &&
+      !hasSelectedAddress
+    ) {
+      const defaultAddress = user.addresses[0];
+      setAddress(defaultAddress);
+
+      if (hasValidCoords(defaultAddress?.coords)) {
+        const restaurantIndex = getClosestRestaurant(
+          defaultAddress.coords,
+          restaurantsSettings
+        );
+        const closestRestaurant = restaurantsSettings[restaurantIndex];
+        if (closestRestaurant) {
+          setSelectedRestaurant(closestRestaurant);
+        }
+      }
     }
-  }, [loading, restaurantsSettings, user]);
+  }, [address?.address, loading, restaurantsSettings, user]);
 
   useEffect(() => {
     if (deliveryMode !== "delivery") {
@@ -681,7 +616,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       setPromoCodeIsValid(false);
       setPromoCodeData(null);
       setPromoCodeError(
-        "Ce code promo ne s'applique à aucun article de votre panier."
+        "Ce code promo ne s'applique à aucun article ou offre de votre panier."
       );
       return;
     }
@@ -712,6 +647,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       promoCodeIsValid,
       promoCodeData,
       basketItems,
+      basketOffers,
     });
     setSubTotalWithDiscount(nextSubtotal);
 
@@ -749,6 +685,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     deliveryMode,
     effectiveDeliveryFee,
     firstOrderDiscountAllowed,
+    basketOffers,
     basketItems,
     promoCodeAllowed,
     promoCodeData,
@@ -1063,6 +1000,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
           <PromoCodeBlock
             userId={user._id}
             basketItems={basketItems}
+            basketOffers={basketOffers}
             promoCodeData={promoCodeData}
             setPromoCodeData={setPromoCodeData}
             promoCodeIsValid={promoCodeIsValid}

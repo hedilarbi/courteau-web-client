@@ -1,4 +1,15 @@
+function hasValidCoords(coords) {
+  return (
+    Number.isFinite(Number(coords?.latitude)) &&
+    Number.isFinite(Number(coords?.longitude))
+  );
+}
+
 function calculateDistance(userCoords, restaurantCoords) {
+  if (!hasValidCoords(userCoords) || !hasValidCoords(restaurantCoords)) {
+    return Infinity;
+  }
+
   const R = 6371; // Earth's radius in kilometers
   const dLat = deg2rad(restaurantCoords.latitude - userCoords.latitude);
   const dLon = deg2rad(restaurantCoords.longitude - userCoords.longitude);
@@ -19,11 +30,15 @@ function deg2rad(deg) {
 }
 
 function getClosestRestaurant(userCoords, restaurants) {
+  if (!hasValidCoords(userCoords) || !Array.isArray(restaurants)) {
+    return 0;
+  }
+
   let minDistance;
   let restaurantIndex = 0;
 
   for (let i = 0; i < restaurants.length; i++) {
-    if (restaurants[i].location) {
+    if (hasValidCoords(restaurants[i]?.location)) {
       let distance = calculateDistance(userCoords, restaurants[i].location);
 
       if (i === 0 || distance < minDistance) {
@@ -36,4 +51,4 @@ function getClosestRestaurant(userCoords, restaurants) {
   return restaurantIndex;
 }
 
-export { calculateDistance, getClosestRestaurant };
+export { calculateDistance, getClosestRestaurant, hasValidCoords };

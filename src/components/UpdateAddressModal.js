@@ -27,25 +27,32 @@ const UpdateAddressModal = ({
         <div>
           <select
             className="mt-3 max-w-full px-3 py-2 border rounded-md text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-pr bg-white"
-            value={address.address}
+            value={address?._id || address?.address || ""}
             onChange={(e) => {
               const selected = addresses.find(
-                (addr) => addr.address === e.target.value
+                (addr) =>
+                  String(addr?._id || addr?.address || "") === e.target.value
               );
+
+              if (!selected) return;
 
               const restaurantIndex = getClosestRestaurant(
                 selected.coords,
                 restaurantsSettings
               );
-
               const closestRestaurant = restaurantsSettings[restaurantIndex];
 
-              setSelectedRestaurant(closestRestaurant);
+              if (closestRestaurant) {
+                setSelectedRestaurant(closestRestaurant);
+              }
               setAddress(selected);
             }}
           >
             {addresses.map((address, idx) => (
-              <option key={idx} value={address.address}>
+              <option
+                key={address?._id || `${address?.address || "address"}-${idx}`}
+                value={address?._id || address.address}
+              >
                 {address.address}
               </option>
             ))}

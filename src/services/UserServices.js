@@ -78,11 +78,11 @@ const addToFavorites = async (userId, itemId) => {
     };
   }
 };
-const addToAddresses = async (userId, address, coords) => {
+const addToAddresses = async (userId, address, coords, detailedAddress = {}) => {
   try {
     let addToAddressesResponse = await axios.put(
       `${API_URL}/users/addresses/update/add/${userId}`,
-      { address, coords }
+      { address, coords, ...detailedAddress }
     );
     if (addToAddressesResponse?.status === 200) {
       return {

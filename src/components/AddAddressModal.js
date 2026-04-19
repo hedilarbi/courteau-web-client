@@ -14,6 +14,10 @@ const AddAddressModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { updateUser } = useUser();
+
+  const getAddressComponent = (components = [], type, format = "long_name") =>
+    components.find((component) => component.types?.includes(type))?.[format] ||
+    "";
  
   const geocodeAddress = async (address) => {
     try {
@@ -42,7 +46,12 @@ const AddAddressModal = ({
       if (data.status === "OK" && data.results.length > 0) {
         const result = data.results[0];
         const { lat, lng } = result.geometry.location;
-        const formattedAddress = result.formatted_address;
+        const components = result.address_components || [];
+        const streetNumber = getAddressComponent(components, "street_number");
+        const route = getAddressComponent(components, "route");
+        const streetAddress =
+          [streetNumber, route].filter(Boolean).join(" ").trim() ||
+          String(address || "").trim();
 
         if (!isFinite(lat) || !isFinite(lng)) {
           throw new Error(
@@ -51,8 +60,21 @@ const AddAddressModal = ({
         }
 
         return {
-          address: newAddress,
+          address: String(newAddress || "").trim(),
           coords: { latitude: lat, longitude: lng },
+          street_address: streetAddress,
+          city:
+            getAddressComponent(components, "locality") ||
+            getAddressComponent(components, "postal_town") ||
+            getAddressComponent(components, "administrative_area_level_3") ||
+            getAddressComponent(components, "sublocality"),
+          state: getAddressComponent(
+            components,
+            "administrative_area_level_1",
+            "short_name",
+          ),
+          postal_code: getAddressComponent(components, "postal_code"),
+          country: getAddressComponent(components, "country", "short_name"),
         };
       } else if (data.status === "ZERO_RESULTS") {
         throw new Error("Aucun résultat pour cette adresse.");
@@ -81,6 +103,13 @@ const AddAddressModal = ({
         userId,
         geocodedAddress.address,
         geocodedAddress.coords,
+        {
+          street_address: geocodedAddress.street_address,
+          city: geocodedAddress.city,
+          state: geocodedAddress.state,
+          postal_code: geocodedAddress.postal_code,
+          country: geocodedAddress.country,
+        },
       );
 
       if (response.status) {
@@ -91,11 +120,26 @@ const AddAddressModal = ({
 
         const closestRestaurant = restaurantsSettings[restaurantIndex];
 
-        setSelectedRestaurant(closestRestaurant);
-        setAddress({
-          address: geocodedAddress.address,
-          coords: geocodedAddress.coords,
-        });
+        if (closestRestaurant) {
+          setSelectedRestaurant(closestRestaurant);
+        }
+        const savedAddress = [...(response.data?.addresses || [])]
+          .reverse()
+          .find(
+            (entry) =>
+              String(entry?.address || "").trim() === geocodedAddress.address,
+          );
+        setAddress(
+          savedAddress || {
+            address: geocodedAddress.address,
+            coords: geocodedAddress.coords,
+            street_address: geocodedAddress.street_address,
+            city: geocodedAddress.city,
+            state: geocodedAddress.state,
+            postal_code: geocodedAddress.postal_code,
+            country: geocodedAddress.country,
+          },
+        );
         updateUser(response.data);
         setIsLoading(false);
         setShowAddAddressModal(false);

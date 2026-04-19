@@ -1,51 +1,16 @@
 import { verifyPromoCode } from "@/services/FoodServices";
 import React, { useState } from "react";
-
-const toSafeNumber = (value, fallback = 0) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const roundMoney = (value, fallback = 0) => {
-  const normalized = toSafeNumber(value, fallback);
-  return Math.round(normalized * 100) / 100;
-};
-
-const getPromoExcludedCategoryIds = (promoCode) => {
-  if (!Array.isArray(promoCode?.excludedCategories)) return [];
-
-  return [
-    ...new Set(
-      promoCode.excludedCategories
-        .map((entry) => String(entry?._id || entry || "").trim())
-        .filter(Boolean)
-    ),
-  ];
-};
-
-const getPromoLegacyCategoryId = (promoCode) =>
-  String(promoCode?.category?._id || promoCode?.category || "").trim();
-
-const getBasketItemCategoryId = (basketItem) =>
-  String(basketItem?.category?._id || basketItem?.category || "").trim();
-
-const buildPromoExcludedItemsLabel = (items = []) => {
-  const counts = new Map();
-
-  items.forEach((item) => {
-    const name = String(item?.name || "").trim();
-    if (!name) return;
-    counts.set(name, (counts.get(name) || 0) + 1);
-  });
-
-  return [...counts.entries()]
-    .map(([name, count]) => (count > 1 ? `${name} x${count}` : name))
-    .join(", ");
-};
+import {
+  buildPromoExcludedItemsLabel,
+  calculatePromoEligibleSubtotalForBasket,
+  getPromoExcludedBasketEntries,
+  toSafeNumber,
+} from "@/utils/promoCodeHelpers";
 
 const PromoCodeBlock = ({
   userId,
   basketItems,
+  basketOffers = [],
   promoCodeData,
   setPromoCodeData,
   promoCodeIsValid,
@@ -58,11 +23,12 @@ const PromoCodeBlock = ({
 }) => {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCodeData);
   const promoExcludedItemsLabel = buildPromoExcludedItemsLabel(
-    (basketItems || []).filter((item) =>
-      promoExcludedCategoryIds.includes(getBasketItemCategoryId(item))
-    )
+    getPromoExcludedBasketEntries({
+      basketItems,
+      basketOffers,
+      promoCode: promoCodeData,
+    })
   );
   const handleVerifyPromoCode = async () => {
     try {
@@ -85,39 +51,19 @@ const PromoCodeBlock = ({
       const response = await verifyPromoCode(code, userId);
 
       if (response.status) {
-        const nextPromoExcludedCategoryIds =
-          getPromoExcludedCategoryIds(response.data);
-        const nextPromoLegacyCategoryId = getPromoLegacyCategoryId(
-          response.data
-        );
-        const eligibleSubtotal =
-          nextPromoExcludedCategoryIds.length || nextPromoLegacyCategoryId
-            ? roundMoney(
-                (basketItems || []).reduce((sum, item) => {
-                  const basketItemCategoryId = getBasketItemCategoryId(item);
-
-                  if (nextPromoExcludedCategoryIds.length) {
-                    if (
-                      nextPromoExcludedCategoryIds.includes(basketItemCategoryId)
-                    ) {
-                      return sum;
-                    }
-                  } else if (basketItemCategoryId !== nextPromoLegacyCategoryId) {
-                    return sum;
-                  }
-
-                  return sum + toSafeNumber(item?.price, 0);
-                }, 0),
-                0
-              )
-            : roundMoney(subTotal, 0);
+        const eligibleSubtotal = calculatePromoEligibleSubtotalForBasket({
+          basketItems,
+          basketOffers,
+          subTotal,
+          promoCode: response.data,
+        });
 
         if (
           (response.data.type === "amount" || response.data.type === "percent") &&
           eligibleSubtotal <= 0
         ) {
           setPromoCodeError(
-            "Ce code promo ne s'applique à aucun article de votre panier."
+            "Ce code promo ne s'applique à aucun article ou offre de votre panier."
           );
           setPromoCodeIsValid(false);
           return;
@@ -125,7 +71,7 @@ const PromoCodeBlock = ({
 
         if (
           response.data.type === "amount" &&
-          response.data.amount > eligibleSubtotal
+          toSafeNumber(response.data.amount, 0) > eligibleSubtotal
         ) {
           setPromoCodeError(
             "Le montant du code promo ne peut pas être supérieur au total des articles éligibles."
