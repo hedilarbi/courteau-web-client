@@ -14,6 +14,7 @@ const Page = () => {
     email: "",
     dob: "",
     address: "",
+    referralCode: "",
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -89,6 +90,7 @@ const Page = () => {
         formData.address,
         userCoords,
         formData.dob,
+        formData.referralCode,
       );
 
       if (response.status) {
@@ -181,6 +183,22 @@ const Page = () => {
             value={formData.address}
             onChange={(e) =>
               setFormData((s) => ({ ...s, address: e.target.value }))
+            }
+          />
+        </div>
+
+        <div>
+          <label className="block text-gray-700 mb-1" htmlFor="referralCode">
+            Code de parrainage (Optionnel)
+          </label>
+          <input
+            id="referralCode"
+            type="text"
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pr uppercase"
+            placeholder="EX: A1B2C3"
+            value={formData.referralCode}
+            onChange={(e) =>
+              setFormData((s) => ({ ...s, referralCode: e.target.value }))
             }
           />
         </div>

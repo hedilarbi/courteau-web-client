@@ -184,7 +184,7 @@ const getUserByToken = async (token) => {
   }
 };
 
-const setUserInfo = async (id, name, email, address, coords, date) => {
+const setUserInfo = async (id, name, email, address, coords, date, referralCode) => {
   try {
     let updateUserInfoResponse = await axios.put(`${API_URL}/users/set/${id}`, {
       name,
@@ -192,6 +192,7 @@ const setUserInfo = async (id, name, email, address, coords, date) => {
       address,
       date_of_birth: date,
       coords,
+      referralCode,
     });
     if (updateUserInfoResponse.status === 200) {
       return {
@@ -409,6 +410,36 @@ const createZeroTotalSubscriptionOrder = async (order) => {
   try {
     let createOrderResponse = await axios.post(
       `${API_URL}/orders/create/subscription-zero-total`,
+      {
+        order,
+      },
+      {
+        timeout: 15000,
+      }
+    );
+    if (createOrderResponse.status === 201) {
+      return {
+        status: true,
+        message: "order data",
+        data: createOrderResponse.data,
+      };
+    } else {
+      return {
+        status: false,
+        message: "didn't found",
+      };
+    }
+  } catch (error) {
+    return {
+      status: false,
+      message: error?.response?.data?.message || error.message,
+    };
+  }
+};
+const createZeroTotalReferralOrder = async (order) => {
+  try {
+    let createOrderResponse = await axios.post(
+      `${API_URL}/orders/create/referral-zero-total`,
       {
         order,
       },
@@ -666,6 +697,7 @@ export {
   catchError,
   createOrder,
   createZeroTotalSubscriptionOrder,
+  createZeroTotalReferralOrder,
   confirmPaiment,
   cancelPaymentIntent,
 };

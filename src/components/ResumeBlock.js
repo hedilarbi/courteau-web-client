@@ -16,6 +16,7 @@ const ResumeBlock = ({
   subscriptionActive,
   subscriptionDiscountAmount,
   promoDiscountAmount,
+  referralDiscountApplied,
 }) => {
   return (
     <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
@@ -51,7 +52,7 @@ const ResumeBlock = ({
         )}
 
         {(firstOrderDiscountAllowed ||
-          subscriptionActive ||
+          subscriptionDiscountAmount > 0 ||
           (promoCodeAllowed && promoCodeData && promoCodeIsValid)) && (
           <div className="flex justify-between">
             <span className="font-inter text-gray-700">
@@ -116,6 +117,14 @@ const ResumeBlock = ({
             ${tps.toFixed(2)}
           </span>
         </div>
+        {referralDiscountApplied > 0 && (
+          <div className="flex justify-between text-green-600">
+            <span className="font-inter">Crédit parrainage</span>
+            <span className="font-inter font-semibold">
+              -${referralDiscountApplied.toFixed(2)}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="font-inter text-gray-700">Total</span>
           <span className="font-inter font-semibold text-gray-900">

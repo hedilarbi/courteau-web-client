@@ -3,7 +3,7 @@ import Spinner from "@/components/spinner/Spinner";
 import { useUser } from "@/context/UserContext";
 import Link from "next/link";
 import React, { useEffect } from "react";
-import { FaClockRotateLeft } from "react-icons/fa6";
+import { FaClockRotateLeft, FaUsers, FaCopy } from "react-icons/fa6";
 import { FaHeart } from "react-icons/fa";
 import { MdLocationPin, MdWorkspacePremium } from "react-icons/md";
 import { IoChevronForwardOutline } from "react-icons/io5";
@@ -136,6 +136,43 @@ const Page = () => {
             </div>
           </Link>
         )}
+      </div>
+
+      <div className="bg-white rounded-xl shadow-md mt-6 p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-pr flex items-center justify-center text-black">
+              <FaUsers size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">Parrainer des amis</h3>
+              <p className="text-sm text-gray-500">
+                Gagnez 10$ de crédit pour chaque ami parrainé qui passe sa première commande.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 min-w-[200px]">
+            <div className="bg-gray-50 p-3 rounded-lg border border-dashed border-gray-300 flex items-center justify-between gap-4">
+              <span className="font-mono font-bold tracking-wider text-lg">{user?.referralCode || "------"}</span>
+              <button 
+                onClick={() => {
+                  if (user?.referralCode) {
+                    navigator.clipboard.writeText(user.referralCode);
+                    alert("Code copié !");
+                  }
+                }}
+                className="text-gray-500 hover:text-black transition-colors"
+                title="Copier le code"
+              >
+                <FaCopy />
+              </button>
+            </div>
+            <div className="flex justify-between items-center px-1">
+              <span className="text-xs text-gray-500 font-inter">Crédit disponible :</span>
+              <span className="text-sm font-bold text-green-600">{(user?.referralBalance || 0).toFixed(2)}$</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

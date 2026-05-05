@@ -14,6 +14,10 @@ import { getClosestRestaurant, hasValidCoords } from "@/utils/locationHandlers";
 import { getScheduleValidationError } from "@/utils/dateHandlers";
 import { getSubscriptionConfig } from "@/services/SubscriptionServices";
 import {
+  checkRestaurantOrderAvailability,
+} from "@/services/FoodServices";
+import toast from "react-hot-toast";
+import {
   calculatePromoDiscountAmountForPromo,
   calculatePromoEligibleSubtotalForBasket,
   roundMoney,
@@ -31,6 +35,40 @@ import MenuItemModal from "./MenuItemModal";
 
 const SUBSCRIPTION_DISCOUNT_PERCENT = 15;
 const BIRTHDAY_TIMEZONE = "America/Toronto";
+
+const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
+  const unavailableItems = Array.isArray(availabilityData?.unavailableItems)
+    ? availabilityData.unavailableItems
+    : [];
+  const unavailableOffers = Array.isArray(availabilityData?.unavailableOffers)
+    ? availabilityData.unavailableOffers
+    : [];
+  const parts = [];
+
+  if (unavailableItems.length > 0) {
+    parts.push(
+      `Articles indisponibles: ${unavailableItems
+        .map((item) => item?.name)
+        .filter(Boolean)
+        .join(", ")}`
+    );
+  }
+
+  if (unavailableOffers.length > 0) {
+    parts.push(
+      `Offres indisponibles: ${unavailableOffers
+        .map((offer) => offer?.name)
+        .filter(Boolean)
+        .join(", ")}`
+    );
+  }
+
+  if (!parts.length) {
+    return "Certains articles de votre panier ne sont plus disponibles pour cette succursale.";
+  }
+
+  return parts.join(" | ");
+};
 
 const getCurrentDateParts = (timezone = BIRTHDAY_TIMEZONE) => {
   try {
@@ -79,12 +117,15 @@ const calculateDiscountedSubtotal = ({
   basketOffers = [],
 }) => {
   let nextSubtotal = toSafeNumber(subTotal, 0);
+  const shouldApplyPromoCode = Boolean(
+    promoCodeAllowed && promoCodeIsValid && promoCodeData
+  );
+  const shouldApplyFirstOrderDiscount =
+    firstOrderDiscountAllowed && !(subscriptionActive && shouldApplyPromoCode);
 
-  if (firstOrderDiscountAllowed) {
+  if (shouldApplyFirstOrderDiscount) {
     nextSubtotal *= 0.8;
-  } else if (subscriptionActive) {
-    nextSubtotal *= (100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100;
-  } else if (promoCodeAllowed && promoCodeIsValid && promoCodeData) {
+  } else if (shouldApplyPromoCode) {
     const eligibleSubtotal = calculatePromoEligibleSubtotalForBasket({
       basketItems,
       basketOffers,
@@ -96,6 +137,8 @@ const calculateDiscountedSubtotal = ({
       eligibleSubtotal
     );
     nextSubtotal -= promoDiscountAmount;
+  } else if (subscriptionActive) {
+    nextSubtotal *= (100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100;
   }
 
   return roundMoney(Math.max(0, nextSubtotal), 0);
@@ -164,6 +207,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const [promoCodeData, setPromoCodeData] = useState(null);
   const [promoCodeIsValid, setPromoCodeIsValid] = useState(false);
   const [promoCodeError, setPromoCodeError] = useState(null);
+  const [isBasketAvailable, setIsBasketAvailable] = useState(true);
+  const [basketErrorMessage, setBasketErrorMessage] = useState("");
   const [selectedRestaurant, setSelectedRestaurant] = useState(
     restaurantsSettings && restaurantsSettings.length > 0
       ? restaurantsSettings[0]
@@ -174,6 +219,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const [total, setTotal] = useState(0);
   const [tvq, setTvq] = useState(0);
   const [tps, setTps] = useState(0);
+  const [referralDiscountApplied, setReferralDiscountApplied] = useState(0);
   const [subTotalWithDiscount, setSubTotalWithDiscount] = useState(
     roundMoney(subTotal, 0)
   );
@@ -199,7 +245,12 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const subscriptionActive = isUserSubscriptionActive(user);
   const firstOrderDiscountAllowed =
     !user?.firstOrderDiscountApplied;
-  const promoCodeAllowed = !subscriptionActive;
+  const promoCodeAllowed = true;
+  const promoCodeApplied = Boolean(
+    promoCodeAllowed && promoCodeIsValid && promoCodeData
+  );
+  const shouldApplyFirstOrderDiscount =
+    firstOrderDiscountAllowed && !(subscriptionActive && promoCodeApplied);
   const currentCycleKey = getExpectedSubscriptionCycleKey(user, new Date());
   const userCycleKey = String(user?.subscriptionFreeItemCycleKey || "").trim();
   const subscriptionFreeItemUsedCount =
@@ -263,7 +314,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     subscriptionFreeItemRemaining > 0 &&
     Boolean(configuredSubscriptionFreeItemId);
   const shouldApplySubscriptionDiscount =
-    subscriptionActive && !firstOrderDiscountAllowed;
+    subscriptionActive && !shouldApplyFirstOrderDiscount && !promoCodeApplied;
 
   const selectedFreeItem =
     basketItems.find((item) => item.isSubscriptionFreeItem) || null;
@@ -449,9 +500,14 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     ((subscriptionActive && canUseMonthlyFreeItem && Boolean(selectedFreeItem)) ||
       (canUseBirthdayFreeItem && Boolean(selectedBirthdayFreeItem)));
 
-  const orderDiscountPercent = firstOrderDiscountAllowed
+  const isZeroTotalReferralOrder =
+    normalizedTotal <= 0 &&
+    !isZeroTotalSubscriptionOrder &&
+    referralDiscountApplied > 0;
+
+  const orderDiscountPercent = shouldApplyFirstOrderDiscount
     ? 20
-    : subscriptionActive
+    : shouldApplySubscriptionDiscount
     ? SUBSCRIPTION_DISCOUNT_PERCENT
     : 0;
 
@@ -508,6 +564,44 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       }
     }
   }, [address?.address, loading, restaurantsSettings, user]);
+
+  useEffect(() => {
+    const verifyAvailabilityOnRestaurantChange = async () => {
+      if (
+        !selectedRestaurant?._id ||
+        (basketItems.length === 0 && basketOffers.length === 0)
+      )
+        return;
+
+      try {
+        const availabilityResponse = await checkRestaurantOrderAvailability(
+          selectedRestaurant._id,
+          basketItems.map((item) => ({ item: item.id })),
+          basketOffers.map((offer) => ({ offer: offer.id }))
+        );
+
+        if (
+          availabilityResponse?.status &&
+          availabilityResponse?.data?.isValid === false
+        ) {
+          const message = buildOrderAvailabilityErrorMessage(
+            availabilityResponse.data
+          );
+          setIsBasketAvailable(false);
+          setBasketErrorMessage(message);
+          toast.error(message, { duration: 5000 });
+        } else {
+          setIsBasketAvailable(true);
+          setBasketErrorMessage("");
+        }
+      } catch (error) {
+        console.error("Availability check failed on restaurant change", error);
+      }
+    };
+
+    verifyAvailabilityOnRestaurantChange();
+  }, [selectedRestaurant?._id, basketItems, basketOffers]);
+
 
   useEffect(() => {
     if (deliveryMode !== "delivery") {
@@ -671,15 +765,29 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       const nextTps = roundMoney((taxableAmount * 5) / 100, 0);
       setTvq(nextTvq);
       setTps(nextTps);
-      setTotal(
-        roundMoney(effectiveDeliveryFee + nextSubtotal + nextTvq + nextTps + nextTip)
+      const totalValueBeforeReferral = roundMoney(
+        effectiveDeliveryFee + nextSubtotal + nextTvq + nextTps + nextTip,
+        0
       );
+      const nextReferralDiscount = Math.min(
+        toSafeNumber(user?.referralBalance, 0),
+        totalValueBeforeReferral
+      );
+      setReferralDiscountApplied(nextReferralDiscount);
+      setTotal(roundMoney(totalValueBeforeReferral - nextReferralDiscount, 0));
     } else {
       const nextTvq = roundMoney((nextSubtotal * 9.975) / 100, 0);
       const nextTps = roundMoney((nextSubtotal * 5) / 100, 0);
       setTvq(nextTvq);
       setTps(nextTps);
-      setTotal(roundMoney(nextSubtotal + nextTvq + nextTps + nextTip, 0));
+      const nextReferralDiscount = Math.min(
+        toSafeNumber(user?.referralBalance, 0),
+        roundMoney(nextSubtotal + nextTvq + nextTps + nextTip, 0)
+      );
+      setReferralDiscountApplied(nextReferralDiscount);
+      setTotal(
+        roundMoney(nextSubtotal + nextTvq + nextTps + nextTip - nextReferralDiscount, 0)
+      );
     }
   }, [
     deliveryMode,
@@ -695,6 +803,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     subTotal,
     subscriptionActive,
     tips,
+    user?.referralBalance,
   ]);
 
   useEffect(() => {
@@ -808,6 +917,18 @@ const CheckoutContent = ({ restaurantsSettings }) => {
           setCanOrder={setCanOrder}
           addressValid={isAddressValid}
         />
+
+        {!isBasketAvailable && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-sm mb-4 flex items-start gap-3">
+            <svg className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p className="font-semibold font-inter">Articles indisponibles</p>
+              <p className="font-inter text-sm mt-0.5">{basketErrorMessage}</p>
+            </div>
+          </div>
+        )}
 
         <h1 className="font-inter font-semibold text-black md:text-2xl text-lg">
           Finaliser la commande
@@ -1006,6 +1127,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             promoCodeIsValid={promoCodeIsValid}
             setPromoCodeIsValid={setPromoCodeIsValid}
             firstOrderDiscountAllowed={firstOrderDiscountAllowed}
+            subscriptionActive={subscriptionActive}
             promoCodeAllowed={promoCodeAllowed}
             subTotal={subTotal}
             promoCodeError={promoCodeError}
@@ -1026,7 +1148,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             tps={tps}
             deliveryFee={effectiveDeliveryFee}
             tips={tipAmount}
-            firstOrderDiscountAllowed={firstOrderDiscountAllowed}
+            firstOrderDiscountAllowed={shouldApplyFirstOrderDiscount}
             promoCodeData={promoCodeData}
             promoCodeIsValid={promoCodeIsValid}
             promoCodeAllowed={promoCodeAllowed}
@@ -1035,6 +1157,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             subscriptionActive={subscriptionActive}
             subscriptionDiscountAmount={subscriptionDiscountAmount}
             promoDiscountAmount={promoDiscountAmount}
+            referralDiscountApplied={referralDiscountApplied}
           />
 
           <ProcessPaiement
@@ -1050,13 +1173,16 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             subTotal={subTotal}
             subTotalWithDiscount={subTotalWithDiscount}
             canOrder={canOrder}
+            isBasketAvailable={isBasketAvailable}
             isScheduledOrder={isScheduledOrder}
             scheduledDateTime={scheduledDateTime}
             subscriptionBenefits={subscriptionBenefits}
             birthdayBenefits={birthdayBenefits}
             orderDiscountPercent={orderDiscountPercent}
             effectiveDeliveryFee={effectiveDeliveryFee}
+            referralDiscountApplied={referralDiscountApplied}
             isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
+            isZeroTotalReferralOrder={isZeroTotalReferralOrder}
             setPromoCodeData={setPromoCodeData}
             setPromoCodeIsValid={setPromoCodeIsValid}
             setPromoCodeError={setPromoCodeError}

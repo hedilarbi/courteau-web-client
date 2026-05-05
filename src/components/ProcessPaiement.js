@@ -18,13 +18,16 @@ const ProcessPaiement = ({
   subTotal,
   subTotalWithDiscount,
   canOrder,
+  isBasketAvailable = true,
   isScheduledOrder,
   scheduledDateTime,
   subscriptionBenefits,
   birthdayBenefits,
   orderDiscountPercent,
   effectiveDeliveryFee,
+  referralDiscountApplied,
   isZeroTotalSubscriptionOrder,
+  isZeroTotalReferralOrder,
   setPromoCodeData,
   setPromoCodeIsValid,
   setPromoCodeError,
@@ -83,13 +86,16 @@ const ProcessPaiement = ({
             birthdayBenefits={birthdayBenefits}
             orderDiscountPercent={orderDiscountPercent}
             effectiveDeliveryFee={effectiveDeliveryFee}
+            referralDiscountApplied={referralDiscountApplied}
             isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
+            isZeroTotalReferralOrder={isZeroTotalReferralOrder}
             setPromoCodeData={setPromoCodeData}
             setPromoCodeIsValid={setPromoCodeIsValid}
             setPromoCodeError={setPromoCodeError}
             subTotal={subTotal}
             subTotalWithDiscount={subTotalWithDiscount}
             canOrder={canOrder}
+            isBasketAvailable={isBasketAvailable}
             isScheduledOrder={isScheduledOrder}
             scheduledDateTime={scheduledDateTime}
           />
@@ -109,13 +115,16 @@ const ProcessPaiement = ({
           birthdayBenefits={birthdayBenefits}
           orderDiscountPercent={orderDiscountPercent}
           effectiveDeliveryFee={effectiveDeliveryFee}
+          referralDiscountApplied={referralDiscountApplied}
           isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
+          isZeroTotalReferralOrder={isZeroTotalReferralOrder}
           setPromoCodeData={setPromoCodeData}
           setPromoCodeIsValid={setPromoCodeIsValid}
           setPromoCodeError={setPromoCodeError}
           subTotal={subTotal}
           subTotalWithDiscount={subTotalWithDiscount}
           canOrder={canOrder}
+          isBasketAvailable={isBasketAvailable}
           isScheduledOrder={isScheduledOrder}
           scheduledDateTime={scheduledDateTime}
         />

@@ -8,6 +8,7 @@ import {
   confirmPaiment,
   createOrder,
   createZeroTotalSubscriptionOrder,
+  createZeroTotalReferralOrder,
   getPaymentIntentClientSecret,
   getPaymentMethods,
 } from "@/services/UserServices";
@@ -82,9 +83,12 @@ export default function CheckoutCard({
   birthdayBenefits,
   orderDiscountPercent,
   effectiveDeliveryFee,
+  referralDiscountApplied = 0,
   isZeroTotalSubscriptionOrder,
+  isZeroTotalReferralOrder,
   subTotalWithDiscount,
   canOrder,
+  isBasketAvailable = true,
   isScheduledOrder,
   scheduledDateTime,
   setPromoCodeData,
@@ -352,6 +356,10 @@ export default function CheckoutCard({
     );
     const resolvedTotal = roundMoney(options?.totalOverride, total);
     const resolvedTip = roundMoney(options?.tipAmountOverride, tipAmount);
+    const resolvedReferralDiscountApplied = roundMoney(
+      options?.referralDiscountAppliedOverride,
+      referralDiscountApplied || 0
+    );
 
     const orderItems = [];
     const orderOffers = [];
@@ -459,6 +467,7 @@ export default function CheckoutCard({
           isScheduled: isScheduledOrder,
           scheduledFor,
         },
+        referralDiscountApplied: resolvedReferralDiscountApplied,
       },
     };
   };
@@ -645,26 +654,8 @@ export default function CheckoutCard({
         }
       }
 
-      const availabilityResponse = await checkRestaurantOrderAvailability(
-        selectedRestaurant._id,
-        basketItems.map((item) => ({ item: item.id })),
-        basketOffers.map((offer) => ({ offer: offer.id })),
-      );
-
-      if (!availabilityResponse?.status) {
-        setError(
-          availabilityResponse?.message ||
-            "Impossible de vérifier la disponibilité des articles.",
-        );
-        return;
-      }
-
-      if (availabilityResponse?.data?.isValid === false) {
-        setError(buildOrderAvailabilityErrorMessage(availabilityResponse.data));
-        return;
-      }
-
       const promoRevalidation = await revalidatePromoCodeBeforeCheckout();
+
       if (!promoRevalidation?.status) {
         setError(
           promoRevalidation?.message ||
@@ -675,13 +666,16 @@ export default function CheckoutCard({
 
       if (!requiresCardPayment) {
         if (!hasPositiveTotal) {
-          if (!isZeroTotalSubscriptionOrder) {
+          const isZeroReferral = Boolean(isZeroTotalReferralOrder);
+          const isZeroSub = Boolean(isZeroTotalSubscriptionOrder);
+          if (!isZeroSub && !isZeroReferral) {
             setError(
-              "Une commande à total 0 est possible uniquement avec un article gratuit éligible (abonnement ou anniversaire).",
+              "Une commande à total 0 est possible uniquement avec un article gratuit ou un crédit de parrainage suffisant.",
             );
             return;
           }
-          await handlePaymentReady(null, { zeroTotalSubscriptionFlow: true });
+          const flowKey = isZeroSub ? "zeroTotalSubscriptionFlow" : "zeroTotalReferralFlow";
+          await handlePaymentReady(null, { [flowKey]: true });
           return;
         }
 
@@ -723,7 +717,76 @@ export default function CheckoutCard({
       };
 
       if (isZeroTotalSubscriptionOrder) {
-        await handlePaymentReady(null, { zeroTotalSubscriptionFlow: true });
+        const availabilityResponse = await checkRestaurantOrderAvailability(
+          selectedRestaurant._id,
+          basketItems.map((item) => ({ item: item.id })),
+          basketOffers.map((offer) => ({ offer: offer.id }))
+        );
+
+        if (!availabilityResponse?.status) {
+          setError(
+            availabilityResponse?.message ||
+              "Impossible de vérifier la disponibilité des articles."
+          );
+          return;
+        }
+
+        if (availabilityResponse?.data?.isValid === false) {
+          setError(
+            buildOrderAvailabilityErrorMessage(availabilityResponse.data)
+          );
+          return;
+        }
+
+        await handlePaymentReady(null, {
+          zeroTotalSubscriptionFlow: true,
+        });
+        return;
+      }
+
+      const isZeroReferral = Boolean(isZeroTotalReferralOrder);
+      if (isZeroReferral) {
+        const availabilityResponse = await checkRestaurantOrderAvailability(
+          selectedRestaurant._id,
+          basketItems.map((item) => ({ item: item.id })),
+          basketOffers.map((offer) => ({ offer: offer.id }))
+        );
+
+        if (!availabilityResponse?.status) {
+          setError(
+            availabilityResponse?.message ||
+              "Impossible de vérifier la disponibilité des articles."
+          );
+          return;
+        }
+
+        if (availabilityResponse?.data?.isValid === false) {
+          setError(
+            buildOrderAvailabilityErrorMessage(availabilityResponse.data)
+          );
+          return;
+        }
+
+        await handlePaymentReady(null, { zeroTotalReferralFlow: true });
+        return;
+      }
+
+      const availabilityResponse = await checkRestaurantOrderAvailability(
+        selectedRestaurant._id,
+        basketItems.map((item) => ({ item: item.id })),
+        basketOffers.map((offer) => ({ offer: offer.id }))
+      );
+
+      if (!availabilityResponse?.status) {
+        setError(
+          availabilityResponse?.message ||
+            "Impossible de vérifier la disponibilité des articles."
+        );
+        return;
+      }
+
+      if (availabilityResponse?.data?.isValid === false) {
+        setError(buildOrderAvailabilityErrorMessage(availabilityResponse.data));
         return;
       }
 
@@ -747,6 +810,7 @@ export default function CheckoutCard({
         return;
       }
 
+
       await processPi(pi);
     } catch (e) {
       setError(e?.message || "Erreur lors du traitement du paiement.");
@@ -759,25 +823,33 @@ export default function CheckoutCard({
 
   const handlePaymentReady = async (pi, options = {}) => {
     try {
-      const isZeroTotalFlow = Boolean(
+      const isZeroTotalSubFlow = Boolean(
         options?.zeroTotalSubscriptionFlow ||
         checkoutAttemptRef.current?.zeroTotalSubscriptionFlow,
       );
+      const isZeroTotalRefFlow = Boolean(
+        options?.zeroTotalReferralFlow ||
+        checkoutAttemptRef.current?.zeroTotalReferralFlow,
+      );
+      const isAnyZeroTotalFlow = isZeroTotalSubFlow || isZeroTotalRefFlow;
       const order =
         cloneOrderPayload(checkoutAttemptRef.current?.orderPayload) ||
         buildOrderPayload(pi, {
-          zeroTotalSubscriptionFlow: isZeroTotalFlow,
+          zeroTotalSubscriptionFlow: isZeroTotalSubFlow,
+          zeroTotalReferralFlow: isZeroTotalRefFlow,
         });
 
       if (order?.order) {
         order.order.paymentIntentId = pi || null;
       }
 
-      const response = isZeroTotalFlow
+      const response = isZeroTotalSubFlow
         ? await createZeroTotalSubscriptionOrder(order)
-        : await createOrder(order);
+        : isZeroTotalRefFlow
+          ? await createZeroTotalReferralOrder(order)
+          : await createOrder(order);
       if (!response?.status || !response.data) {
-        if (pi && !isZeroTotalFlow) {
+        if (pi && !isAnyZeroTotalFlow) {
           await cancelPaymentIntent(pi);
         }
         checkoutAttemptRef.current = null;
@@ -798,7 +870,7 @@ export default function CheckoutCard({
         router.replace("/success?id=" + response.data.orderId);
       }
     } catch (error) {
-      if (pi && !options?.zeroTotalSubscriptionFlow) {
+      if (pi && !options?.zeroTotalSubscriptionFlow && !options?.zeroTotalReferralFlow) {
         await cancelPaymentIntent(pi);
       }
       checkoutAttemptRef.current = null;
@@ -974,6 +1046,7 @@ export default function CheckoutCard({
         onClick={onPay}
         disabled={
           loading ||
+          !isBasketAvailable ||
           (requiresCardPayment &&
             !!showCardField &&
             !cardComplete &&
