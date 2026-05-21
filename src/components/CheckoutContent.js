@@ -43,6 +43,9 @@ const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
   const unavailableOffers = Array.isArray(availabilityData?.unavailableOffers)
     ? availabilityData.unavailableOffers
     : [];
+  const unavailableToppings = Array.isArray(availabilityData?.unavailableToppings)
+    ? availabilityData.unavailableToppings
+    : [];
   const parts = [];
 
   if (unavailableItems.length > 0) {
@@ -58,6 +61,15 @@ const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
     parts.push(
       `Offres indisponibles: ${unavailableOffers
         .map((offer) => offer?.name)
+        .filter(Boolean)
+        .join(", ")}`
+    );
+  }
+
+  if (unavailableToppings.length > 0) {
+    parts.push(
+      `Personnalisations indisponibles: ${unavailableToppings
+        .map((t) => t?.name)
         .filter(Boolean)
         .join(", ")}`
     );
@@ -576,8 +588,21 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       try {
         const availabilityResponse = await checkRestaurantOrderAvailability(
           selectedRestaurant._id,
-          basketItems.map((item) => ({ item: item.id })),
-          basketOffers.map((offer) => ({ offer: offer.id }))
+          basketItems.map((item) => ({
+            item: item.id,
+            customizations: (item.customization || []).map((c) => c._id || c).filter(Boolean),
+          })),
+          basketOffers.map((offer) => ({
+            offer: offer.id,
+            items: offer.customization
+              ? Object.keys(offer.customization).map((itemId) => ({
+                  item: itemId,
+                  customizations: (offer.customization[itemId]?.[0] || [])
+                    .map((c) => (typeof c === "string" ? c : c?._id))
+                    .filter(Boolean),
+                }))
+              : [],
+          }))
         );
 
         if (

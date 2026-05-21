@@ -42,6 +42,9 @@ const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
   const unavailableOffers = Array.isArray(availabilityData?.unavailableOffers)
     ? availabilityData.unavailableOffers
     : [];
+  const unavailableToppings = Array.isArray(availabilityData?.unavailableToppings)
+    ? availabilityData.unavailableToppings
+    : [];
   const parts = [];
 
   if (unavailableItems.length > 0) {
@@ -62,8 +65,17 @@ const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
     );
   }
 
+  if (unavailableToppings.length > 0) {
+    parts.push(
+      `Personnalisations indisponibles: ${unavailableToppings
+        .map((t) => t?.name)
+        .filter(Boolean)
+        .join(", ")}`,
+    );
+  }
+
   if (!parts.length) {
-    return "Impossible de vérifier la disponibilité des articles.";
+    return "Impossible de v\u00e9rifier la disponibilit\u00e9 des articles.";
   }
 
   return parts.join(" | ");
@@ -719,8 +731,21 @@ export default function CheckoutCard({
       if (isZeroTotalSubscriptionOrder) {
         const availabilityResponse = await checkRestaurantOrderAvailability(
           selectedRestaurant._id,
-          basketItems.map((item) => ({ item: item.id })),
-          basketOffers.map((offer) => ({ offer: offer.id }))
+          basketItems.map((item) => ({
+            item: item.id,
+            customizations: (item.customization || []).map((c) => c._id || c).filter(Boolean),
+          })),
+          basketOffers.map((offer) => ({
+            offer: offer.id,
+            items: offer.customization
+              ? Object.keys(offer.customization).map((itemId) => ({
+                  item: itemId,
+                  customizations: (offer.customization[itemId]?.[0] || [])
+                    .map((c) => (typeof c === "string" ? c : c?._id))
+                    .filter(Boolean),
+                }))
+              : [],
+          }))
         );
 
         if (!availabilityResponse?.status) {
@@ -748,8 +773,21 @@ export default function CheckoutCard({
       if (isZeroReferral) {
         const availabilityResponse = await checkRestaurantOrderAvailability(
           selectedRestaurant._id,
-          basketItems.map((item) => ({ item: item.id })),
-          basketOffers.map((offer) => ({ offer: offer.id }))
+          basketItems.map((item) => ({
+            item: item.id,
+            customizations: (item.customization || []).map((c) => c._id || c).filter(Boolean),
+          })),
+          basketOffers.map((offer) => ({
+            offer: offer.id,
+            items: offer.customization
+              ? Object.keys(offer.customization).map((itemId) => ({
+                  item: itemId,
+                  customizations: (offer.customization[itemId]?.[0] || [])
+                    .map((c) => (typeof c === "string" ? c : c?._id))
+                    .filter(Boolean),
+                }))
+              : [],
+          }))
         );
 
         if (!availabilityResponse?.status) {
@@ -773,8 +811,21 @@ export default function CheckoutCard({
 
       const availabilityResponse = await checkRestaurantOrderAvailability(
         selectedRestaurant._id,
-        basketItems.map((item) => ({ item: item.id })),
-        basketOffers.map((offer) => ({ offer: offer.id }))
+        basketItems.map((item) => ({
+          item: item.id,
+          customizations: (item.customization || []).map((c) => c._id || c).filter(Boolean),
+        })),
+        basketOffers.map((offer) => ({
+          offer: offer.id,
+          items: offer.customization
+            ? Object.keys(offer.customization).map((itemId) => ({
+                item: itemId,
+                customizations: (offer.customization[itemId]?.[0] || [])
+                  .map((c) => (typeof c === "string" ? c : c?._id))
+                  .filter(Boolean),
+              }))
+            : [],
+        }))
       );
 
       if (!availabilityResponse?.status) {
