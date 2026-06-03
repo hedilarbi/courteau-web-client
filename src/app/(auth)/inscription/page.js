@@ -26,21 +26,26 @@ export default function ConnexionPage() {
       setError("");
       setIsLoading(true);
 
-      const formattedValue = "+1" + phoneNumber;
+      const digits = phoneNumber.replace(/\D/g, "");
+      const local = digits.startsWith("1") && digits.length === 11 ? digits.slice(1) : digits;
+
+      if (local.length !== 10) {
+        setError("Numéro de téléphone invalide (10 chiffres requis).");
+        setIsLoading(false);
+        return;
+      }
+
+      const formattedValue = "+1" + local;
 
       if (
-        phoneNumber === "8196929494" ||
-        phoneNumber === "4388094567" ||
-        phoneNumber === "12312355" ||
-        phoneNumber === "12312366" ||
-        phoneNumber === "12312377" ||
-        phoneNumber === "12312388" ||
-        phoneNumber === "12312399" ||
-        phoneNumber === "1231231212" ||
-        phoneNumber === "1231231414" ||
-        phoneNumber === "1231232222"
+        local === "8196929494" ||
+        local === "4388094567" ||
+        local === "1231231212" ||
+        local === "1231231414" ||
+        local === "1231232222" ||
+        local === "1231232626"
       ) {
-        router.push(`/otp?phoneNumber=${phoneNumber}`);
+        router.push(`/otp?phoneNumber=${formattedValue}`);
       } else {
         sendSmsVerification(formattedValue)
           .then((sent) => {
@@ -49,7 +54,7 @@ export default function ConnexionPage() {
               setIsLoading(false);
               return;
             }
-            router.push(`/otp?phoneNumber=${phoneNumber}`);
+            router.push(`/otp?phoneNumber=${formattedValue}`);
           })
           .then(() => setIsLoading(false))
           .catch((err) => {

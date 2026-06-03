@@ -3,7 +3,7 @@ import Spinner from "@/components/spinner/Spinner";
 import { useUser } from "@/context/UserContext";
 import Link from "next/link";
 import React, { useEffect } from "react";
-import { FaClockRotateLeft, FaUsers, FaCopy } from "react-icons/fa6";
+import { FaClockRotateLeft, FaUsers, FaCopy, FaCreditCard } from "react-icons/fa6";
 import { FaHeart } from "react-icons/fa";
 import { MdLocationPin, MdWorkspacePremium } from "react-icons/md";
 import { IoChevronForwardOutline } from "react-icons/io5";
@@ -108,7 +108,7 @@ const Page = () => {
         </Link>
         <Link
           href="/profil/mes-adresses"
-          className="flex items-center gap-2 p-3  "
+          className="flex items-center gap-2 p-3 border-b border-gray-300"
         >
           <div className="md:w-10 md:h-10 h-8 w-8 text-[#16a34a] rounded-md overflow-hidden  flex items-center justify-center bg-[#dcfce7]">
             <MdLocationPin />
@@ -117,6 +117,20 @@ const Page = () => {
             Adresses de livraison
           </p>
           <div className="text-[#9ca3af] ">
+            <IoChevronForwardOutline />
+          </div>
+        </Link>
+        <Link
+          href="/profil/mes-cartes"
+          className="flex items-center gap-2 p-3"
+        >
+          <div className="md:w-10 md:h-10 h-8 w-8 text-[#0284c7] rounded-md overflow-hidden flex items-center justify-center bg-[#e0f2fe]">
+            <FaCreditCard />
+          </div>
+          <p className="text-sm font-bold text-black font-inter flex-1">
+            Mes cartes bancaires
+          </p>
+          <div className="text-[#9ca3af]">
             <IoChevronForwardOutline />
           </div>
         </Link>

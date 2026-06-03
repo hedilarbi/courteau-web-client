@@ -73,6 +73,8 @@ const Page = () => {
       const response = await updateUserInfo(user._id, form.name, form.email);
       if (response.status) {
         setSuccess("Profil enregistré avec succès.");
+      } else if (response.error === "EMAIL_TAKEN") {
+        setErrors({ email: "Cette adresse courriel est déjà utilisée." });
       } else {
         setErrors({ form: "Impossible de sauvegarder. Réessayez plus tard." });
       }

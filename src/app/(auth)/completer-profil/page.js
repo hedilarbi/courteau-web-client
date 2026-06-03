@@ -99,6 +99,11 @@ const Page = () => {
         return;
       }
 
+      if (response.error === "EMAIL_TAKEN") {
+        setError("Cette adresse courriel est déjà utilisée.");
+        return;
+      }
+
       setError("Erreur lors de la mise à jour des informations utilisateur.");
     } catch (err) {
       setError(

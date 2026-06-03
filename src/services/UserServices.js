@@ -209,7 +209,8 @@ const setUserInfo = async (id, name, email, address, coords, date, referralCode)
   } catch (error) {
     return {
       status: false,
-      message: error.message,
+      error: error?.response?.data?.error || null,
+      message: error?.response?.data?.message || error.message,
     };
   }
 };
@@ -237,7 +238,8 @@ const updateUserInfo = async (id, name, email) => {
   } catch (error) {
     return {
       status: false,
-      message: error.message,
+      error: error?.response?.data?.error || null,
+      message: error?.response?.data?.message || error.message,
     };
   }
 };
@@ -466,6 +468,47 @@ const createZeroTotalReferralOrder = async (order) => {
     };
   }
 };
+const deletePaymentMethod = async (paymentMethodId) => {
+  try {
+    const response = await axios.delete(
+      `${API_URL}/payments/payment-method/${paymentMethodId}`,
+      { timeout: 15000 }
+    );
+    if (response.status === 200) return { status: true };
+    return { status: false, message: "Erreur lors de la suppression." };
+  } catch (error) {
+    return { status: false, message: error?.response?.data?.error || error.message };
+  }
+};
+
+const attachPaymentMethod = async (userId, paymentMethodId) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/payments/attach-payment-method`,
+      { userId, paymentMethodId },
+      { timeout: 15000 }
+    );
+    if (response.status === 200) return { status: true, data: response.data };
+    return { status: false, message: "Erreur lors de l'ajout de la carte." };
+  } catch (error) {
+    return { status: false, message: error?.response?.data?.error || error.message };
+  }
+};
+
+const updatePaymentMethod = async (paymentMethodId, exp_month, exp_year) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/payments/payment-method/${paymentMethodId}`,
+      { exp_month, exp_year },
+      { timeout: 15000 }
+    );
+    if (response.status === 200) return { status: true, data: response.data };
+    return { status: false, message: "Erreur lors de la modification." };
+  } catch (error) {
+    return { status: false, message: error?.response?.data?.error || error.message };
+  }
+};
+
 const getPaymentMethods = async (customerId) => {
   try {
     let getPaymentIntentClientSecretResponse = await axios.get(
@@ -693,6 +736,9 @@ export {
   getOrder,
   removeFromAddresses,
   getPaymentMethods,
+  deletePaymentMethod,
+  attachPaymentMethod,
+  updatePaymentMethod,
   getPaymentIntentClientSecret,
   catchError,
   createOrder,
