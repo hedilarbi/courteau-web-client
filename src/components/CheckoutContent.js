@@ -242,6 +242,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const [showSubscriptionItemModal, setShowSubscriptionItemModal] =
     useState(false);
   const [showBirthdayItemModal, setShowBirthdayItemModal] = useState(false);
+  const [showUpdateRestaurantModal, setShowUpdateRestaurantModal] =
+    useState(false);
   const [isSuccessRedirecting, setIsSuccessRedirecting] = useState(() => {
     if (typeof window === "undefined") return false;
     return (
@@ -977,6 +979,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             userId={user._id}
             userAddresses={user.addresses}
             deliveryMode={deliveryMode}
+            showUpdateRestaurantModal={showUpdateRestaurantModal}
+            setShowUpdateRestaurantModal={setShowUpdateRestaurantModal}
           />
 
           <ScheduleBlock
@@ -1211,6 +1215,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             setPromoCodeData={setPromoCodeData}
             setPromoCodeIsValid={setPromoCodeIsValid}
             setPromoCodeError={setPromoCodeError}
+            onChangeRestaurant={() => setShowUpdateRestaurantModal(true)}
           />
         </section>
       </div>

@@ -18,13 +18,24 @@ const AddressesBlock = ({
   userId,
   userAddresses,
   deliveryMode,
+  showUpdateRestaurantModal: externalShowRestaurantModal,
+  setShowUpdateRestaurantModal: externalSetShowRestaurantModal,
 }) => {
   const [showAddAddressModal, setShowAddAddressModal] = React.useState(false);
   const [showUpdateAddressModal, setShowUpdateAddressModal] =
     React.useState(false);
 
-  const [showUpdateRestaurantModal, setShowUpdateRestaurantModal] =
+  const [_localShowRestaurantModal, _localSetShowRestaurantModal] =
     React.useState(false);
+
+  const showUpdateRestaurantModal =
+    externalShowRestaurantModal !== undefined
+      ? externalShowRestaurantModal
+      : _localShowRestaurantModal;
+  const setShowUpdateRestaurantModal =
+    externalSetShowRestaurantModal !== undefined
+      ? externalSetShowRestaurantModal
+      : _localSetShowRestaurantModal;
 
   return (
     <div className="rounded-md bg-white p-6 shadow-md mt-4">

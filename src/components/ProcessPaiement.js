@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import CheckoutCard from "./CheckoutCard";
 import { FaCircleInfo } from "react-icons/fa6";
+import { FaStore } from "react-icons/fa6";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
@@ -31,21 +32,89 @@ const ProcessPaiement = ({
   setPromoCodeData,
   setPromoCodeIsValid,
   setPromoCodeError,
+  onChangeRestaurant,
 }) => {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [processPaiement, setProcessPaiement] = useState(false);
+
+  const restaurantName = selectedRestaurant?.name || "ce restaurant";
+
+  const handleConfirm = () => {
+    setShowConfirmModal(false);
+    setProcessPaiement(true);
+  };
+
+  const handleChangeRestaurant = () => {
+    setShowConfirmModal(false);
+    if (onChangeRestaurant) {
+      onChangeRestaurant();
+    }
+  };
 
   if (!processPaiement) {
     return (
-      <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
-        <button
-          className="bg-pr text-black font-bebas-neue text-xl px-4 py-3 rounded-md mt-6 w-full cursor-pointer"
-          onClick={() => setProcessPaiement(true)}
-        >
-          Procéder au paiement
-        </button>
-      </div>
+      <>
+        <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
+          <button
+            className="bg-pr text-black font-bebas-neue text-xl px-4 py-3 rounded-md mt-6 w-full cursor-pointer"
+            onClick={() => setShowConfirmModal(true)}
+          >
+            Procéder au paiement
+          </button>
+        </div>
+
+        {/* Confirmation Modal */}
+        {showConfirmModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+            onClick={() => setShowConfirmModal(false)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Icon */}
+              <div className="flex justify-center mb-4">
+                <div className="bg-[#FEF3C7] rounded-full p-4">
+                  <FaStore size={28} color="#F7A600" />
+                </div>
+              </div>
+
+              {/* Title */}
+              <h2 className="font-inter font-bold text-black text-center text-xl mb-3">
+                Confirmer votre commande
+              </h2>
+
+              {/* Message */}
+              <p className="font-inter text-[#374151] text-center text-sm leading-relaxed mb-7">
+                Confirmez-vous que vous souhaitez passer cette commande à la
+                succursale{" "}
+                <span className="font-semibold text-black">{restaurantName}</span>
+                {" ?"}
+              </p>
+
+              {/* Confirm button */}
+              <button
+                className="w-full bg-pr text-black font-inter font-semibold text-base py-3 rounded-full cursor-pointer hover:bg-[#e69500] transition mb-3"
+                onClick={handleConfirm}
+              >
+                Oui, confirmer
+              </button>
+
+              {/* Change restaurant button */}
+              <button
+                className="w-full border-2 border-pr text-pr font-inter font-semibold text-base py-3 rounded-full cursor-pointer hover:bg-[#FEF3C7] transition"
+                onClick={handleChangeRestaurant}
+              >
+                Non, changer de succursale
+              </button>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
+
   const amountCents = Math.trunc(Number(total || 0) * 100);
   const hasValidAmount = amountCents > 0;
 
