@@ -12,9 +12,14 @@ export const viewport = {
 import MenuContent from "@/components/MenuContent";
 import Script from "next/script";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.API_URL ||
+  "https://api.lecourteau.com/api";
+
 // 👉 Remplace par tes vrais appels serveur (ou direct DB)
 async function fetchCategories() {
-  const res = await fetch(`${process.env.API_URL}/categories`, {
+  const res = await fetch(`${API_URL}/categories`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -25,7 +30,7 @@ async function fetchCategories() {
 
 async function fetchItemsByCategory(categorySlug) {
   const res = await fetch(
-    `${process.env.API_URL}/menuItems/category/slug/${categorySlug}`,
+    `${API_URL}/menuItems/category/slug/${categorySlug}`,
     {
       cache: "no-store",
     },
@@ -38,7 +43,7 @@ async function fetchItemsByCategory(categorySlug) {
 }
 
 async function fetchAwards() {
-  const res = await fetch(`${process.env.API_URL}/rewards`, {
+  const res = await fetch(`${API_URL}/rewards`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -48,7 +53,7 @@ async function fetchAwards() {
 }
 
 async function fetchOffers() {
-  const res = await fetch(`${process.env.API_URL}/offers`, {
+  const res = await fetch(`${API_URL}/offers`, {
     cache: "no-store",
   });
   if (!res.ok) {

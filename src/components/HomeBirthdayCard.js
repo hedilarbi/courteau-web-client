@@ -173,13 +173,15 @@ const HomeBirthdayCard = () => {
 
   return (
     <>
-      <MenuItemModal
-        itemId={birthdayItemId}
-        itemUID={null}
-        showMenuItemModal={showBirthdayModal}
-        setShowMenuItemModal={setShowBirthdayModal}
-        isBirthdayFreeItem
-      />
+      {showBirthdayModal && (
+        <MenuItemModal
+          itemId={birthdayItemId}
+          itemUID={null}
+          showMenuItemModal={showBirthdayModal}
+          setShowMenuItemModal={setShowBirthdayModal}
+          isBirthdayFreeItem
+        />
+      )}
       <div className={cardContainerClassName}>
         <button
           type="button"

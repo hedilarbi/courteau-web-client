@@ -11,6 +11,7 @@ const NoUserModal = ({
   signupHref = "/inscription",
 }) => {
   const router = useRouter();
+  if (!showNoUserModal) return null;
   return (
     <div
       className={`h-screen bg-black/40 flex justify-center items-center fixed inset-0 z-50 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${

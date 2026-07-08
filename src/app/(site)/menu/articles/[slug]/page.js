@@ -6,9 +6,14 @@ import Script from "next/script";
 
 export const dynamic = "force-dynamic";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.API_URL ||
+  "https://api.lecourteau.com/api";
+
 async function fetchItem(slug) {
   const res = await fetch(
-    `${process.env.API_URL}/menuItems/slug/${encodeURIComponent(slug)}`,
+    `${API_URL}/menuItems/slug/${encodeURIComponent(slug)}`,
     { cache: "no-store" }
   );
   if (!res.ok) return null;

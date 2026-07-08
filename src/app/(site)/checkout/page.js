@@ -1,8 +1,13 @@
 import CheckoutContent from "@/components/CheckoutContent";
 import React from "react";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.API_URL ||
+  "https://api.lecourteau.com/api";
+
 const page = async () => {
-  const response = await fetch(`${process.env.API_URL}/restaurants/settings`, {
+  const response = await fetch(`${API_URL}/restaurants/settings`, {
     cache: "no-store",
   });
   const restaurantsSettings = await response.json();

@@ -662,12 +662,14 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
 
   return (
     <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 min-h-screen">
-      <NoUserModal
-        showNoUserModal={showNoUserModal}
-        setShowNoUserModal={setShowNoUserModal}
-        title="Vous devez être connecté pour activer CLUB COURTEAU."
-        description="Connectez-vous ou créez votre compte pour activer votre abonnement."
-      />
+      {showNoUserModal && (
+        <NoUserModal
+          showNoUserModal={showNoUserModal}
+          setShowNoUserModal={setShowNoUserModal}
+          title="Vous devez être connecté pour activer CLUB COURTEAU."
+          description="Connectez-vous ou créez votre compte pour activer votre abonnement."
+        />
+      )}
       <div className="max-w-3xl mx-auto">
         <div className="rounded-xl border border-[#0F172A] bg-[#111827] p-6 shadow-md">
           <h1 className="font-bebas-neue text-4xl text-white">CLUB COURTEAU</h1>

@@ -41,24 +41,30 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
         showBasketSlider ? "" : "translate-x-[100%]"
       }  md:w-[40%] w-[100%]  bg-[#F3F4F6] flex flex-col  fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
     >
-      <NoUserModal
-        showNoUserModal={showNoUserModal}
-        setShowNoUserModal={setShowNoUserModal}
-      />
+      {showNoUserModal && (
+        <NoUserModal
+          showNoUserModal={showNoUserModal}
+          setShowNoUserModal={setShowNoUserModal}
+        />
+      )}
 
-      <OfferModal
-        setShowOfferModal={setShowOfferModal}
-        itemId={offerId}
-        itemUID={offerUID}
-        showOfferModal={showOfferModal}
-      />
+      {showOfferModal && (
+        <OfferModal
+          setShowOfferModal={setShowOfferModal}
+          itemId={offerId}
+          itemUID={offerUID}
+          showOfferModal={showOfferModal}
+        />
+      )}
 
-      <MenuItemModal
-        setShowMenuItemModal={setShowItemModal}
-        itemId={itemId}
-        itemUID={itemUID}
-        showMenuItemModal={showItemModal}
-      />
+      {showItemModal && (
+        <MenuItemModal
+          setShowMenuItemModal={setShowItemModal}
+          itemId={itemId}
+          itemUID={itemUID}
+          showMenuItemModal={showItemModal}
+        />
+      )}
 
       <div className="flex justify-end mb-4">
         <button

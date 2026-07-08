@@ -370,10 +370,12 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
     }
   };
   useEffect(() => {
-    if (itemId) {
+    if (itemId && showOfferModal) {
       fetchItem();
     }
-  }, [fetchItem, itemId]);
+  }, [fetchItem, itemId, showOfferModal]);
+
+  if (!showOfferModal) return null;
 
   return (
     <div

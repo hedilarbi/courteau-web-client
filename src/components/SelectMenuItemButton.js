@@ -42,17 +42,21 @@ const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
 
   return (
     <>
-      <MenuItemModal
-        itemId={selectedItem}
-        setShowMenuItemModal={setShowMenuItemModal}
-        showMenuItemModal={showMenuItemModal}
-      />
+      {showMenuItemModal && (
+        <MenuItemModal
+          itemId={selectedItem}
+          setShowMenuItemModal={setShowMenuItemModal}
+          showMenuItemModal={showMenuItemModal}
+        />
+      )}
 
-      <OfferModal
-        itemId={selectedOffer}
-        setShowOfferModal={setShowOfferModal}
-        showOfferModal={showOfferModal}
-      />
+      {showOfferModal && (
+        <OfferModal
+          itemId={selectedOffer}
+          setShowOfferModal={setShowOfferModal}
+          showOfferModal={showOfferModal}
+        />
+      )}
 
       <button
         onClick={() => {

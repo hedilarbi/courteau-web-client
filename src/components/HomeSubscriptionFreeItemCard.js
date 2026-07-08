@@ -169,13 +169,15 @@ const HomeSubscriptionFreeItemCard = () => {
 
   return (
     <>
-      <MenuItemModal
-        itemId={freeItemId}
-        itemUID={null}
-        showMenuItemModal={showFreeItemModal}
-        setShowMenuItemModal={setShowFreeItemModal}
-        isSubscriptionFreeItem
-      />
+      {showFreeItemModal && (
+        <MenuItemModal
+          itemId={freeItemId}
+          itemUID={null}
+          showMenuItemModal={showFreeItemModal}
+          setShowMenuItemModal={setShowFreeItemModal}
+          isSubscriptionFreeItem
+        />
+      )}
       <div className="md:px-14 px-4 -mt-8 md:-mt-10 relative z-20">
         <button
           type="button"

@@ -366,6 +366,8 @@ const MenuItemModal = ({
     }
   }, [fetchItem, itemId, showMenuItemModal]);
 
+  if (!showMenuItemModal) return null;
+
   return (
     <div
       className={`h-screen bg-[#F3F4F6] fixed inset-0 z-40 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${
