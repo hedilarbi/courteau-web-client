@@ -69,12 +69,12 @@ const Footer = () => {
                 (819) 371-3935
               </span>
             </li>
-            <li className="flex items-center">
+            {/* <li className="flex items-center">
               <FaEnvelope />
               <span className="font-inter font-semibold ml-2 ">
                 support@lecourteau.com
               </span>
-            </li>
+            </li> */}
           </ul>
         </div>
         <div className="text-black font-inter space-x-4">
