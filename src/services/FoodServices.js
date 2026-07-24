@@ -261,13 +261,13 @@ const getRestaurantOffer = async (id, restaurantId) => {
 
 const checkRestaurantOrderAvailability = async (
   restaurantId,
-  items = [],
+  orderItems = [],
   offers = []
 ) => {
   try {
     const response = await axios.post(
       `${API_URL}/restaurants/${restaurantId}/check-availability`,
-      { items, offers },
+      { orderItems, offers, source: "desktop" },
       {
         timeout: 10000,
       }
@@ -277,7 +277,7 @@ const checkRestaurantOrderAvailability = async (
       return {
         status: true,
         message: "availability checked",
-        data: response?.data,
+        data: response?.data?.data || null,
       };
     }
 

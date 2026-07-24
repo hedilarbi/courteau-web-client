@@ -8,6 +8,8 @@ export const roundMoney = (value, fallback = 0) => {
   return Math.round(normalized * 100) / 100;
 };
 
+const PROMO_ALWAYS_EXCLUDED_CATEGORY_NAME = "promos";
+
 export const getPromoExcludedCategoryIds = (promoCode) => {
   if (!Array.isArray(promoCode?.excludedCategories)) return [];
 
@@ -26,25 +28,14 @@ export const getPromoLegacyCategoryId = (promoCode) =>
 export const getBasketItemCategoryId = (basketItem) =>
   String(basketItem?.category?._id || basketItem?.category || "").trim();
 
-export const getOfferItemCategoryIds = (offer) => {
-  const offerItems = Array.isArray(offer?.items) ? offer.items : [];
+export const getBasketItemCategoryName = (basketItem) =>
+  String(
+    basketItem?.categoryName || basketItem?.category?.name || "",
+  ).trim();
 
-  return [
-    ...new Set(
-      offerItems
-        .map((entry) =>
-          String(
-            entry?.item?.category?._id ||
-              entry?.item?.category ||
-              entry?.category?._id ||
-              entry?.category ||
-              "",
-          ).trim(),
-        )
-        .filter(Boolean),
-    ),
-  ];
-};
+export const isPromosCategoryName = (name) =>
+  String(name || "").trim().toLowerCase() ===
+  PROMO_ALWAYS_EXCLUDED_CATEGORY_NAME;
 
 export const buildBasketItemsSubtotal = (basketItems = []) =>
   roundMoney(
@@ -55,16 +46,11 @@ export const buildBasketItemsSubtotal = (basketItems = []) =>
     0,
   );
 
-export const buildBasketOffersSubtotal = (basketOffers = []) =>
-  roundMoney(
-    (basketOffers || []).reduce(
-      (sum, offer) => sum + toSafeNumber(offer?.price, 0),
-      0,
-    ),
-    0,
-  );
-
+// Menu items in the "Promos" category are never eligible for a promo code
+// discount, regardless of how the promo code itself is configured.
 export const isBasketItemEligibleForPromo = (item, promoCode) => {
+  if (isPromosCategoryName(getBasketItemCategoryName(item))) return false;
+
   const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCode);
   const promoLegacyCategoryId = getPromoLegacyCategoryId(promoCode);
   const categoryId = getBasketItemCategoryId(item);
@@ -80,43 +66,16 @@ export const isBasketItemEligibleForPromo = (item, promoCode) => {
   return true;
 };
 
-export const isBasketOfferEligibleForPromo = (offer, promoCode) => {
-  const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCode);
-  const promoLegacyCategoryId = getPromoLegacyCategoryId(promoCode);
-  const categoryIds = getOfferItemCategoryIds(offer);
-
-  if (promoExcludedCategoryIds.length) {
-    return !categoryIds.some((categoryId) =>
-      promoExcludedCategoryIds.includes(categoryId),
-    );
-  }
-
-  if (promoLegacyCategoryId) {
-    return categoryIds.some((categoryId) => categoryId === promoLegacyCategoryId);
-  }
-
-  return true;
-};
+// Offers are never eligible for a promo code discount.
+export const isBasketOfferEligibleForPromo = () => false;
 
 export const calculatePromoEligibleSubtotalForBasket = ({
   basketItems = [],
-  basketOffers = [],
   subTotal = 0,
   promoCode = null,
 }) => {
-  const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCode);
-  const promoLegacyCategoryId = getPromoLegacyCategoryId(promoCode);
-
   if (!promoCode) {
     return roundMoney(subTotal, 0);
-  }
-
-  if (!promoExcludedCategoryIds.length && !promoLegacyCategoryId) {
-    return roundMoney(
-      buildBasketItemsSubtotal(basketItems) +
-        buildBasketOffersSubtotal(basketOffers),
-      0,
-    );
   }
 
   const eligibleItemsSubtotal = (basketItems || []).reduce((sum, item) => {
@@ -124,12 +83,7 @@ export const calculatePromoEligibleSubtotalForBasket = ({
     return sum + toSafeNumber(item?.price, 0);
   }, 0);
 
-  const eligibleOffersSubtotal = (basketOffers || []).reduce((sum, offer) => {
-    if (!isBasketOfferEligibleForPromo(offer, promoCode)) return sum;
-    return sum + toSafeNumber(offer?.price, 0);
-  }, 0);
-
-  return roundMoney(eligibleItemsSubtotal + eligibleOffersSubtotal, 0);
+  return roundMoney(eligibleItemsSubtotal, 0);
 };
 
 export const calculatePromoDiscountAmountForPromo = (
@@ -160,17 +114,14 @@ export const getPromoExcludedBasketEntries = ({
   basketOffers = [],
   promoCode = null,
 }) => {
-  const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCode);
-  if (!promoExcludedCategoryIds.length) return [];
+  if (!promoCode) return [];
 
   const excludedItems = (basketItems || []).filter(
     (item) => !isBasketItemEligibleForPromo(item, promoCode),
   );
-  const excludedOffers = (basketOffers || []).filter(
-    (offer) => !isBasketOfferEligibleForPromo(offer, promoCode),
-  );
 
-  return [...excludedItems, ...excludedOffers];
+  // Offers are never eligible for a promo code discount.
+  return [...excludedItems, ...(basketOffers || [])];
 };
 
 export const buildPromoExcludedItemsLabel = (items = []) => {
