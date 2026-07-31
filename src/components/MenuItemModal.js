@@ -68,6 +68,8 @@ const MenuItemModal = ({
   showMenuItemModal,
   isSubscriptionFreeItem = false,
   isBirthdayFreeItem = false,
+  isSmartOfferFreeItem = false,
+  lockedSize = "",
 }) => {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,11 +87,16 @@ const MenuItemModal = ({
   const isExistingBirthdayFreeItemFlow = Boolean(
     itemFromBasket?.isBirthdayFreeItem
   );
+  const isExistingSmartOfferFreeItemFlow = Boolean(
+    itemFromBasket?.isSmartOfferFreeItem
+  );
   const isFreeItemFlow =
     Boolean(isSubscriptionFreeItem) ||
     isExistingSubscriptionFreeItemFlow ||
     Boolean(isBirthdayFreeItem) ||
-    isExistingBirthdayFreeItemFlow;
+    isExistingBirthdayFreeItemFlow ||
+    Boolean(isSmartOfferFreeItem) ||
+    isExistingSmartOfferFreeItemFlow;
   const usingCustomizationGroup = customizationGroups.length > 0;
 
   const { addToBasket, removeFromBasket, updateItemInBasket } = useBasket();
@@ -98,7 +105,7 @@ const MenuItemModal = ({
       setLoading(true);
       const response = await getMenuItem(itemId);
       if (response.status) {
-        console.log("Menu item response:", response.data);
+
         setItem(response.data);
         const groupsData = normalizeCustomizationGroups(
           response?.data?.customization_group
@@ -109,8 +116,19 @@ const MenuItemModal = ({
           ? response.data.prices
           : [];
 
+        const configuredSize = String(lockedSize || "").trim().toLowerCase();
+        const lockedPrice = configuredSize
+          ? fetchedPrices.find(
+              (priceOption) =>
+                String(priceOption?.size || "").trim().toLowerCase() ===
+                configuredSize
+            )
+          : null;
+
         if (!itemFromBasket) {
-          setSelectedSize(fetchedPrices[0] || null);
+          setSelectedSize(
+            configuredSize ? lockedPrice || null : fetchedPrices[0] || null
+          );
           setComment("");
         } else {
           const existingSizeId = String(itemFromBasket?.size?._id || "");
@@ -165,7 +183,7 @@ const MenuItemModal = ({
     } finally {
       setLoading(false);
     }
-  }, [itemFromBasket, itemId]);
+  }, [itemFromBasket, itemId, lockedSize]);
 
   const selectedGroupItems = useMemo(() => {
     if (!usingCustomizationGroup) return [];
@@ -263,6 +281,15 @@ const MenuItemModal = ({
   };
 
   const handleAddToBasket = () => {
+    if (!selectedSize) {
+      toast.error(
+        lockedSize
+          ? `La taille ${lockedSize} configurée pour ce cadeau n’est pas disponible.`
+          : "Veuillez choisir une taille."
+      );
+      return;
+    }
+
     if (usingCustomizationGroup) {
       for (const group of customizationGroups) {
         const rule = group?.selectionRule;
@@ -311,6 +338,13 @@ const MenuItemModal = ({
               removeFromBasket(basketItem.uid);
             });
         }
+        if (Boolean(isSmartOfferFreeItem)) {
+          basketItems
+            .filter((basketItem) => basketItem.isSmartOfferFreeItem)
+            .forEach((basketItem) => {
+              removeFromBasket(basketItem.uid);
+            });
+        }
       }
 
       addToBasket({
@@ -322,14 +356,20 @@ const MenuItemModal = ({
         originalPrice: totalItemPrice,
         category: item?.category?._id || item?.category || null,
         categoryName: item?.category?.name || "",
+        promoLocked: Boolean(item?.promo_locked),
         subscriptionFreeItemExtraPrice: isFreeItemFlow
           ? extraCustomizationTotal
           : 0,
         birthdayFreeItemExtraPrice: isFreeItemFlow ? extraCustomizationTotal : 0,
+        smartOfferFreeItemExtraPrice: isFreeItemFlow
+          ? extraCustomizationTotal
+          : 0,
         isSubscriptionFreeItem:
           Boolean(isSubscriptionFreeItem) || isExistingSubscriptionFreeItemFlow,
         isBirthdayFreeItem:
           Boolean(isBirthdayFreeItem) || isExistingBirthdayFreeItemFlow,
+        isSmartOfferFreeItem:
+          Boolean(isSmartOfferFreeItem) || isExistingSmartOfferFreeItemFlow,
         size: selectedSize,
         customization: selectedItems,
         comment: comment,
@@ -344,14 +384,20 @@ const MenuItemModal = ({
         originalPrice: totalItemPrice,
         category: item?.category?._id || item?.category || null,
         categoryName: item?.category?.name || "",
+        promoLocked: Boolean(item?.promo_locked),
         subscriptionFreeItemExtraPrice: isFreeItemFlow
           ? extraCustomizationTotal
           : 0,
         birthdayFreeItemExtraPrice: isFreeItemFlow ? extraCustomizationTotal : 0,
+        smartOfferFreeItemExtraPrice: isFreeItemFlow
+          ? extraCustomizationTotal
+          : 0,
         isSubscriptionFreeItem:
           Boolean(isSubscriptionFreeItem) || isExistingSubscriptionFreeItemFlow,
         isBirthdayFreeItem:
           Boolean(isBirthdayFreeItem) || isExistingBirthdayFreeItemFlow,
+        isSmartOfferFreeItem:
+          Boolean(isSmartOfferFreeItem) || isExistingSmartOfferFreeItemFlow,
         size: selectedSize,
         customization: selectedItems,
         comment: comment,
@@ -370,9 +416,8 @@ const MenuItemModal = ({
 
   return (
     <div
-      className={`h-screen bg-[#F3F4F6] fixed inset-0 z-40 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${
-        showMenuItemModal ? "" : "translate-y-[100%]"
-      } `}
+      className={`h-screen bg-[#F3F4F6] fixed inset-0 z-40 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${showMenuItemModal ? "" : "translate-y-[100%]"
+        } `}
     >
       <div className="flex justify-end py-4">
         <button
@@ -435,12 +480,16 @@ const MenuItemModal = ({
                   {item.prices.map((price) => (
                     <button
                       key={price._id}
-                      className={`border rounded-md md:px-4 px-2 items-center md:py-4 py-2 flex  md:gap-6 gap-3 cursor-pointer ${
-                        selectedSize?._id === price._id
+                      className={`border rounded-md md:px-4 px-2 items-center md:py-4 py-2 flex  md:gap-6 gap-3 cursor-pointer ${selectedSize?._id === price._id
                           ? "border-2 border-pr"
                           : "border-2 border-[#E5E7EB]"
-                      }`}
+                        }`}
                       onClick={() => setSelectedSize(price)}
+                      disabled={
+                        Boolean(lockedSize) &&
+                        String(price?.size || "").trim().toLowerCase() !==
+                          String(lockedSize).trim().toLowerCase()
+                      }
                     >
                       <span className="md:text-lg text-xs font-inter font-semibold  capitalize">
                         {price.size}
@@ -488,11 +537,10 @@ const MenuItemModal = ({
                               <button
                                 key={`${group?._id || group?.name}-${topping._id}`}
                                 type="button"
-                                className={`w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2 ${
-                                  isSelectionDisabled
+                                className={`w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2 ${isSelectionDisabled
                                     ? "opacity-60 cursor-not-allowed"
                                     : ""
-                                }`}
+                                  }`}
                                 onClick={() =>
                                   handleGroupCustomizationChange(toppingId)
                                 }

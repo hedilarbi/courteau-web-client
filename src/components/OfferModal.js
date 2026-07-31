@@ -108,29 +108,29 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
     try {
       setLoading(true);
       const response = await getOffer(itemId);
-        if (response.status) {
-          console.log("Offer response:", response.data);
-          setOffer(response.data);
-          if (!offerFromBasket) {
-            const initialCustomizations = {};
-            response.data.items.forEach((item) => {
-              initialCustomizations[item.item._id] = Array.from(
-                { length: item.quantity },
-                () => []
-              );
-            });
-            setSelectedCustomizations(initialCustomizations);
-          } else {
-            const basketCustomizations =
-              offerFromBasket.customization ||
-              offerFromBasket.customizations ||
-              {};
-            setSelectedCustomizations(basketCustomizations);
-            setComment(offerFromBasket.comment || "");
-          }
+      if (response.status) {
+
+        setOffer(response.data);
+        if (!offerFromBasket) {
+          const initialCustomizations = {};
+          response.data.items.forEach((item) => {
+            initialCustomizations[item.item._id] = Array.from(
+              { length: item.quantity },
+              () => []
+            );
+          });
+          setSelectedCustomizations(initialCustomizations);
         } else {
-          setError(response.message);
+          const basketCustomizations =
+            offerFromBasket.customization ||
+            offerFromBasket.customizations ||
+            {};
+          setSelectedCustomizations(basketCustomizations);
+          setComment(offerFromBasket.comment || "");
         }
+      } else {
+        setError(response.message);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -327,8 +327,7 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
 
     if (missingSelection?.maxSelections) {
       toast.error(
-        `Vous pouvez sélectionner au maximum ${missingSelection.maxSelections} option(s) pour ${missingSelection.itemName} (${
-          missingSelection.index + 1
+        `Vous pouvez sélectionner au maximum ${missingSelection.maxSelections} option(s) pour ${missingSelection.itemName} (${missingSelection.index + 1
         }).`
       );
       return;
@@ -336,8 +335,7 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
 
     if (missingSelection) {
       toast.error(
-        `Veuillez selectionner au moins ${missingSelection.minRequired} option(s) pour ${missingSelection.itemName} (${
-          missingSelection.index + 1
+        `Veuillez selectionner au moins ${missingSelection.minRequired} option(s) pour ${missingSelection.itemName} (${missingSelection.index + 1
         }).`
       );
       return;
@@ -379,9 +377,8 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
 
   return (
     <div
-      className={`h-screen bg-[#F3F4F6] fixed inset-0 z-40 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${
-        showOfferModal ? "" : "translate-y-[100%]"
-      } `}
+      className={`h-screen bg-[#F3F4F6] fixed inset-0 z-40 w-full md:px-14 px-4  overflow-y-auto text-black duration-400 ease-in-out ${showOfferModal ? "" : "translate-y-[100%]"
+        } `}
     >
       {loading ? (
         <ItemLoadingSkeleton />
@@ -460,114 +457,113 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
                             </p>
                             {hasCustomizationGroup
                               ? customizationGroups.map((group) => {
-                                  const selectedIdsInGroup =
-                                    getSelectedIdsForGroup(
-                                      selectedEntries,
-                                      group
-                                    );
-                                  const maxSelections = getMaxSelectionLimit(
+                                const selectedIdsInGroup =
+                                  getSelectedIdsForGroup(
+                                    selectedEntries,
+                                    group
+                                  );
+                                const maxSelections = getMaxSelectionLimit(
+                                  group?.selectionRule
+                                );
+                                const selectionSummary =
+                                  getSelectionSummaryText(
                                     group?.selectionRule
                                   );
-                                  const selectionSummary =
-                                    getSelectionSummaryText(
-                                      group?.selectionRule
-                                    );
 
-                                  return (
-                                    <div
-                                      key={group?._id || group?.name}
-                                      className="mt-2"
-                                    >
-                                      <p className="font-inter font-semibold text-base">
-                                        {group?.name}{" "}
-                                        {selectionSummary ? selectionSummary : ""}
-                                      </p>
-                                      {(group?.toppings || []).map((topping) => {
-                                        const isSelected =
-                                          selectedIdsInGroup.includes(
-                                            topping._id
-                                          );
-                                        const maxSelectionReached =
-                                          maxSelections !== Infinity &&
-                                          selectedIdsInGroup.length >=
-                                            maxSelections;
-                                        const isSelectionDisabled =
-                                          !isSelected && maxSelectionReached;
-
-                                        return (
-                                          <button
-                                            key={`${group?._id || group?.name}-${topping._id}`}
-                                            type="button"
-                                            className={`w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2 ${
-                                              isSelectionDisabled
-                                                ? "opacity-60 cursor-not-allowed"
-                                                : ""
-                                            }`}
-                                            onClick={() =>
-                                              handleCustomizationChange(
-                                                item.item._id,
-                                                topping,
-                                                index
-                                              )
-                                            }
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
-                                                {isSelected && (
-                                                  <span className="text-pr text-sm">
-                                                    <FaCheck />
-                                                  </span>
-                                                )}
-                                              </div>
-                                              <p className="text-sm capitalize font-inter font-medium">
-                                                {topping.name}
-                                              </p>
-                                            </div>
-                                            <p className="font-bebas-neue text-pr md:text-xl text-base">
-                                              + $
-                                              {Number(topping.price).toFixed(
-                                                2
-                                              )}
-                                            </p>
-                                          </button>
+                                return (
+                                  <div
+                                    key={group?._id || group?.name}
+                                    className="mt-2"
+                                  >
+                                    <p className="font-inter font-semibold text-base">
+                                      {group?.name}{" "}
+                                      {selectionSummary ? selectionSummary : ""}
+                                    </p>
+                                    {(group?.toppings || []).map((topping) => {
+                                      const isSelected =
+                                        selectedIdsInGroup.includes(
+                                          topping._id
                                         );
-                                      })}
-                                    </div>
-                                  );
-                                })
+                                      const maxSelectionReached =
+                                        maxSelections !== Infinity &&
+                                        selectedIdsInGroup.length >=
+                                        maxSelections;
+                                      const isSelectionDisabled =
+                                        !isSelected && maxSelectionReached;
+
+                                      return (
+                                        <button
+                                          key={`${group?._id || group?.name}-${topping._id}`}
+                                          type="button"
+                                          className={`w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2 ${isSelectionDisabled
+                                              ? "opacity-60 cursor-not-allowed"
+                                              : ""
+                                            }`}
+                                          onClick={() =>
+                                            handleCustomizationChange(
+                                              item.item._id,
+                                              topping,
+                                              index
+                                            )
+                                          }
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
+                                              {isSelected && (
+                                                <span className="text-pr text-sm">
+                                                  <FaCheck />
+                                                </span>
+                                              )}
+                                            </div>
+                                            <p className="text-sm capitalize font-inter font-medium">
+                                              {topping.name}
+                                            </p>
+                                          </div>
+                                          <p className="font-bebas-neue text-pr md:text-xl text-base">
+                                            + $
+                                            {Number(topping.price).toFixed(
+                                              2
+                                            )}
+                                          </p>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })
                               : (item.item.customization || []).map((c) => {
-                                  const isSelected = selectedIds.includes(c._id);
-                                  return (
-                                    <button
-                                      key={c._id}
-                                      type="button"
-                                      className={`w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2`}
-                                      onClick={() =>
-                                        handleCustomizationChange(
-                                          item.item._id,
-                                          c,
-                                          index
-                                        )
-                                      }
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
-                                          {isSelected && (
-                                            <span className="text-pr text-sm">
-                                              <FaCheck />
-                                            </span>
-                                          )}
-                                        </div>
-                                        <p className="text-sm capitalize font-inter font-medium">
-                                          {c.name}
-                                        </p>
+                                const isSelected = selectedIds.includes(c._id);
+                                return (
+                                  <button
+                                    key={c._id}
+                                    type="button"
+                                    className={`w-full flex border-2 rounded-md border-[#E5E7EB] p-2 justify-between mb-2 mt-2`}
+                                    onClick={() =>
+                                      handleCustomizationChange(
+                                        item.item._id,
+                                        c,
+                                        index
+                                      )
+                                    }
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className="border border-black h-5 w-5 rounded-sm flex justify-center items-center">
+                                        {isSelected && (
+                                          <span className="text-pr text-sm">
+                                            <FaCheck />
+                                          </span>
+                                        )}
                                       </div>
-                                      <p className="font-bebas-neue text-pr md:text-xl text-base">
-                                        + ${c.price.toFixed(2)}
+                                      <p className="text-sm capitalize font-inter font-medium">
+                                        {c.name}
                                       </p>
-                                    </button>
-                                  );
-                                })}
+                                    </div>
+                                    <p className="font-bebas-neue text-pr md:text-xl text-base">
+                                      + ${c.price.toFixed(2)}
+                                    </p>
+                                  </button>
+                                );
+                              })}
                           </div>
                         );
                       })}

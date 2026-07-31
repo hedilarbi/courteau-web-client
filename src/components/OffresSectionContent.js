@@ -9,7 +9,12 @@ const OffresSectionContent = async () => {
     const res = await getOffers(); // idéalement cacheable côté serveur (ISR/tags)
     const raw = Array.isArray(res?.data) ? res.data : [];
     // Garde uniquement les offres valides
-    items = raw.filter((o) => o && o._id && o.image && o.name);
+    const now = Date.now();
+    items = raw.filter((offer) => {
+      if (!offer || !offer._id || !offer.image || !offer.name) return false;
+      const expireAt = new Date(offer.expireAt).getTime();
+      return Number.isFinite(expireAt) && expireAt > now;
+    });
   } catch (e) {
     console.error("Échec du chargement des offres :", e);
   }

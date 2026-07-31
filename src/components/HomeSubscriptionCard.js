@@ -30,7 +30,7 @@ const HomeSubscriptionCard = () => {
   }
 
   return (
-    <div className="md:px-14 px-4 -mt-8 md:-mt-10 relative z-10">
+    <div className="md:px-14 px-4 mt-4">
       <Link
         href="/abonnement"
         className="block rounded-2xl border border-[#0F172A] bg-pr p-4 shadow-lg hover:brightness-95 transition"

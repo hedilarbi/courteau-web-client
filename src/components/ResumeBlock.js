@@ -16,6 +16,7 @@ const ResumeBlock = ({
   subscriptionActive,
   subscriptionDiscountAmount,
   promoDiscountAmount,
+  smartOfferDiscountAmount,
   referralDiscountApplied,
 }) => {
   return (
@@ -50,9 +51,18 @@ const ResumeBlock = ({
             </span>
           </div>
         )}
+        {smartOfferDiscountAmount > 0 && (
+          <div className="flex justify-between text-green-700">
+            <span className="font-inter">Offre personnalisée</span>
+            <span className="font-inter font-semibold">
+              -${smartOfferDiscountAmount.toFixed(2)}
+            </span>
+          </div>
+        )}
 
         {(firstOrderDiscountAllowed ||
           subscriptionDiscountAmount > 0 ||
+          smartOfferDiscountAmount > 0 ||
           (promoCodeAllowed && promoCodeData && promoCodeIsValid)) && (
           <div className="flex justify-between">
             <span className="font-inter text-gray-700">

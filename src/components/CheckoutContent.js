@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
+import { useSmartOffer } from "@/context/SmartOfferContext";
 import {
   useBasket,
   useSelectBasket,
@@ -118,6 +119,58 @@ const getBirthUtcParts = (value) => {
   };
 };
 
+const calculateSmartOfferDiscount = ({ smartOffer, smartOfferActivated, subTotal, basketItems }) => {
+  if (!smartOfferActivated || !smartOffer) return 0;
+  const nextSubtotal = toSafeNumber(subTotal, 0);
+  const threshold = toSafeNumber(smartOffer.bonusThreshold, 0);
+  if (threshold > 0 && nextSubtotal < threshold) return 0;
+
+  if (smartOffer.offerType === "discount_order") {
+    const discountableSubtotal = (basketItems || []).reduce(
+      (sum, item) =>
+        item?.promoLocked ? sum : sum + toSafeNumber(item?.price, 0),
+      0
+    );
+    return roundMoney(
+      discountableSubtotal *
+        (toSafeNumber(smartOffer.discountValue, 0) / 100),
+      0
+    );
+  } else if (smartOffer.offerType === "bonus_basket") {
+    return smartOffer.discountValue || 0;
+  } else if (smartOffer.offerType === "discount_category") {
+    const targetCatId = String(smartOffer.targetCategory?._id || smartOffer.targetCategory || "");
+    if (!targetCatId) return 0;
+    const catSub = (basketItems || []).reduce((acc, item) => {
+      const itemCat = String(item.category || "");
+      return !item?.promoLocked && itemCat && itemCat === targetCatId
+        ? acc + (parseFloat(item.price) || 0)
+        : acc;
+    }, 0);
+    return Math.round(catSub * (smartOffer.discountValue / 100) * 100) / 100;
+  } else if (smartOffer.offerType === "free_item") {
+    // The basket item price already contains only paying extras.
+    return 0;
+  } else if (smartOffer.offerType === "discount_product") {
+    const targetItemId = String(
+      smartOffer.targetMenuItem?._id || smartOffer.targetMenuItem || ""
+    );
+    const matchingItemsSubtotal = (basketItems || []).reduce(
+      (sum, item) =>
+        !item?.promoLocked && String(item?.id || "") === targetItemId
+          ? sum + toSafeNumber(item?.price, 0)
+          : sum,
+      0
+    );
+    return roundMoney(
+      matchingItemsSubtotal *
+        (toSafeNumber(smartOffer.discountValue, 0) / 100),
+      0
+    );
+  }
+  return 0;
+};
+
 const calculateDiscountedSubtotal = ({
   subTotal = 0,
   firstOrderDiscountAllowed = false,
@@ -127,11 +180,21 @@ const calculateDiscountedSubtotal = ({
   promoCodeData = null,
   basketItems = [],
   basketOffers = [],
+  smartOffer = null,
+  smartOfferActivated = false,
 }) => {
   let nextSubtotal = toSafeNumber(subTotal, 0);
+
   const shouldApplyPromoCode = Boolean(
     promoCodeAllowed && promoCodeIsValid && promoCodeData
   );
+
+  // A validated promo code replaces the activated Smart Offer for this order.
+  if (smartOfferActivated && smartOffer && !shouldApplyPromoCode) {
+    const persoDiscount = calculateSmartOfferDiscount({ smartOffer, smartOfferActivated, subTotal: nextSubtotal, basketItems });
+    return roundMoney(Math.max(0, nextSubtotal - persoDiscount), 0);
+  }
+
   const shouldApplyFirstOrderDiscount =
     firstOrderDiscountAllowed && !(subscriptionActive && shouldApplyPromoCode);
 
@@ -208,6 +271,11 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const basketOffers = useSelectBasketOffers();
   const subTotal = useSelectBasketTotal();
   const router = useRouter();
+  const {
+    smartOffer,
+    smartOfferActivated,
+    clearSmartOffer,
+  } = useSmartOffer();
 
   const [tips, setTips] = useState("");
   const [selectedTip, setSelectedTip] = useState(0);
@@ -242,6 +310,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const [showSubscriptionItemModal, setShowSubscriptionItemModal] =
     useState(false);
   const [showBirthdayItemModal, setShowBirthdayItemModal] = useState(false);
+  const [showSmartOfferItemModal, setShowSmartOfferItemModal] = useState(false);
+  const [smartOfferItemChoice, setSmartOfferItemChoice] = useState(null);
   const [showUpdateRestaurantModal, setShowUpdateRestaurantModal] =
     useState(false);
   const [isSuccessRedirecting, setIsSuccessRedirecting] = useState(() => {
@@ -263,8 +333,34 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const promoCodeApplied = Boolean(
     promoCodeAllowed && promoCodeIsValid && promoCodeData
   );
+  const smartOfferSelectedForOrder = Boolean(
+    smartOfferActivated && smartOffer && !promoCodeApplied
+  );
+  const smartOfferThresholdReached =
+    toSafeNumber(subTotal, 0) >= toSafeNumber(smartOffer?.bonusThreshold, 0);
+  const smartOfferComputedDiscount = calculateSmartOfferDiscount({
+    smartOffer,
+    smartOfferActivated: smartOfferSelectedForOrder,
+    subTotal,
+    basketItems,
+  });
+  const hasSelectedSmartOfferFreeItem = basketItems.some(
+    (item) => item.isSmartOfferFreeItem
+  );
+  const smartOfferAppliedToOrder = Boolean(
+    smartOfferSelectedForOrder &&
+      smartOfferThresholdReached &&
+      (smartOffer?.offerType === "free_item"
+        ? hasSelectedSmartOfferFreeItem
+        : smartOffer?.offerType === "free_delivery"
+        ? deliveryMode === "delivery"
+          && toSafeNumber(selectedRestaurant?.settings?.delivery_fee, 0) > 0
+        : smartOfferComputedDiscount > 0)
+  );
   const shouldApplyFirstOrderDiscount =
-    firstOrderDiscountAllowed && !(subscriptionActive && promoCodeApplied);
+    firstOrderDiscountAllowed &&
+    !(subscriptionActive && promoCodeApplied) &&
+    !smartOfferAppliedToOrder;
   const currentCycleKey = getExpectedSubscriptionCycleKey(user, new Date());
   const userCycleKey = String(user?.subscriptionFreeItemCycleKey || "").trim();
   const subscriptionFreeItemUsedCount =
@@ -328,7 +424,31 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     subscriptionFreeItemRemaining > 0 &&
     Boolean(configuredSubscriptionFreeItemId);
   const shouldApplySubscriptionDiscount =
-    subscriptionActive && !shouldApplyFirstOrderDiscount && !promoCodeApplied;
+    subscriptionActive &&
+    !shouldApplyFirstOrderDiscount &&
+    !promoCodeApplied &&
+    !smartOfferAppliedToOrder;
+
+  const smartOfferFreeItemOptions = useMemo(() => {
+    const configuredItems = Array.isArray(smartOffer?.freeItems)
+      ? smartOffer.freeItems
+      : [];
+    const options = configuredItems
+      .map((entry) => ({
+        id: String(entry?.item?._id || entry?.item || "").trim(),
+        name: entry?.item?.name || "Article offert",
+        size: String(entry?.size || "").trim(),
+      }))
+      .filter((entry) => entry.id);
+
+    if (options.length > 0) return options;
+    const legacyId = String(smartOffer?.freeItem?._id || smartOffer?.freeItem || "").trim();
+    return legacyId
+      ? [{ id: legacyId, name: smartOffer?.freeItem?.name || "Article offert", size: "" }]
+      : [];
+  }, [smartOffer?.freeItem, smartOffer?.freeItems]);
+  const selectedSmartOfferFreeItem =
+    basketItems.find((item) => item.isSmartOfferFreeItem) || null;
 
   const selectedFreeItem =
     basketItems.find((item) => item.isSubscriptionFreeItem) || null;
@@ -336,6 +456,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     basketItems.find((item) => item.isBirthdayFreeItem) || null;
   const shouldShowBirthdayFreeItemSection =
     Boolean(configuredBirthdayFreeItemId) &&
+    !smartOfferAppliedToOrder &&
     (canUseBirthdayFreeItem || Boolean(selectedBirthdayFreeItem));
   const selectedFreeItemCustomizationAmount = roundMoney(
     (selectedFreeItem?.customization || []).reduce(
@@ -403,10 +524,17 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   );
   const effectiveDeliveryFee =
     deliveryMode === "delivery"
-      ? subscriptionActive
+      ? (smartOfferAppliedToOrder &&
+          smartOffer?.offerType === "free_delivery" &&
+          toSafeNumber(subTotal, 0) >= toSafeNumber(smartOffer?.bonusThreshold, 0)) ||
+        subscriptionActive
         ? 0
         : restaurantDeliveryFee
       : 0;
+  const submittedDeliveryFee =
+    smartOfferAppliedToOrder && smartOffer?.offerType === "free_delivery"
+      ? restaurantDeliveryFee
+      : effectiveDeliveryFee;
 
   const subscriptionScenarioSubtotal = roundMoney(
     Math.max(0, subTotal * ((100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100)),
@@ -518,6 +646,10 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     normalizedTotal <= 0 &&
     !isZeroTotalSubscriptionOrder &&
     referralDiscountApplied > 0;
+
+  const hasOrphanedSmartOfferFreeItem = Boolean(
+    selectedSmartOfferFreeItem && !smartOfferAppliedToOrder
+  );
 
   const orderDiscountPercent = shouldApplyFirstOrderDiscount
     ? 20
@@ -687,6 +819,53 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   ]);
 
   useEffect(() => {
+    if (!selectedSmartOfferFreeItem?.uid) return;
+    const selectedId = String(selectedSmartOfferFreeItem.id || "").trim();
+    const selectedSize = String(
+      selectedSmartOfferFreeItem.size?.size || selectedSmartOfferFreeItem.size || ""
+    ).trim().toLowerCase();
+    const matchingOption = smartOfferFreeItemOptions.find(
+      (option) =>
+        option.id === selectedId &&
+        (!option.size || option.size.toLowerCase() === selectedSize)
+    );
+
+    if (
+      !smartOfferSelectedForOrder ||
+      !smartOfferThresholdReached ||
+      smartOffer?.offerType !== "free_item" ||
+      !matchingOption
+    ) {
+      removeFromBasket(selectedSmartOfferFreeItem.uid);
+    }
+  }, [
+    removeFromBasket,
+    selectedSmartOfferFreeItem?.id,
+    selectedSmartOfferFreeItem?.size,
+    selectedSmartOfferFreeItem?.uid,
+    smartOffer?.offerType,
+    smartOfferSelectedForOrder,
+    smartOfferThresholdReached,
+    smartOfferFreeItemOptions,
+  ]);
+
+  useEffect(() => {
+    if (!smartOfferAppliedToOrder) return;
+
+    if (selectedFreeItem?.uid) {
+      removeFromBasket(selectedFreeItem.uid);
+    }
+    if (selectedBirthdayFreeItem?.uid) {
+      removeFromBasket(selectedBirthdayFreeItem.uid);
+    }
+  }, [
+    removeFromBasket,
+    selectedBirthdayFreeItem?.uid,
+    selectedFreeItem?.uid,
+    smartOfferAppliedToOrder,
+  ]);
+
+  useEffect(() => {
     if (!selectedBirthdayFreeItem?.uid) return;
     if (!isSubscriptionConfigLoaded) return;
     if (!canUseBirthdayFreeItem) {
@@ -759,6 +938,18 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     promoEligibleSubtotal,
   ]);
 
+  // Smart offer discount amount for display in ResumeBlock
+  const smartOfferDiscountAmount = useMemo(
+    () =>
+      calculateSmartOfferDiscount({
+        smartOffer,
+        smartOfferActivated: smartOfferAppliedToOrder,
+        subTotal,
+        basketItems,
+      }),
+    [smartOffer, smartOfferAppliedToOrder, subTotal, basketItems]
+  );
+
   useEffect(() => {
     let nextSubtotal = calculateDiscountedSubtotal({
       subTotal,
@@ -769,6 +960,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       promoCodeData,
       basketItems,
       basketOffers,
+      smartOffer,
+      smartOfferActivated: smartOfferAppliedToOrder,
     });
     setSubTotalWithDiscount(nextSubtotal);
 
@@ -831,6 +1024,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     subscriptionActive,
     tips,
     user?.referralBalance,
+    smartOffer,
+    smartOfferAppliedToOrder,
   ]);
 
   useEffect(() => {
@@ -926,6 +1121,15 @@ const CheckoutContent = ({ restaurantsSettings }) => {
         showMenuItemModal={showBirthdayItemModal}
         setShowMenuItemModal={setShowBirthdayItemModal}
         isBirthdayFreeItem
+      />
+      <MenuItemModal
+        key={`${smartOfferItemChoice?.id || "smart-offer-item"}-${smartOfferItemChoice?.size || "default"}`}
+        itemId={smartOfferItemChoice?.id || null}
+        itemUID={selectedSmartOfferFreeItem?.uid || null}
+        showMenuItemModal={showSmartOfferItemModal}
+        setShowMenuItemModal={setShowSmartOfferItemModal}
+        isSmartOfferFreeItem
+        lockedSize={smartOfferItemChoice?.size || ""}
       />
 
       <div className="md:w-[70%] w-full mx-auto">
@@ -1032,7 +1236,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             </div>
           )}
 
-          {subscriptionActive && (
+          {subscriptionActive && !smartOfferAppliedToOrder && (
             <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
               <h2 className="font-inter font-semibold text-black md:text-xl text-base">
                 Article gratuit mensuel
@@ -1147,6 +1351,126 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             </div>
           )}
 
+          {/* Smart Offer Banner in Checkout */}
+          {smartOffer && (
+            <div
+              className="rounded-2xl overflow-hidden mt-4"
+              style={{
+                background: smartOfferActivated
+                  ? "linear-gradient(135deg, #052E16, #064E3B)"
+                  : "linear-gradient(135deg, #111827, #1F2937)",
+                border: `1px solid ${smartOfferActivated ? "#10B981" : "#374151"}`,
+              }}
+            >
+              <div
+                className="h-1"
+                style={{
+                  background: smartOfferActivated
+                    ? "linear-gradient(90deg, #10B981, #34D399)"
+                    : "linear-gradient(90deg, #F7A600, #FF6B35)",
+                }}
+              />
+              <div className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p
+                      className="text-xs font-bold tracking-widest uppercase"
+                      style={{ color: smartOfferActivated ? "#10B981" : "#F7A600" }}
+                    >
+                      {smartOfferActivated ? "✅ Offre activée" : "✦ Offre personnalisée disponible"}
+                    </p>
+                    <p className="text-white text-sm font-semibold mt-0.5 truncate">
+                      {smartOffer.notificationTitle}
+                    </p>
+                    {toSafeNumber(smartOffer?.bonusThreshold, 0) > 0 && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between gap-3 text-xs font-semibold">
+                          <span
+                            style={{
+                              color: smartOfferThresholdReached
+                                ? "#34D399"
+                                : "#D1D5DB",
+                            }}
+                          >
+                            {smartOfferThresholdReached
+                              ? "Offre débloquée"
+                              : `Encore ${Math.max(
+                                  0,
+                                  toSafeNumber(smartOffer.bonusThreshold, 0) -
+                                    toSafeNumber(subTotal, 0),
+                                ).toFixed(2)}$`}
+                          </span>
+                          <span className="text-gray-300 whitespace-nowrap">
+                            {toSafeNumber(subTotal, 0).toFixed(2)}$ /{" "}
+                            {toSafeNumber(smartOffer.bonusThreshold, 0).toFixed(2)}$
+                          </span>
+                        </div>
+                        <div className="h-2 bg-white/20 rounded-full overflow-hidden mt-2">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                (toSafeNumber(subTotal, 0) /
+                                  toSafeNumber(smartOffer.bonusThreshold, 1)) *
+                                  100,
+                              )}%`,
+                              backgroundColor: smartOfferThresholdReached
+                                ? "#34D399"
+                                : "#F7A600",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {smartOfferActivated && smartOfferDiscountAmount > 0 && (
+                      <p className="text-sm mt-1" style={{ color: "#34D399" }}>
+                        Économie : -{smartOfferDiscountAmount.toFixed(2)}$
+                      </p>
+                    )}
+                    {smartOfferSelectedForOrder && smartOffer?.offerType === "free_item" && (
+                      <div className="mt-3">
+                        {selectedSmartOfferFreeItem ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-[#34D399] font-semibold">
+                              {selectedSmartOfferFreeItem.name}
+                              {selectedSmartOfferFreeItem.size?.size
+                                ? ` (${selectedSmartOfferFreeItem.size.size})`
+                                : ""} gratuit
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeFromBasket(selectedSmartOfferFreeItem.uid)}
+                              className="text-xs text-red-300 underline cursor-pointer"
+                            >
+                              Retirer
+                            </button>
+                          </div>
+                        ) : smartOfferFreeItemOptions.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => router.push("/menu/cadeaux")}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-black bg-[#F7A600] cursor-pointer"
+                          >
+                            Choisissez votre {String(
+                              smartOffer.targetCategory?.name ||
+                                smartOffer.freeItems?.[0]?.item?.category?.name ||
+                                "cadeau",
+                            ).toLowerCase()}
+                          </button>
+                        ) : (
+                          <p className="text-xs text-amber-200">
+                            Aucun article gratuit n’est configuré pour cette offre.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <PromoCodeBlock
             userId={user._id}
             basketItems={basketItems}
@@ -1186,6 +1510,9 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             subscriptionActive={subscriptionActive}
             subscriptionDiscountAmount={subscriptionDiscountAmount}
             promoDiscountAmount={promoDiscountAmount}
+            smartOfferDiscountAmount={
+              smartOfferAppliedToOrder ? smartOfferDiscountAmount : 0
+            }
             referralDiscountApplied={referralDiscountApplied}
           />
 
@@ -1201,14 +1528,14 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             promoCode={promoCodeAllowed && promoCodeIsValid ? promoCodeData : null}
             subTotal={subTotal}
             subTotalWithDiscount={subTotalWithDiscount}
-            canOrder={canOrder}
+            canOrder={canOrder && !hasOrphanedSmartOfferFreeItem}
             isBasketAvailable={isBasketAvailable}
             isScheduledOrder={isScheduledOrder}
             scheduledDateTime={scheduledDateTime}
             subscriptionBenefits={subscriptionBenefits}
             birthdayBenefits={birthdayBenefits}
             orderDiscountPercent={orderDiscountPercent}
-            effectiveDeliveryFee={effectiveDeliveryFee}
+            effectiveDeliveryFee={submittedDeliveryFee}
             referralDiscountApplied={referralDiscountApplied}
             isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
             isZeroTotalReferralOrder={isZeroTotalReferralOrder}
@@ -1216,6 +1543,10 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             setPromoCodeIsValid={setPromoCodeIsValid}
             setPromoCodeError={setPromoCodeError}
             onChangeRestaurant={() => setShowUpdateRestaurantModal(true)}
+            personalizedOfferId={smartOfferAppliedToOrder ? smartOffer._id : undefined}
+            onOrderSuccess={() => {
+              clearSmartOffer();
+            }}
           />
         </section>
       </div>

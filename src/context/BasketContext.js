@@ -126,12 +126,18 @@ function basketReducer(state, action) {
         birthdayFreeItemExtraPrice:
           action.payload.birthdayFreeItemExtraPrice ??
           old.birthdayFreeItemExtraPrice,
+        smartOfferFreeItemExtraPrice:
+          action.payload.smartOfferFreeItemExtraPrice ??
+          old.smartOfferFreeItemExtraPrice,
         category: action.payload.category ?? old.category,
         categoryName: action.payload.categoryName ?? old.categoryName,
+        promoLocked: action.payload.promoLocked ?? old.promoLocked,
         isSubscriptionFreeItem:
           action.payload.isSubscriptionFreeItem ?? old.isSubscriptionFreeItem,
         isBirthdayFreeItem:
           action.payload.isBirthdayFreeItem ?? old.isBirthdayFreeItem,
+        isSmartOfferFreeItem:
+          action.payload.isSmartOfferFreeItem ?? old.isSmartOfferFreeItem,
         size: action.payload.size,
         comment: action.payload.comment,
       };

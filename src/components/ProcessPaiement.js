@@ -33,6 +33,8 @@ const ProcessPaiement = ({
   setPromoCodeIsValid,
   setPromoCodeError,
   onChangeRestaurant,
+  personalizedOfferId,
+  onOrderSuccess,
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [processPaiement, setProcessPaiement] = useState(false);
@@ -167,6 +169,8 @@ const ProcessPaiement = ({
             isBasketAvailable={isBasketAvailable}
             isScheduledOrder={isScheduledOrder}
             scheduledDateTime={scheduledDateTime}
+            personalizedOfferId={personalizedOfferId}
+            onOrderSuccess={onOrderSuccess}
           />
         </Elements>
       ) : (
@@ -196,6 +200,8 @@ const ProcessPaiement = ({
           isBasketAvailable={isBasketAvailable}
           isScheduledOrder={isScheduledOrder}
           scheduledDateTime={scheduledDateTime}
+          personalizedOfferId={personalizedOfferId}
+          onOrderSuccess={onOrderSuccess}
         />
       )}
     </div>

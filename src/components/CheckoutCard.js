@@ -106,6 +106,8 @@ export default function CheckoutCard({
   setPromoCodeData,
   setPromoCodeIsValid,
   setPromoCodeError,
+  personalizedOfferId,
+  onOrderSuccess,
 }) {
   const { clearBasket } = useBasket();
   const router = useRouter();
@@ -132,8 +134,6 @@ export default function CheckoutCard({
     [total],
   );
   const hasPositiveTotal = normalizedTotal > 0;
-  const showPickupCounterPaymentOption =
-    deliveryMode === "pickup" && hasPositiveTotal;
   const isAddressValid =
     deliveryMode !== "delivery" ||
     !!String(address?.address || "").trim();
@@ -391,6 +391,7 @@ export default function CheckoutCard({
         comment: item.comment,
         isSubscriptionFreeItem: Boolean(item.isSubscriptionFreeItem),
         isBirthdayFreeItem: Boolean(item.isBirthdayFreeItem),
+        isSmartOfferFreeItem: Boolean(item.isSmartOfferFreeItem),
       });
     });
 
@@ -480,6 +481,7 @@ export default function CheckoutCard({
           scheduledFor,
         },
         referralDiscountApplied: resolvedReferralDiscountApplied,
+        personalizedOfferId: personalizedOfferId || undefined,
       },
     };
   };
@@ -918,6 +920,7 @@ export default function CheckoutCard({
           window.sessionStorage.setItem("checkout_success_redirecting", "1");
         }
         clearBasket();
+        if (onOrderSuccess) onOrderSuccess();
         router.replace("/success?id=" + response.data.orderId);
       }
     } catch (error) {
@@ -961,9 +964,7 @@ export default function CheckoutCard({
               Choisissez comment régler cette commande
             </div>
             <p className="mt-1 font-inter text-sm text-[#6B7280]">
-              {showPickupCounterPaymentOption
-                ? "Pour une commande à ramasser, vous pouvez payer en ligne ou directement au comptoir."
-                : "Le paiement en ligne est requis pour cette commande."}
+              Le paiement en ligne est requis pour cette commande.
             </p>
           </div>
 
@@ -998,40 +999,6 @@ export default function CheckoutCard({
             </div>
           </button>
 
-          {showPickupCounterPaymentOption && (
-            <button
-              type="button"
-              onClick={() => setPaymentMethod?.("cash_at_counter")}
-              className={`w-full rounded-2xl border p-4 text-left transition ${
-                paymentMethod === "cash_at_counter"
-                  ? "border-pr bg-white ring-2 ring-pr shadow-md"
-                  : "border-[#D1D5DB] bg-white hover:border-[#F59E0B]"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="font-inter text-base font-semibold text-[#111827]">
-                    Paiement au comptoir
-                  </div>
-                </div>
-                <div
-                  className={`mt-1 flex h-6 w-6 items-center justify-center rounded-full border-2 ${
-                    paymentMethod === "cash_at_counter"
-                      ? "border-pr bg-pr"
-                      : "border-[#D1D5DB] bg-white"
-                  }`}
-                >
-                  <div
-                    className={`h-2.5 w-2.5 rounded-full ${
-                      paymentMethod === "cash_at_counter"
-                        ? "bg-white"
-                        : "bg-transparent"
-                    }`}
-                  />
-                </div>
-              </div>
-            </button>
-          )}
         </div>
       )}
       {/* Saved cards */}

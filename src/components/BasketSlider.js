@@ -9,11 +9,29 @@ import OfferModal from "./OfferModal";
 import MenuItemModal from "./MenuItemModal";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
+import { useSmartOffer } from "@/context/SmartOfferContext";
 import NoUserModal from "./NoUserModal";
 
 const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
   const basket = useSelectBasket();
   const { user, loading } = useUser();
+  const { smartOffer } = useSmartOffer();
+  const smartOfferThreshold = Math.max(
+    0,
+    Number(smartOffer?.bonusThreshold) || 0,
+  );
+  const trackedBasketSubtotal = Math.max(0, Number(basket.subtotal) || 0);
+  const smartOfferProgress =
+    smartOfferThreshold > 0
+      ? Math.min(100, (trackedBasketSubtotal / smartOfferThreshold) * 100)
+      : 100;
+  const smartOfferUnlocked =
+    Boolean(smartOffer) &&
+    (smartOfferThreshold <= 0 || trackedBasketSubtotal >= smartOfferThreshold);
+  const smartOfferRemaining = Math.max(
+    0,
+    smartOfferThreshold - trackedBasketSubtotal,
+  );
 
   const { removeFromBasket, removeOfferFromBasket, removeRewardFromBasket } =
     useBasket();
@@ -74,6 +92,61 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
           <MdClose size={28} />
         </button>
       </div>
+      {smartOffer && (
+        <div className="bg-white border border-[#F7A600] rounded-xl p-4 mb-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wider font-bold text-[#A16207]">
+                Offre personnalisée
+              </p>
+              <p className="text-sm font-semibold text-black mt-1">
+                {smartOffer.notificationTitle}
+              </p>
+            </div>
+            {smartOfferThreshold > 0 && (
+              <p className="text-xs font-bold text-black whitespace-nowrap">
+                {trackedBasketSubtotal.toFixed(2)}$ / {smartOfferThreshold.toFixed(2)}$
+              </p>
+            )}
+          </div>
+
+          {smartOfferThreshold > 0 && (
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden mt-3">
+              <div
+                className="h-full bg-[#F7A600] rounded-full transition-all duration-300"
+                style={{ width: `${smartOfferProgress}%` }}
+              />
+            </div>
+          )}
+
+          <p
+            className={`text-xs font-semibold mt-2 ${
+              smartOfferUnlocked ? "text-green-700" : "text-gray-600"
+            }`}
+          >
+            {smartOfferUnlocked
+              ? "Offre débloquée pour cette commande"
+              : `Encore ${smartOfferRemaining.toFixed(2)}$ pour débloquer l’offre`}
+          </p>
+
+          {smartOfferUnlocked && smartOffer.offerType === "free_item" && (
+            <button
+              type="button"
+              className="bg-[#F7A600] text-black text-xs font-bold px-3 py-2 rounded-md cursor-pointer mt-3"
+              onClick={() => {
+                setShowBasketSlider(false);
+                router.push("/menu/cadeaux");
+              }}
+            >
+              Choisissez votre {String(
+                smartOffer.targetCategory?.name ||
+                  smartOffer.freeItems?.[0]?.item?.category?.name ||
+                  "cadeau",
+              ).toLowerCase()}
+            </button>
+          )}
+        </div>
+      )}
       {basket.size !== 0 ? (
         <div className="bg-white rounded-md shadow-lg p-4  overflow-y-auto flex-1">
           <div className="">

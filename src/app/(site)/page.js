@@ -7,6 +7,8 @@ import HomeSubscriptionFreeItemCard from "@/components/HomeSubscriptionFreeItemC
 import OffresSection from "@/components/OffresSection";
 import OrderOnlineSection from "@/components/OrderOnlineSection";
 import VedetteSection from "@/components/VedetteSection";
+import HomeSmartOfferCard from "@/components/HomeSmartOfferCard";
+import SmartOfferModal from "@/components/SmartOfferModal";
 import React from "react";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +17,9 @@ export const revalidate = 0;
 const page = () => {
   return (
     <>
+      <SmartOfferModal />
       <HomeHero />
+      <HomeSmartOfferCard />
       <HomeSubscriptionCard />
       <HomeSubscriptionFreeItemCard />
       <HomeBirthdayCard />

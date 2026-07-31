@@ -69,7 +69,7 @@ export function UserProvider({ children }) {
         },
       );
       if (response.status === 200) {
-        console.log(response.data);
+
         createUser(response.data);
 
         if (!response.data.is_profile_setup) {

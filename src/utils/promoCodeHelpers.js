@@ -8,8 +8,6 @@ export const roundMoney = (value, fallback = 0) => {
   return Math.round(normalized * 100) / 100;
 };
 
-const PROMO_ALWAYS_EXCLUDED_CATEGORY_NAME = "promos";
-
 export const getPromoExcludedCategoryIds = (promoCode) => {
   if (!Array.isArray(promoCode?.excludedCategories)) return [];
 
@@ -28,15 +26,6 @@ export const getPromoLegacyCategoryId = (promoCode) =>
 export const getBasketItemCategoryId = (basketItem) =>
   String(basketItem?.category?._id || basketItem?.category || "").trim();
 
-export const getBasketItemCategoryName = (basketItem) =>
-  String(
-    basketItem?.categoryName || basketItem?.category?.name || "",
-  ).trim();
-
-export const isPromosCategoryName = (name) =>
-  String(name || "").trim().toLowerCase() ===
-  PROMO_ALWAYS_EXCLUDED_CATEGORY_NAME;
-
 export const buildBasketItemsSubtotal = (basketItems = []) =>
   roundMoney(
     (basketItems || []).reduce(
@@ -46,11 +35,8 @@ export const buildBasketItemsSubtotal = (basketItems = []) =>
     0,
   );
 
-// Menu items in the "Promos" category are never eligible for a promo code
-// discount, regardless of how the promo code itself is configured.
+// Menu items are excluded only when their category is explicitly configured.
 export const isBasketItemEligibleForPromo = (item, promoCode) => {
-  if (isPromosCategoryName(getBasketItemCategoryName(item))) return false;
-
   const promoExcludedCategoryIds = getPromoExcludedCategoryIds(promoCode);
   const promoLegacyCategoryId = getPromoLegacyCategoryId(promoCode);
   const categoryId = getBasketItemCategoryId(item);
@@ -79,6 +65,7 @@ export const calculatePromoEligibleSubtotalForBasket = ({
   }
 
   const eligibleItemsSubtotal = (basketItems || []).reduce((sum, item) => {
+    if (item?.isSmartOfferFreeItem) return sum;
     if (!isBasketItemEligibleForPromo(item, promoCode)) return sum;
     return sum + toSafeNumber(item?.price, 0);
   }, 0);

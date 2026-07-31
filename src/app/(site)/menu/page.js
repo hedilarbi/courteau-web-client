@@ -59,7 +59,12 @@ async function fetchOffers() {
   if (!res.ok) {
     throw new Error("Impossible de récupérer les offres.");
   }
-  return res.json();
+  const offers = await res.json();
+  const now = Date.now();
+  return (Array.isArray(offers) ? offers : []).filter((offer) => {
+    const expireAt = new Date(offer?.expireAt).getTime();
+    return Number.isFinite(expireAt) && expireAt > now;
+  });
 }
 
 function sortItemsByOrder(items = []) {

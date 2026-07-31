@@ -152,11 +152,6 @@ const PromoCodeBlock = ({
           {promoCodeData.type === "free_item" &&
             (promoCodeData?.freeItem?.name || "Article") + " offert"}
         </p>
-        {subscriptionActive ? (
-          <p className="text-[#6B7280] text-xs mt-1">
-            Le code promo remplace les rabais automatiques.
-          </p>
-        ) : null}
         {promoExcludedItemsLabel ? (
           <p className="text-[#6B7280] text-xs mt-1">
             Rabais non appliqué sur: {promoExcludedItemsLabel}
