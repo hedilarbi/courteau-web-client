@@ -355,6 +355,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
         : smartOffer?.offerType === "free_delivery"
         ? deliveryMode === "delivery"
           && toSafeNumber(selectedRestaurant?.settings?.delivery_fee, 0) > 0
+        : smartOffer?.offerType === "loyalty_points"
+        ? toSafeNumber(smartOffer?.bonusPoints, 0) > 0
         : smartOfferComputedDiscount > 0)
   );
   const shouldApplyFirstOrderDiscount =
@@ -1428,6 +1430,14 @@ const CheckoutContent = ({ restaurantsSettings }) => {
                         Économie : -{smartOfferDiscountAmount.toFixed(2)}$
                       </p>
                     )}
+                    {smartOfferSelectedForOrder &&
+                      smartOffer?.offerType === "loyalty_points" && (
+                        <p className="text-sm mt-2 font-bold" style={{ color: "#34D399" }}>
+                          {smartOfferThresholdReached
+                            ? `+${Math.floor(toSafeNumber(smartOffer.bonusPoints, 0))} points seront crédités après confirmation de la commande`
+                            : `Atteignez le seuil pour gagner ${Math.floor(toSafeNumber(smartOffer.bonusPoints, 0))} points bonus`}
+                        </p>
+                      )}
                     {smartOfferSelectedForOrder && smartOffer?.offerType === "free_item" && (
                       <div className="mt-3">
                         {selectedSmartOfferFreeItem ? (

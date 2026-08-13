@@ -121,6 +121,7 @@ const AddressesBlock = ({
               <UpdateRestaurantModal
                 setShowUpdateRestaurantModal={setShowUpdateRestaurantModal}
                 restaurantsSettings={restaurantsSettings}
+                selectedRestaurant={selectedRestaurant}
                 setSelectedRestaurant={setSelectedRestaurant}
               />
             )}

@@ -2,24 +2,14 @@
 import React, { useEffect } from "react";
 import MenuItemModal from "./MenuItemModal";
 import OfferModal from "./OfferModal";
-import { useBasket } from "@/context/BasketContext";
 import { useUser } from "@/context/UserContext";
-import toast from "react-hot-toast";
 const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
   const [showMenuItemModal, setShowMenuItemModal] = React.useState(false);
   const [showOfferModal, setShowOfferModal] = React.useState(false);
   const [selectedItem, setSelectedItem] = React.useState(null);
   const [selectedOffer, setSelectedOffer] = React.useState(null);
-  const { addRewardToBasket } = useBasket();
-  const { removePoints, user, loading } = useUser();
+  const { user, loading } = useUser();
   const [actifButton, setActifButton] = React.useState(true);
-
-  const handleAddReward = () => {
-    if (user && actifButton) {
-      addRewardToBasket(reward);
-      removePoints(reward.points);
-    }
-  };
 
   useEffect(() => {
     if (!user && selectedCategory === "recompenses") {
@@ -47,6 +37,8 @@ const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
           itemId={selectedItem}
           setShowMenuItemModal={setShowMenuItemModal}
           showMenuItemModal={showMenuItemModal}
+          reward={reward}
+          lockedSize={reward?.size || ""}
         />
       )}
 
@@ -64,8 +56,8 @@ const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
             setSelectedOffer(itemId);
             setShowOfferModal(true);
           } else if (selectedCategory === "recompenses") {
-            handleAddReward();
-            toast.success("Article ajouté au panier");
+            setSelectedItem(reward?.item?._id);
+            setShowMenuItemModal(true);
           } else {
             setSelectedItem(itemId);
             setShowMenuItemModal(true);

@@ -12,6 +12,7 @@ const OFFER_ICONS = {
   discount_category: "🏷️",
   free_delivery: "🚚",
   free_item: "🎁",
+  loyalty_points: "⭐",
 };
 
 export default function SmartOfferModal() {

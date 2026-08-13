@@ -12,6 +12,7 @@ const OFFER_ICONS = {
   discount_category: "🏷️",
   free_delivery: "🚚",
   free_item: "🎁",
+  loyalty_points: "⭐",
 };
 
 const getOfferLabel = (offer) => {
@@ -38,6 +39,8 @@ const getOfferLabel = (offer) => {
         : offer.targetCategory?.name
         ? `Article offert (${offer.targetCategory.name})`
         : "Article offert";
+    case "loyalty_points":
+      return `${Math.floor(Number(offer.bonusPoints) || 0)} points bonus dès ${Number(offer.bonusThreshold) || 0}$`;
     default:
       return "Offre exclusive";
   }

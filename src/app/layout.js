@@ -5,6 +5,7 @@ import Script from "next/script";
 import { AppProviders } from "@/context/AppProviders";
 import { Toaster } from "react-hot-toast";
 import StripeProvider from "@/providers/StripeProvider";
+import { GoogleTagManager } from "@next/third-parties/google";
 
 const bebasNeue = Bebas_Neue({
   variable: "--font-bebas-neue",
@@ -91,6 +92,7 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebsite) }}
         />
+        <GoogleTagManager gtmId="GTM-W2RK5QZH" />
       </body>
     </html>
   );

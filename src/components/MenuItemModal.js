@@ -14,6 +14,7 @@ import { FaCheck } from "react-icons/fa";
 import { IoChatbubble } from "react-icons/io5";
 
 import ItemLoadingSkeleton from "./ItemLoadingSkeleton";
+import { useUser } from "@/context/UserContext";
 const parseRuleValue = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
@@ -70,6 +71,7 @@ const MenuItemModal = ({
   isBirthdayFreeItem = false,
   isSmartOfferFreeItem = false,
   lockedSize = "",
+  reward = null,
 }) => {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -90,16 +92,24 @@ const MenuItemModal = ({
   const isExistingSmartOfferFreeItemFlow = Boolean(
     itemFromBasket?.isSmartOfferFreeItem
   );
+  const isRewardFlow = Boolean(reward);
   const isFreeItemFlow =
     Boolean(isSubscriptionFreeItem) ||
     isExistingSubscriptionFreeItemFlow ||
     Boolean(isBirthdayFreeItem) ||
     isExistingBirthdayFreeItemFlow ||
     Boolean(isSmartOfferFreeItem) ||
-    isExistingSmartOfferFreeItemFlow;
+    isExistingSmartOfferFreeItemFlow ||
+    isRewardFlow;
   const usingCustomizationGroup = customizationGroups.length > 0;
 
-  const { addToBasket, removeFromBasket, updateItemInBasket } = useBasket();
+  const {
+    addToBasket,
+    addRewardToBasket,
+    removeFromBasket,
+    updateItemInBasket,
+  } = useBasket();
+  const { removePoints } = useUser();
   const fetchItem = useCallback(async () => {
     try {
       setLoading(true);
@@ -322,6 +332,20 @@ const MenuItemModal = ({
       ? extraCustomizationTotal
       : totalItemPrice;
 
+    if (isRewardFlow) {
+      addRewardToBasket({
+        ...reward,
+        size: selectedSize?.size || lockedSize,
+        customization: selectedItems,
+        comment,
+        extraPrice: extraCustomizationTotal,
+      });
+      removePoints(reward.points);
+      toast.success("Récompense ajoutée au panier !");
+      setShowMenuItemModal(false);
+      return;
+    }
+
     if (!itemFromBasket) {
       if (isFreeItemFlow) {
         if (Boolean(isSubscriptionFreeItem)) {
@@ -455,6 +479,12 @@ const MenuItemModal = ({
               <h2 className="font-bebas-neue md:text-2xl text-xl">
                 {item.name}
               </h2>
+              {isRewardFlow && (
+                <p className="mt-2 rounded-md bg-amber-100 px-3 py-2 font-inter text-sm font-semibold text-amber-900">
+                  Article offert pour {reward.points} points. Seuls les
+                  suppléments ajoutés sont facturés.
+                </p>
+              )}
               <div className="flex justify-between items-center mt-2">
                 <h4 className="md:text-2xl text-xl font-bebas-neue text-pr ">
                   {calculateTotalPrice() <= 0
@@ -495,7 +525,9 @@ const MenuItemModal = ({
                         {price.size}
                       </span>
                       <span className="text-pr font-bebas-neue md:text-xl text-base">
-                        ${price.price.toFixed(2)}
+                        {isRewardFlow
+                          ? "Inclus"
+                          : `$${price.price.toFixed(2)}`}
                       </span>
                     </button>
                   ))}

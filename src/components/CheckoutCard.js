@@ -1,11 +1,17 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import {
+  CardElement,
+  ExpressCheckoutElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
 import {
   cancelPaymentIntent,
   catchError,
   confirmPaiment,
+  createPlatformPaymentIntent,
   createOrder,
   createZeroTotalSubscriptionOrder,
   createZeroTotalReferralOrder,
@@ -85,6 +91,7 @@ export default function CheckoutCard({
   user,
   total,
   selectedRestaurant,
+  confirmedRestaurantId,
   address,
   deliveryMode,
   paymentMethod = "card",
@@ -122,6 +129,8 @@ export default function CheckoutCard({
   const [selectedPmId, setSelectedPmId] = useState(null);
   const [showCardField, setShowCardField] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
+  const [expressCheckoutAvailable, setExpressCheckoutAvailable] =
+    useState(false);
   const [error, setError] = useState(null);
   const paymentFlowLockRef = useRef(false);
   const checkoutAttemptRef = useRef(null);
@@ -429,7 +438,16 @@ export default function CheckoutCard({
     });
 
     basket.rewards.forEach((item) => {
-      orderRewards.push({ id: item._id, points: item.points });
+      orderRewards.push({
+        id: item._id,
+        points: item.points,
+        size: item.size?.size || item.size,
+        customizations: (item.customization || [])
+          .map((customization) => customization?._id || customization)
+          .filter(Boolean),
+        comment: item.comment || "",
+        extraPrice: roundMoney(item.extraPrice, 0),
+      });
     });
 
     const scheduledFor =
@@ -607,7 +625,8 @@ export default function CheckoutCard({
     setError(`Statut paiement inattendu`);
   }
 
-  async function onPay() {
+  async function onPay(options = {}) {
+    const isExpressCheckout = options?.wallet === true;
     if (paymentFlowLockRef.current || loading) return;
     paymentFlowLockRef.current = true;
     setLoading(true);
@@ -622,6 +641,15 @@ export default function CheckoutCard({
       }
       if (!selectedRestaurant) {
         setError("Veuillez sélectionner un restaurant.");
+        return;
+      }
+      if (
+        !confirmedRestaurantId ||
+        String(confirmedRestaurantId) !== String(selectedRestaurant?._id || "")
+      ) {
+        setError(
+          "La succursale a changé. Revenez à l’étape précédente et confirmez de nouveau le lieu de prise en charge.",
+        );
         return;
       }
       if (!user?.email) {
@@ -843,6 +871,71 @@ export default function CheckoutCard({
         return;
       }
 
+      if (isExpressCheckout) {
+        const submitResult = await elements.submit();
+        if (submitResult?.error) {
+          setError(
+            submitResult.error.message ||
+              "Impossible de valider le paiement express.",
+          );
+          return;
+        }
+
+        const returnUrl = `${window.location.origin}/checkout`;
+        const tokenResult = await stripe.createConfirmationToken({
+          elements,
+          params: {
+            payment_method_data: {
+              billing_details: { email: user.email.trim() },
+            },
+            return_url: returnUrl,
+          },
+        });
+
+        if (tokenResult.error || !tokenResult.confirmationToken?.id) {
+          setError(
+            tokenResult.error?.message ||
+              "Impossible de créer le paiement express.",
+          );
+          return;
+        }
+
+        const intentResponse = await createPlatformPaymentIntent(
+          user._id,
+          amountCents,
+          user.email.trim(),
+          "express_checkout",
+        );
+        if (!intentResponse?.status || !intentResponse?.data?.clientSecret) {
+          setError(
+            intentResponse?.message ||
+              "Impossible de préparer le paiement express.",
+          );
+          return;
+        }
+
+        const paymentIntentId = intentResponse.data.id;
+        const confirmResult = await stripe.confirmPayment({
+          clientSecret: intentResponse.data.clientSecret,
+          confirmParams: {
+            confirmation_token: tokenResult.confirmationToken.id,
+            return_url: returnUrl,
+          },
+          redirect: "if_required",
+        });
+
+        if (confirmResult.error) {
+          await cancelPaymentIntent(paymentIntentId);
+          setError(
+            confirmResult.error.message || "Le paiement express a échoué.",
+          );
+          return;
+        }
+
+        await processPi(confirmResult.paymentIntent);
+        return;
+      }
+
       if (selectedPmId) {
         const response = await handleSavedCardFlow(selectedPmId);
 
@@ -968,6 +1061,33 @@ export default function CheckoutCard({
             </p>
           </div>
 
+          <ExpressCheckoutElement
+            options={{
+              buttonHeight: 50,
+              buttonType: {
+                applePay: "check-out",
+              },
+              layout: { maxColumns: 1, maxRows: 2, overflow: "never" },
+              paymentMethods: { applePay: "auto", googlePay: "never" },
+            }}
+            onReady={({ availablePaymentMethods }) =>
+              setExpressCheckoutAvailable(
+                Boolean(availablePaymentMethods?.applePay),
+              )
+            }
+            onConfirm={() => onPay({ wallet: true })}
+          />
+
+          {expressCheckoutAvailable && (
+            <div className="flex items-center gap-3 py-1">
+              <div className="h-px flex-1 bg-gray-300" />
+              <span className="font-inter text-xs text-gray-500">
+                ou payer par carte
+              </span>
+              <div className="h-px flex-1 bg-gray-300" />
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => setPaymentMethod?.("card")}
@@ -1061,7 +1181,7 @@ export default function CheckoutCard({
 
       <button
         type="button"
-        onClick={onPay}
+        onClick={() => onPay()}
         disabled={
           loading ||
           !isBasketAvailable ||

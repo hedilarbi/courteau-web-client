@@ -14,7 +14,7 @@ import NoUserModal from "./NoUserModal";
 
 const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
   const basket = useSelectBasket();
-  const { user, loading } = useUser();
+  const { user, loading, addPoints } = useUser();
   const { smartOffer } = useSmartOffer();
   const smartOfferThreshold = Math.max(
     0,
@@ -51,6 +51,11 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
     }
     setShowBasketSlider(false);
     router.push("/checkout");
+  };
+
+  const handleRemoveReward = (reward) => {
+    removeRewardFromBasket(reward.uid || reward._id);
+    addPoints(Number(reward.points) || 0);
   };
 
   return (
@@ -367,12 +372,33 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                       height={70}
                       className="object-cover rounded-xl  md:w-40  w-14  h-30"
                     />
-                    <p className="text-sm font-inter text-gray-700 ml-2">
-                      {item.item.name}
-                    </p>
+                    <div className="ml-2 min-w-0 flex-1">
+                      <p className="text-sm font-inter text-gray-700">
+                        {item.item.name}
+                      </p>
+                      {item.size && (
+                        <p className="text-xs font-inter text-gray-500 mt-1">
+                          Taille : {item.size?.size || item.size}
+                        </p>
+                      )}
+                      {item.customization?.length > 0 && (
+                        <p className="text-xs font-inter text-gray-500 mt-1">
+                          Personnalisations :{" "}
+                          {item.customization
+                            .map((customization) => customization?.name)
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      )}
+                      {Number(item.extraPrice) > 0 && (
+                        <p className="text-xs font-inter font-semibold text-pr mt-1">
+                          Extras : ${Number(item.extraPrice).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
                     <button
                       className="bg-red-500 flex items-center justify-center gap-2 text-white text-sm cursor-pointer px-3 py-2 rounded-md mt-2"
-                      onClick={() => removeRewardFromBasket(item._id)}
+                      onClick={() => handleRemoveReward(item)}
                     >
                       <FaTrash />
                       <p className="font-inter font-semibold">Supprimer</p>

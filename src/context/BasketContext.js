@@ -90,22 +90,36 @@ function basketReducer(state, action) {
     }
 
     case "addRewardToBasket": {
+      const added = { ...action.payload, uid: uuidv4() };
+      const extraPrice = Number(action.payload?.extraPrice) || 0;
       return {
         ...state,
-        rewards: [...state.rewards, action.payload],
+        rewards: [...state.rewards, added],
         size: state.size + 1,
+        subtotal: round2(state.subtotal + extraPrice),
       };
     }
 
     case "removeRewardFromBasket": {
-      const idx = state.rewards.findIndex((it) => it.id === action.payload.id);
+      const rewardIdentity =
+        typeof action.payload === "object"
+          ? action.payload?.uid || action.payload?._id || action.payload?.id
+          : action.payload;
+      const idx = state.rewards.findIndex(
+        (it) =>
+          it.uid === rewardIdentity ||
+          it._id === rewardIdentity ||
+          it.id === rewardIdentity,
+      );
       if (idx < 0) return state;
+      const extraPrice = Number(state.rewards[idx]?.extraPrice) || 0;
       const rewards = [...state.rewards];
       rewards.splice(idx, 1);
       return {
         ...state,
         rewards,
         size: Math.max(0, state.size - 1),
+        subtotal: round2(Math.max(0, state.subtotal - extraPrice)),
       };
     }
 

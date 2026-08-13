@@ -630,6 +630,30 @@ const getPaymentIntentClientSecret = async (
     };
   }
 };
+
+const createPlatformPaymentIntent = async (
+  userId,
+  amount,
+  email,
+  platform = "express_checkout",
+) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/payments/create-platform-payment-intent`,
+      { userId, amount, email, platform },
+      { timeout: 15000 },
+    );
+    return { status: true, data: response.data };
+  } catch (error) {
+    return {
+      status: false,
+      message:
+        error?.response?.data?.error ||
+        error?.message ||
+        "Impossible de préparer le paiement express.",
+    };
+  }
+};
 const catchError = async (userId, error, source) => {
   try {
     let getPaymentIntentClientSecretResponse = await axios.post(
@@ -740,6 +764,7 @@ export {
   attachPaymentMethod,
   updatePaymentMethod,
   getPaymentIntentClientSecret,
+  createPlatformPaymentIntent,
   catchError,
   createOrder,
   createZeroTotalSubscriptionOrder,

@@ -436,9 +436,19 @@ const Page = () => {
                 <h3 className="font-inter font-semibold text-xl">
                   Récompenses
                 </h3>
-                {order.rewards.map((item, index) => (
+                {order.rewards.map((item, index) => {
+                  const rewardItem = item?.item || item?.reward?.item;
+                  const rewardSize = getSizeLabel(
+                    item?.size || item?.reward?.size,
+                  );
+                  const customizations = getCustomizationDisplayItems(
+                    item?.customizations,
+                    rewardItem?.customization_group,
+                  );
+
+                  return (
                   <div
-                    key={item._id}
+                    key={item?._id || item?.reward?._id || index}
                     className={`flex justify-between items-center ${
                       order.rewards.length - 1 === index
                         ? ""
@@ -447,14 +457,30 @@ const Page = () => {
                   >
                     <div>
                       <p className="font-semibold font-inter text-pr-700">
-                        {item.item.name}
+                        {rewardItem?.name || "Article indisponible"}
                       </p>
+                      {rewardSize && (
+                        <p className="text-sm font-inter text-gray-600 mt-1">
+                          Taille : {rewardSize}
+                        </p>
+                      )}
+                      {customizations.length > 0 && (
+                        <div className="text-sm font-inter text-gray-600 mt-1">
+                          <p>Personnalisations :</p>
+                          {customizations.map((customization, customIndex) => (
+                            <p key={`${item?._id || index}-reward-${customIndex}`}>
+                              • {formatCustomizationLabel(customization)}
+                            </p>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="font-inter font-semibold">
                       {item.points} pts
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

@@ -32,6 +32,11 @@ export default function MenuItemsSection({ items, selectedCategory }) {
                 <p className="font-inter text-[#717171] md:text-lg sm:text-base text-xs font-medium mt-2">
                   {item.points} pts
                 </p>
+                {item.size && (
+                  <p className="font-inter text-[#717171] text-xs sm:text-sm mt-1">
+                    Taille : {item.size}
+                  </p>
+                )}
                 <div className="mt-auto pt-3">
                   <SelectMenuItemButton
                     itemId={item._id}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import CheckoutCard from "./CheckoutCard";
 import { FaCircleInfo } from "react-icons/fa6";
 import { FaStore } from "react-icons/fa6";
@@ -38,10 +38,33 @@ const ProcessPaiement = ({
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [processPaiement, setProcessPaiement] = useState(false);
+  const [restaurantConfirmationAccepted, setRestaurantConfirmationAccepted] =
+    useState(false);
+  const [confirmedRestaurantId, setConfirmedRestaurantId] = useState(null);
 
   const restaurantName = selectedRestaurant?.name || "ce restaurant";
+  const restaurantAddress =
+    selectedRestaurant?.address || "Adresse non disponible";
+
+  useEffect(() => {
+    if (
+      confirmedRestaurantId &&
+      String(confirmedRestaurantId) !== String(selectedRestaurant?._id || "")
+    ) {
+      setProcessPaiement(false);
+      setConfirmedRestaurantId(null);
+      setRestaurantConfirmationAccepted(false);
+    }
+  }, [confirmedRestaurantId, selectedRestaurant?._id]);
+
+  const openConfirmation = () => {
+    setRestaurantConfirmationAccepted(false);
+    setShowConfirmModal(true);
+  };
 
   const handleConfirm = () => {
+    if (!restaurantConfirmationAccepted || !selectedRestaurant?._id) return;
+    setConfirmedRestaurantId(String(selectedRestaurant._id));
     setShowConfirmModal(false);
     setProcessPaiement(true);
   };
@@ -59,7 +82,7 @@ const ProcessPaiement = ({
         <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
           <button
             className="bg-pr text-black font-bebas-neue text-xl px-4 py-3 rounded-md mt-6 w-full cursor-pointer"
-            onClick={() => setShowConfirmModal(true)}
+            onClick={openConfirmation}
           >
             Procéder au paiement
           </button>
@@ -88,16 +111,51 @@ const ProcessPaiement = ({
               </h2>
 
               {/* Message */}
-              <p className="font-inter text-[#374151] text-center text-sm leading-relaxed mb-7">
-                Confirmez-vous que vous souhaitez passer cette commande à la
-                succursale{" "}
-                <span className="font-semibold text-black">{restaurantName}</span>
-                {" ?"}
+              <p className="font-inter text-[#374151] text-center text-sm leading-relaxed mb-4">
+                Vérifiez attentivement la succursale avant de payer. La commande
+                sera préparée uniquement à l&apos;adresse ci-dessous.
               </p>
+
+              <div className="rounded-2xl bg-[#111827] p-5 mb-4 text-left">
+                <div className="font-inter text-xs font-bold uppercase tracking-wider text-pr">
+                  {deliveryMode === "pickup"
+                    ? "Lieu de prise en charge"
+                    : "Succursale responsable"}
+                </div>
+                <div className="font-inter text-xl font-bold text-white mt-2">
+                  {restaurantName}
+                </div>
+                <div className="font-inter text-sm leading-5 text-gray-200 mt-1">
+                  {restaurantAddress}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-[#F7A600] bg-amber-100 p-3 mb-4 text-left">
+                <p className="font-inter text-sm font-bold leading-5 text-amber-900">
+                  Attention : en confirmant, vous acceptez que la commande ne
+                  pourra pas être transférée vers une autre succursale.
+                </p>
+              </div>
+
+              <label className="flex items-start gap-3 mb-5 cursor-pointer text-left">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-5 w-5 accent-[#F7A600]"
+                  checked={restaurantConfirmationAccepted}
+                  onChange={(event) =>
+                    setRestaurantConfirmationAccepted(event.target.checked)
+                  }
+                />
+                <span className="font-inter text-sm font-semibold leading-5 text-[#111827]">
+                  Je confirme que cette succursale est le bon lieu pour ma
+                  commande.
+                </span>
+              </label>
 
               {/* Confirm button */}
               <button
-                className="w-full bg-pr text-black font-inter font-semibold text-base py-3 rounded-full cursor-pointer hover:bg-[#e69500] transition mb-3"
+                disabled={!restaurantConfirmationAccepted}
+                className="w-full bg-pr text-black font-inter font-semibold text-base py-3 rounded-full cursor-pointer hover:bg-[#e69500] transition mb-3 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 onClick={handleConfirm}
               >
                 Oui, confirmer
@@ -140,6 +198,8 @@ const ProcessPaiement = ({
             mode: "payment",
             currency: "cad",
             amount: amountCents, // amount in cents (Stripe requires > 0)
+            captureMethod: "manual",
+            paymentMethodTypes: ["card"],
             locale: "fr",
           }}
         >
@@ -147,6 +207,7 @@ const ProcessPaiement = ({
             user={user}
             total={total}
             selectedRestaurant={selectedRestaurant}
+            confirmedRestaurantId={confirmedRestaurantId}
             address={address}
             deliveryMode={deliveryMode}
             paymentMethod={paymentMethod}
@@ -178,6 +239,7 @@ const ProcessPaiement = ({
           user={user}
           total={total}
           selectedRestaurant={selectedRestaurant}
+          confirmedRestaurantId={confirmedRestaurantId}
           address={address}
           deliveryMode={deliveryMode}
           paymentMethod={paymentMethod}
