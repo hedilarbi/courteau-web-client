@@ -34,6 +34,7 @@ const organizationJsonLd = {
   "@id": `${SITE_URL}/#organization`,
   name: "Casse-Croûte Courteau",
   url: SITE_URL,
+  logo: `${SITE_URL}/logo-ld.png`,
   telephone: "+1-819-371-3935",
   email: "support@lecourteau.com",
   sameAs: [
