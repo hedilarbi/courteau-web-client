@@ -16,6 +16,25 @@ export const metadata = {
   },
 };
 
+const restaurantJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  "@id":
+    "https://www.lecourteau.com/succursales/des-prairies-trois-rivieres#restaurant",
+  name: "Casse-Croûte Courteau – Rue des Prairies",
+  url: "https://www.lecourteau.com/succursales/des-prairies-trois-rivieres",
+  telephone: "+1-819-371-3935",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "3331 Rue des Prairies",
+    addressLocality: "Trois-Rivières",
+    addressRegion: "QC",
+    postalCode: "G8V 1W7",
+    addressCountry: "CA",
+  },
+  menu: "https://www.lecourteau.com/menu",
+};
+
 export default function DesPrairiesPage() {
   return (
     <main className="md:px-14 px-4 md:py-16 py-10 md:mt-28 mt-20">
@@ -47,6 +66,12 @@ export default function DesPrairiesPage() {
           </Link>
         </div>
       </div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(restaurantJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
     </main>
   );
 }
