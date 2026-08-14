@@ -24,12 +24,13 @@ async function fetchItem(slug) {
 // SEO dynamique pour chaque article (JS, sans types)
 export async function generateMetadata({ params }) {
   const { slug: menuItemSlug } = await params;
+  const slug = decodeURIComponent(menuItemSlug);
   const base = SITE_URL;
-  const item = await fetchItem(menuItemSlug);
+  const item = await fetchItem(slug);
 
   if (!item) {
     return {
-      title: "Article introuvable | Casse-Croûte Courteau",
+      title: { absolute: "Article introuvable | Casse-Croûte Courteau" },
       robots: { index: false, follow: false },
     };
   }
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }) {
     : `${base}${item.image}`;
 
   return {
-    title,
+    title: { absolute: title },
     description: desc,
     alternates: { canonical: url },
     robots: { index: true, follow: true },

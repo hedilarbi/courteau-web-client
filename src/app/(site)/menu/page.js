@@ -10,6 +10,11 @@ export const viewport = {
 };
 
 export const metadata = {
+  title: {
+    absolute: "Menu – Poutines, pizzas et déjeuners | Casse-Croûte Courteau",
+  },
+  description:
+    "Découvrez le menu du Casse-Croûte Courteau à Trois-Rivières : poutines généreuses, pizzas, déjeuners, combos et autres classiques à commander en ligne.",
   alternates: { canonical: "/menu" },
 };
 
@@ -152,7 +157,7 @@ export default async function Page({ searchParams }) {
 
   return (
     <div className="md:mt-28 mt-20">
-      <h1 className="sr-only">Menu</h1>
+      <h1 className="sr-only">Menu du Casse-Croûte Courteau</h1>
 
       {/* Contenu intercatif hydraté avec des données SSG */}
       <MenuContent
