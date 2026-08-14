@@ -1,6 +1,13 @@
 import Link from "next/link";
 import React from "react";
 
+export const metadata = {
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
 const SuccessPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100 md:mt-28 mt-20">

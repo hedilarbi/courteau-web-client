@@ -1,6 +1,13 @@
 import CheckoutContent from "@/components/CheckoutContent";
 import React from "react";
 
+export const metadata = {
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.API_URL ||

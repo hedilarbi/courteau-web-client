@@ -1,7 +1,6 @@
 // app/layout.jsx
 import "./globals.css";
 import { Bebas_Neue, Inter } from "next/font/google";
-import Script from "next/script";
 import { AppProviders } from "@/context/AppProviders";
 import { Toaster } from "react-hot-toast";
 import StripeProvider from "@/providers/StripeProvider";
@@ -64,19 +63,6 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
-  // JSON-LD WebSite + SearchAction (pour la “sitelinks search box”)
-  const ldWebsite = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: BRAND,
-    url: BASE,
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${BASE}/recherche?q={search_term_string}`,
-      "query-input": "required name=search_term_string",
-    },
-  };
-
   return (
     <html lang="fr-CA">
       <body className={`${bebasNeue.variable} ${inter.variable} antialiased`}>
@@ -87,11 +73,6 @@ export default function RootLayout({ children }) {
           </AppProviders>
         </StripeProvider>
 
-        <Script
-          id="ld-website"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebsite) }}
-        />
         <GoogleTagManager gtmId="GTM-W2RK5QZH" />
       </body>
     </html>

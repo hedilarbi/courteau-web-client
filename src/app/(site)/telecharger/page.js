@@ -1,6 +1,13 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+export const metadata = {
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
 const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=com.hedilarbi95.lecourteauclient";
 const APP_STORE_URL =

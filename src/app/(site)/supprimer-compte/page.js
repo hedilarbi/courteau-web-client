@@ -1,5 +1,12 @@
 import React from "react";
 
+export const metadata = {
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
 const Page = () => {
   return (
     <main className="md:px-14 md:py-10 p-4 md:mt-28 mt-20 mb-20">

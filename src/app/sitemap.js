@@ -88,13 +88,12 @@ async function fetchMenuProducts() {
 }
 
 export default async function sitemap() {
-  const now = new Date();
   const staticPages = [
-    { url: `${SITE_URL}/`, lastModified: now },
-    { url: `${SITE_URL}/menu`, lastModified: now },
-    { url: `${SITE_URL}/contact`, lastModified: now },
-    { url: `${SITE_URL}/blogue`, lastModified: now },
-    { url: `${SITE_URL}/a-propos`, lastModified: now },
+    { url: `${SITE_URL}/` },
+    { url: `${SITE_URL}/menu` },
+    { url: `${SITE_URL}/contact` },
+    { url: `${SITE_URL}/blogue` },
+    { url: `${SITE_URL}/a-propos` },
   ];
 
   const blogPages = blogueList.filter(isPublishedArticle).map((article) => {
