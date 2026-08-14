@@ -121,7 +121,7 @@ export default async function sitemap() {
     const lastModified = getProductLastModified(product);
 
     return {
-      url: `${SITE_URL}/menu/articles/${product.slug}`,
+      url: `${SITE_URL}/menu/articles/${encodeURIComponent(product.slug)}`,
       ...(lastModified ? { lastModified } : {}),
     };
   });
