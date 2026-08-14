@@ -206,7 +206,7 @@ const ArticleComponent = ({ item }) => {
 
   return (
     <div className="md:w-1/2 w-full rounded-md shadow-lg bg-white p-6   ">
-      <h2 className="font-bebas-neue md:text-2xl text-xl">{item.name}</h2>
+      <h1 className="font-bebas-neue md:text-2xl text-xl">{item.name}</h1>
       <div className="flex justify-between items-center mt-2">
         <h4 className="md:text-2xl text-xl font-bebas-neue text-pr ">
           ${calculateTotalPrice().toFixed(2)}
