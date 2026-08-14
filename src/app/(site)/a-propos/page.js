@@ -19,7 +19,7 @@ export async function generateMetadata() {
     "Découvrez l’histoire et les valeurs du Casse-Croûte Courteau : fraîcheur, passion et communauté au cœur de la Mauricie. Commandez en ligne.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "/a-propos" },
     robots: { index: true, follow: true },

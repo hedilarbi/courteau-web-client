@@ -16,7 +16,7 @@ export async function generateMetadata() {
   const ogImage = `${base}/logo.svg`; // remplace par ton image OG si dispo
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "/contact" },
     robots: { index: true, follow: true },

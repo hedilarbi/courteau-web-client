@@ -5,7 +5,7 @@ import blogueList from "@/constants/blogueData";
 
 // 🧩 SEO dynamique
 export const metadata = {
-  title: "Blogue | Casse-Croûte Courteau — Nos articles gourmands et nouvelles",
+  title: { absolute: "Blogue | Casse-Croûte Courteau" },
   description:
     "Découvrez nos articles de blogue gourmands : conseils, nouveautés et coulisses du Casse-Croûte Courteau. 🍔 Restez à jour sur nos plats, événements et promotions!",
   alternates: {

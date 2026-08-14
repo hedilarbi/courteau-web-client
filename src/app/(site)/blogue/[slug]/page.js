@@ -27,7 +27,7 @@ export async function generateMetadata({ params }) {
   const post = (blogueList || []).find((b) => b.slug === slug);
   if (!post) {
     return {
-      title: `Article introuvable | ${BRAND}`,
+      title: { absolute: `Article introuvable | ${BRAND}` },
       robots: { index: false },
     };
   }
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }) {
     : `${BASE}${post.image || ""}`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical },
     robots: { index: true, follow: true },

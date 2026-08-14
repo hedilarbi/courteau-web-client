@@ -21,6 +21,58 @@ async function fetchItem(slug) {
   return res.json();
 }
 
+async function fetchRelatedItems(categorySlug, currentItem) {
+  if (!categorySlug) return [];
+
+  try {
+    const res = await fetch(
+      `${API_URL}/menuItems/category/slug/${encodeURIComponent(categorySlug)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return [];
+
+    const items = await res.json();
+    if (!Array.isArray(items)) return [];
+
+    return items
+      .filter((relatedItem) => {
+        const relatedSlug = String(relatedItem?.slug || "").trim();
+        const relatedName = String(relatedItem?.name || "").trim();
+        const status = String(relatedItem?.status || "").toLowerCase();
+        const isCurrentItem =
+          String(relatedItem?._id || "") === String(currentItem?._id || "") ||
+          relatedSlug === String(currentItem?.slug || "");
+
+        return (
+          relatedSlug &&
+          relatedName &&
+          !isCurrentItem &&
+          relatedItem.is_available !== false &&
+          relatedItem.active !== false &&
+          relatedItem.isActive !== false &&
+          relatedItem.published !== false &&
+          relatedItem.isPublished !== false &&
+          !relatedItem.deleted &&
+          !relatedItem.isDeleted &&
+          !relatedItem.deletedAt &&
+          !["draft", "deleted", "disabled", "inactive", "unpublished"].includes(
+            status
+          )
+        );
+      })
+      .slice(0, 4);
+  } catch {
+    return [];
+  }
+}
+
+function cleanMetadataText(value) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // SEO dynamique pour chaque article (JS, sans types)
 export async function generateMetadata({ params }) {
   const { slug: menuItemSlug } = await params;
@@ -36,9 +88,11 @@ export async function generateMetadata({ params }) {
   }
 
   const title = `${item.name} | Casse-Croûte Courteau`;
+  const productDescription = cleanMetadataText(item.description);
+  const productName = cleanMetadataText(item.name);
   const desc =
-    (item.description && item.description.slice(0, 160)) ||
-    `Découvrez ${item.name} et personnalisez votre commande en ligne.`;
+    productDescription ||
+    `Découvrez ${productName} au Casse-Croûte Courteau. Consultez les détails et commandez en ligne.`;
   const url = `${base}/menu/articles/${item.slug}`;
   const ogImage = item.image?.startsWith("http")
     ? item.image
@@ -79,6 +133,7 @@ export default async function Page({ params }) {
   const slug = decodeURIComponent(menuItemSlug);
   const item = await fetchItem(slug);
   if (!item) notFound();
+  const relatedItems = await fetchRelatedItems(item.category?.slug, item);
 
   const base = SITE_URL;
   const pageUrl = `${base}/menu/articles/${item.slug}`;
@@ -191,6 +246,40 @@ export default async function Page({ params }) {
         {/* Colonne configurateur (client) */}
         <ArticleComponent item={item} />
       </div>
+
+      {relatedItems.length > 0 && (
+        <section className="mt-10 pb-10" aria-labelledby="related-items-title">
+          <h2
+            id="related-items-title"
+            className="font-bebas-neue text-2xl font-bold md:text-3xl"
+          >
+            Vous aimerez aussi
+          </h2>
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {relatedItems.map((relatedItem) => (
+              <Link
+                key={relatedItem._id || relatedItem.slug}
+                href={`/menu/articles/${relatedItem.slug}`}
+                className="overflow-hidden rounded-md bg-white shadow-md"
+              >
+                {relatedItem.image && (
+                  <Image
+                    src={relatedItem.image}
+                    alt={relatedItem.name}
+                    width={500}
+                    height={375}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="h-48 w-full object-cover"
+                  />
+                )}
+                <span className="block p-4 font-inter font-semibold">
+                  {relatedItem.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* JSON-LD */}
       <Script
