@@ -10,7 +10,6 @@ import VedetteSection from "@/components/VedetteSection";
 import HomeSmartOfferCard from "@/components/HomeSmartOfferCard";
 import SmartOfferModal from "@/components/SmartOfferModal";
 import React from "react";
-import Script from "next/script";
 import { SITE_URL } from "@/lib/siteUrl";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +33,7 @@ const organizationJsonLd = {
   "@id": `${SITE_URL}/#organization`,
   name: "Casse-Croûte Courteau",
   url: SITE_URL,
-  logo: `${SITE_URL}/logo-ld.png`,
+  logo: `${SITE_URL}/logo.svg`,
   telephone: "+1-819-371-3935",
   email: "support@lecourteau.com",
   sameAs: [
@@ -57,15 +56,17 @@ const page = () => {
       <OffresSection />
       <OrderOnlineSection />
       <GetAppSection />
-      <Script
-        id="ld-website"
+      <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c"),
+        }}
       />
-      <Script
-        id="ld-organization"
+      <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
+        }}
       />
     </>
   );
