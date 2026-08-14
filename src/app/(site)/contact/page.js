@@ -237,6 +237,61 @@ export default function Page() {
                 </a>
               </p>
 
+              {b.id === "prairies" && (
+                <p className="text-center mt-3">
+                  <Link
+                    href="/succursales/des-prairies-trois-rivieres"
+                    className="hover:underline"
+                  >
+                    Voir la succursale Rue des Prairies
+                  </Link>
+                </p>
+              )}
+
+              {b.id === "forges" && (
+                <p className="text-center mt-3">
+                  <Link
+                    href="/succursales/boulevard-des-forges-trois-rivieres"
+                    className="hover:underline"
+                  >
+                    Voir la succursale Boulevard des Forges
+                  </Link>
+                </p>
+              )}
+
+              {b.id === "sainte-marguerite" && (
+                <p className="text-center mt-3">
+                  <Link
+                    href="/succursales/chemin-ste-marguerite-trois-rivieres"
+                    className="hover:underline"
+                  >
+                    Voir la succursale Chemin Ste-Marguerite
+                  </Link>
+                </p>
+              )}
+
+              {b.id === "arseneault" && (
+                <p className="text-center mt-3">
+                  <Link
+                    href="/succursales/avenue-arseneault-becancour"
+                    className="hover:underline"
+                  >
+                    Voir la succursale Avenue Arseneault
+                  </Link>
+                </p>
+              )}
+
+              {b.id === "trudel" && (
+                <p className="text-center mt-3">
+                  <Link
+                    href="/succursales/boulevard-trudel-est-saint-boniface"
+                    className="hover:underline"
+                  >
+                    Voir la succursale Boulevard Trudel Est
+                  </Link>
+                </p>
+              )}
+
               <div className="mt-3 rounded-3xl overflow-hidden">
                 <Image
                   src={b.image}

@@ -94,6 +94,17 @@ export default async function sitemap() {
     { url: `${SITE_URL}/contact` },
     { url: `${SITE_URL}/blogue` },
     { url: `${SITE_URL}/a-propos` },
+    { url: `${SITE_URL}/succursales/des-prairies-trois-rivieres` },
+    {
+      url: `${SITE_URL}/succursales/boulevard-des-forges-trois-rivieres`,
+    },
+    {
+      url: `${SITE_URL}/succursales/chemin-ste-marguerite-trois-rivieres`,
+    },
+    { url: `${SITE_URL}/succursales/avenue-arseneault-becancour` },
+    {
+      url: `${SITE_URL}/succursales/boulevard-trudel-est-saint-boniface`,
+    },
   ];
 
   const blogPages = blogueList.filter(isPublishedArticle).map((article) => {
