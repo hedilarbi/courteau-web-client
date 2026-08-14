@@ -13,6 +13,8 @@ const OFFER_ICONS = {
   free_delivery: "🚚",
   free_item: "🎁",
   loyalty_points: "⭐",
+  split_discount: "📉",
+  buy_one_get_one: "🎁",
 };
 
 const getOfferLabel = (offer) => {
@@ -20,6 +22,10 @@ const getOfferLabel = (offer) => {
   switch (offer.offerType) {
     case "discount_order":
       return `${offer.discountValue}% de rabais sur commande`;
+    case "split_discount":
+      return `${offer.discountSteps?.[offer.currentStep || 0] || 0}% maintenant — étape ${(offer.currentStep || 0) + 1}/${offer.discountSteps?.length || 0}`;
+    case "buy_one_get_one":
+      return `${offer.triggerItem?.name || "1 article"} acheté = ${offer.freeItem?.name || "1 article"} offert`;
     case "bonus_basket":
       return `${offer.discountValue}$ de rabais dès ${offer.bonusThreshold}$`;
     case "discount_category":

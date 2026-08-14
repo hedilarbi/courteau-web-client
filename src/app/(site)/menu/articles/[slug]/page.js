@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
+import { SITE_URL } from "@/lib/siteUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ async function fetchItem(slug) {
 // SEO dynamique pour chaque article (JS, sans types)
 export async function generateMetadata({ params }) {
   const { slug: menuItemSlug } = await params;
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.lecourteau.com";
+  const base = SITE_URL;
   const item = await fetchItem(menuItemSlug);
 
   if (!item) {
@@ -78,7 +79,7 @@ export default async function Page({ params }) {
   const item = await fetchItem(slug);
   if (!item) notFound();
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.example.com";
+  const base = SITE_URL;
   const pageUrl = `${base}/menu/articles/${item.slug}`;
   const imgAbs = item.image?.startsWith("http")
     ? item.image

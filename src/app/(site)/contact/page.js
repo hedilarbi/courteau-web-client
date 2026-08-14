@@ -2,12 +2,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
+import { SITE_URL } from "@/lib/siteUrl";
 
 export const dynamic = "force-static";
 export const revalidate = 2592000;
 
 export async function generateMetadata() {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.example.com";
+  const base = SITE_URL;
   const brand = "Casse-Croûte Courteau";
   const title = `Contact | ${brand}`;
   const description =
@@ -39,7 +40,7 @@ export async function generateMetadata() {
 
 export default function Page() {
   const brand = "Casse-Croûte Courteau";
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.example.com";
+  const base = SITE_URL;
 
   // Centralise les données (évite la duplication + facilite le JSON-LD)
   const telDisplay = "(819) 371-3935";

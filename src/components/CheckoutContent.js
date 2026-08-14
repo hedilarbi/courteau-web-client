@@ -136,6 +136,16 @@ const calculateSmartOfferDiscount = ({ smartOffer, smartOfferActivated, subTotal
         (toSafeNumber(smartOffer.discountValue, 0) / 100),
       0
     );
+  } else if (smartOffer.offerType === "split_discount") {
+    const stepPercent = toSafeNumber(
+      smartOffer.discountSteps?.[smartOffer.currentStep || 0],
+      0
+    );
+    const discountableSubtotal = (basketItems || []).reduce(
+      (sum, item) => item?.promoLocked ? sum : sum + toSafeNumber(item?.price, 0),
+      0
+    );
+    return roundMoney(discountableSubtotal * (stepPercent / 100), 0);
   } else if (smartOffer.offerType === "bonus_basket") {
     return smartOffer.discountValue || 0;
   } else if (smartOffer.offerType === "discount_category") {
@@ -148,7 +158,7 @@ const calculateSmartOfferDiscount = ({ smartOffer, smartOfferActivated, subTotal
         : acc;
     }, 0);
     return Math.round(catSub * (smartOffer.discountValue / 100) * 100) / 100;
-  } else if (smartOffer.offerType === "free_item") {
+  } else if (["free_item", "buy_one_get_one"].includes(smartOffer.offerType)) {
     // The basket item price already contains only paying extras.
     return 0;
   } else if (smartOffer.offerType === "discount_product") {
@@ -350,7 +360,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const smartOfferAppliedToOrder = Boolean(
     smartOfferSelectedForOrder &&
       smartOfferThresholdReached &&
-      (smartOffer?.offerType === "free_item"
+      (["free_item", "buy_one_get_one"].includes(smartOffer?.offerType)
         ? hasSelectedSmartOfferFreeItem
         : smartOffer?.offerType === "free_delivery"
         ? deliveryMode === "delivery"
@@ -835,7 +845,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     if (
       !smartOfferSelectedForOrder ||
       !smartOfferThresholdReached ||
-      smartOffer?.offerType !== "free_item" ||
+      !["free_item", "buy_one_get_one"].includes(smartOffer?.offerType) ||
       !matchingOption
     ) {
       removeFromBasket(selectedSmartOfferFreeItem.uid);
@@ -1438,7 +1448,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
                             : `Atteignez le seuil pour gagner ${Math.floor(toSafeNumber(smartOffer.bonusPoints, 0))} points bonus`}
                         </p>
                       )}
-                    {smartOfferSelectedForOrder && smartOffer?.offerType === "free_item" && (
+                    {smartOfferSelectedForOrder && ["free_item", "buy_one_get_one"].includes(smartOffer?.offerType) && (
                       <div className="mt-3">
                         {selectedSmartOfferFreeItem ? (
                           <div className="flex items-center gap-2 flex-wrap">

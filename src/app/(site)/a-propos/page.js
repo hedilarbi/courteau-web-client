@@ -6,12 +6,13 @@ import { IoReceipt } from "react-icons/io5";
 
 import Link from "next/link";
 import Script from "next/script";
+import { SITE_URL } from "@/lib/siteUrl";
 
 export const dynamic = "force-static"; // page 100% statique
 export const revalidate = 2592000;
 
 export async function generateMetadata() {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.example.com";
+  const base = SITE_URL;
   const brand = "Casse-Croûte Courteau";
   const title = `À propos | ${brand}`;
   const description =
@@ -40,7 +41,7 @@ export async function generateMetadata() {
 
 export default function Page() {
   const brand = "Casse-Croûte Courteau";
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.example.com";
+  const base = SITE_URL;
 
   // JSON-LD Restaurant + AboutPage + Breadcrumbs (Canada, fr-CA, CAD)
   const ldRestaurant = {

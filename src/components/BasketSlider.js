@@ -134,7 +134,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
               : `Encore ${smartOfferRemaining.toFixed(2)}$ pour débloquer l’offre`}
           </p>
 
-          {smartOfferUnlocked && smartOffer.offerType === "free_item" && (
+          {smartOfferUnlocked && ["free_item", "buy_one_get_one"].includes(smartOffer.offerType) && (
             <button
               type="button"
               className="bg-[#F7A600] text-black text-xs font-bold px-3 py-2 rounded-md cursor-pointer mt-3"

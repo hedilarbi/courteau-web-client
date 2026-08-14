@@ -6,6 +6,7 @@ import { AppProviders } from "@/context/AppProviders";
 import { Toaster } from "react-hot-toast";
 import StripeProvider from "@/providers/StripeProvider";
 import { GoogleTagManager } from "@next/third-parties/google";
+import { SITE_URL } from "@/lib/siteUrl";
 
 const bebasNeue = Bebas_Neue({
   variable: "--font-bebas-neue",
@@ -21,7 +22,7 @@ const inter = Inter({
 });
 
 const BRAND = "Casse-Croûte Courteau";
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://www.lecourteau.com";
+const BASE = SITE_URL;
 
 export const metadata = {
   metadataBase: new URL(BASE),

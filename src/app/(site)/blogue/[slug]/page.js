@@ -4,12 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import { notFound } from "next/navigation";
+import { SITE_URL } from "@/lib/siteUrl";
 
 export const dynamic = "force-static"; // SSG si possible
 export const revalidate = 2592000;
 
 const BRAND = "Casse-Croûte Courteau";
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://www.lecourteau.com";
+const BASE = SITE_URL;
 
 export async function generateStaticParams() {
   // SSG des articles connus

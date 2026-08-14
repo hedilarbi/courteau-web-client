@@ -18,7 +18,11 @@ export default function SmartOfferGiftSelection() {
 
   const options = useMemo(
     () =>
-      (Array.isArray(smartOffer?.freeItems) ? smartOffer.freeItems : [])
+      (Array.isArray(smartOffer?.freeItems) && smartOffer.freeItems.length
+        ? smartOffer.freeItems
+        : smartOffer?.freeItem
+          ? [{ item: smartOffer.freeItem, size: smartOffer.giftItemSize || "" }]
+          : [])
         .map((option) => ({
           id: String(option?.item?._id || option?.item || ""),
           name: String(option?.item?.name || "Article offert").trim(),
@@ -27,7 +31,7 @@ export default function SmartOfferGiftSelection() {
           size: String(option?.size || "").trim(),
         }))
         .filter((option) => option.id),
-    [smartOffer?.freeItems],
+    [smartOffer?.freeItem, smartOffer?.freeItems, smartOffer?.giftItemSize],
   );
 
   const categoryName = String(
@@ -36,7 +40,7 @@ export default function SmartOfferGiftSelection() {
       "cadeau",
   ).toLowerCase();
 
-  if (!smartOffer || smartOffer.offerType !== "free_item") {
+  if (!smartOffer || !["free_item", "buy_one_get_one"].includes(smartOffer.offerType)) {
     return (
       <div className="md:mt-28 mt-20 min-h-[60vh] flex flex-col items-center justify-center px-4">
         <p className="font-inter font-semibold">Aucun cadeau disponible.</p>
