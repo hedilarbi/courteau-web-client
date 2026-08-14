@@ -87,6 +87,39 @@ async function fetchMenuProducts() {
   }
 }
 
+async function fetchActiveOffers() {
+  try {
+    const response = await fetch(`${API_URL}/offers`, {
+      cache: "no-store",
+    });
+    if (!response.ok) return [];
+
+    const offers = await response.json();
+    const now = Date.now();
+
+    return (Array.isArray(offers) ? offers : []).filter((offer) => {
+      const slug = typeof offer?.slug === "string" ? offer.slug.trim() : "";
+      if (!slug || /[/?#]/.test(slug)) return false;
+      if (offer.deleted || offer.isDeleted || offer.deletedAt) return false;
+      if (offer.active === false || offer.isActive === false) return false;
+
+      if (offer.expireAt) {
+        const expireAt = new Date(offer.expireAt).getTime();
+        if (Number.isFinite(expireAt) && expireAt < now) return false;
+      }
+
+      try {
+        encodeURIComponent(slug);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return [];
+  }
+}
+
 export default async function sitemap() {
   const staticPages = [
     { url: `${SITE_URL}/` },
@@ -136,5 +169,12 @@ export default async function sitemap() {
     };
   });
 
-  return [...staticPages, ...blogPages, ...productPages];
+  const offers = await fetchActiveOffers();
+  const offerPages = [
+    ...new Set(offers.map((offer) => offer.slug.trim())),
+  ].map((slug) => ({
+    url: `${SITE_URL}/menu/offres/${encodeURIComponent(slug)}`,
+  }));
+
+  return [...staticPages, ...blogPages, ...productPages, ...offerPages];
 }

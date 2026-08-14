@@ -42,7 +42,7 @@ export async function generateMetadata({ params }) {
 
   if (!offer) {
     return {
-      title: `Offre introuvable | ${brand}`,
+      title: { absolute: `Offre introuvable | ${brand}` },
       robots: { index: false, follow: false },
     };
   }
@@ -56,12 +56,16 @@ export async function generateMetadata({ params }) {
   const img = offer.image?.startsWith("http")
     ? offer.image
     : `${base}${offer.image ?? ""}`;
+  const expireAt = offer.expireAt
+    ? new Date(offer.expireAt).getTime()
+    : Number.NaN;
+  const isExpired = Number.isFinite(expireAt) && expireAt < Date.now();
 
   return {
-    title,
+    title: { absolute: title },
     description: desc,
     alternates: { canonical: url },
-    robots: { index: true, follow: true },
+    robots: { index: !isExpired, follow: true },
     openGraph: {
       type: "article",
       url,
@@ -94,7 +98,11 @@ export default async function Page({ params }) {
   const image = data.image;
   const price = Number(data.price ?? data.prix ?? 0);
   const validFrom = data.validFrom || data.startDate || null;
-  const validTo = data.validTo || data.endDate || null;
+  const expireAtDate = data.expireAt ? new Date(data.expireAt) : null;
+  const priceValidUntil =
+    expireAtDate && !Number.isNaN(expireAtDate.getTime())
+      ? expireAtDate.toISOString().slice(0, 10)
+      : null;
 
   const pageUrl = `${base}/menu/offres/${data.slug ?? slug}`;
   const imgAbs = image?.startsWith("http")
@@ -119,7 +127,7 @@ export default async function Page({ params }) {
       url: pageUrl,
       availability: "https://schema.org/InStock",
       ...(validFrom ? { priceValidFrom: validFrom } : {}),
-      ...(validTo ? { priceValidUntil: validTo } : {}),
+      ...(priceValidUntil ? { priceValidUntil } : {}),
     },
   };
 
