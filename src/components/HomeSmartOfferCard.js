@@ -104,7 +104,7 @@ export default function HomeSmartOfferCard() {
 
   return (
     <div className="md:px-14 px-4 mt-4">
-      <button
+      <div
         onClick={handleCardClick}
         className="w-full text-left rounded-2xl overflow-hidden cursor-pointer transition-all hover:brightness-105 active:scale-[0.99]"
         style={{
@@ -184,7 +184,7 @@ export default function HomeSmartOfferCard() {
             )}
           </div>
         </div>
-      </button>
+      </div>
     </div>
   );
 }
