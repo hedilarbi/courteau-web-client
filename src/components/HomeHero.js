@@ -1,12 +1,43 @@
 import Link from "next/link";
+import { getImageProps } from "next/image";
 import React from "react";
+import heroMobile from "../../public/hero1.jpg";
+import heroDesktop from "../../public/hero2.jpg";
 
 const HomeHero = () => {
+  const imageProps = {
+    alt: "",
+    sizes: "100vw",
+    priority: true,
+    loading: "eager",
+    fetchPriority: "high",
+  };
+  const {
+    props: { srcSet: desktopSrcSet },
+  } = getImageProps({ ...imageProps, src: heroDesktop });
+  const { props: mobileImageProps } = getImageProps({
+    ...imageProps,
+    src: heroMobile,
+  });
+
   return (
     <section
-      className="bg-cover bg-center h-[calc(100vh-140px)] flex items-center justify-center md:px-24 px-6 md:mt-28 mt-16 bg-[url('/hero1.jpg')] md:bg-[url('/hero2.jpg')]"
+      className="relative overflow-hidden h-[calc(100vh-140px)] flex items-center justify-center md:px-24 px-6 md:mt-28 mt-16"
     >
-      <div>
+      <picture className="absolute inset-0 block">
+        <source
+          media="(min-width: 768px)"
+          srcSet={desktopSrcSet}
+          sizes="100vw"
+        />
+        <img
+          {...mobileImageProps}
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-cover object-center"
+        />
+      </picture>
+      <div className="relative z-10">
         <h1 className="md:text-5xl text-3xl font-bebas-neue font-bold tracking-widest text-white text-center">
           Bienvenue au Casse-Croûte Courteau
         </h1>
