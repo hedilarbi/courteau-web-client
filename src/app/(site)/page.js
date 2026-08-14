@@ -15,8 +15,28 @@ import { SITE_URL } from "@/lib/siteUrl";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const HOME_DESCRIPTION =
+  "Découvrez le Casse-Croûte Courteau à Trois-Rivières : poutines généreuses, pizzas, déjeuners, offres et commande en ligne.";
+
 export const metadata = {
+  title: {
+    absolute: "Casse-Croûte Courteau | Poutine et pizza à Trois-Rivières",
+  },
+  description: HOME_DESCRIPTION,
   alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "Casse-Croûte Courteau",
+    title: "Casse-Croûte Courteau",
+    description: HOME_DESCRIPTION,
+    locale: "fr_CA",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Casse-Croûte Courteau",
+    description: HOME_DESCRIPTION,
+  },
 };
 
 const websiteJsonLd = {
