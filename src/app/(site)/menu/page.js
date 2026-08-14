@@ -9,6 +9,10 @@ export const viewport = {
   viewportFit: "cover",
 };
 
+export const metadata = {
+  alternates: { canonical: "/menu" },
+};
+
 import MenuContent from "@/components/MenuContent";
 import Script from "next/script";
 

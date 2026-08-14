@@ -18,7 +18,7 @@ export async function generateMetadata() {
   return {
     title,
     description,
-    alternates: { canonical: `${base}/contact` },
+    alternates: { canonical: "/contact" },
     robots: { index: true, follow: true },
     openGraph: {
       type: "website",

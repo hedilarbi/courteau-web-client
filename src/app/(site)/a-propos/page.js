@@ -21,7 +21,7 @@ export async function generateMetadata() {
   return {
     title,
     description,
-    alternates: { canonical: `${base}/a-propos` },
+    alternates: { canonical: "/a-propos" },
     robots: { index: true, follow: true },
     openGraph: {
       type: "website",

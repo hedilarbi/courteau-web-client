@@ -25,7 +25,7 @@ const BRAND = "Casse-Croûte Courteau";
 const BASE = SITE_URL;
 
 export const metadata = {
-  metadataBase: new URL(BASE),
+  metadataBase: new URL("https://www.lecourteau.com"),
   title: {
     default: BRAND,
     template: `%s | ${BRAND}`,
@@ -33,7 +33,6 @@ export const metadata = {
   description:
     "Venez découvrir les généreuses et délicieuses poutines ou les succulentes pizzas du Casse-Croûte Courteau. Le meilleur menu à Trois-Rivières.",
   applicationName: BRAND,
-  alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",

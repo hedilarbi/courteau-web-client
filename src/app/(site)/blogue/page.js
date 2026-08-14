@@ -9,7 +9,7 @@ export const metadata = {
   description:
     "Découvrez nos articles de blogue gourmands : conseils, nouveautés et coulisses du Casse-Croûte Courteau. 🍔 Restez à jour sur nos plats, événements et promotions!",
   alternates: {
-    canonical: "https://www.lecourteau.com/blogue",
+    canonical: "/blogue",
   },
   openGraph: {
     type: "website",
