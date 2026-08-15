@@ -36,10 +36,29 @@ const restaurantJsonLd = {
   menu: "https://www.lecourteau.com/menu",
 };
 
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://www.lecourteau.com" },
+    { "@type": "ListItem", position: 2, name: "Succursales", item: "https://www.lecourteau.com/succursales" },
+    { "@type": "ListItem", position: 3, name: "Boulevard des Forges", item: "https://www.lecourteau.com/succursales/boulevard-des-forges-trois-rivieres" },
+  ],
+};
+
 export default function BoulevardDesForgesPage() {
   return (
     <main className="md:px-14 px-4 md:py-16 py-10 md:mt-28 mt-20">
       <div className="mx-auto max-w-3xl rounded-lg bg-white p-6 shadow-lg md:p-10">
+        <nav aria-label="Fil d’Ariane" className="mb-4 text-sm">
+          <ol className="flex flex-wrap items-center gap-1 text-gray-600">
+            <li><Link href="/" className="hover:underline">Accueil</Link></li>
+            <li aria-hidden="true">›</li>
+            <li><Link href="/succursales" className="hover:underline">Succursales</Link></li>
+            <li aria-hidden="true">›</li>
+            <li aria-current="page" className="text-gray-900 font-medium">Boulevard des Forges</li>
+          </ol>
+        </nav>
         <h1 className="font-bebas-neue text-3xl font-bold md:text-5xl">
           Casse-Croûte Courteau – Boulevard des Forges
         </h1>
@@ -79,6 +98,9 @@ export default function BoulevardDesForgesPage() {
           __html: JSON.stringify(restaurantJsonLd).replace(/</g, "\\u003c"),
         }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c"),
+      }} />
     </main>
   );
 }

@@ -49,10 +49,42 @@ const branches = [
   },
 ];
 
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Accueil",
+      item: "https://www.lecourteau.com",
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Succursales",
+      item: "https://www.lecourteau.com/succursales",
+    },
+  ],
+};
+
 export default function SuccursalesPage() {
   return (
     <main className="md:px-14 px-4 md:py-16 py-10 md:mt-28 mt-20">
       <section className="mx-auto max-w-6xl">
+        <nav aria-label="Fil d’Ariane" className="mb-4 text-sm">
+          <ol className="flex flex-wrap items-center gap-1 text-gray-600">
+            <li>
+              <Link href="/" className="hover:underline">
+                Accueil
+              </Link>
+            </li>
+            <li aria-hidden="true">›</li>
+            <li aria-current="page" className="text-gray-900 font-medium">
+              Succursales
+            </li>
+          </ol>
+        </nav>
         <h1 className="font-bebas-neue text-3xl font-bold md:text-5xl">
           Nos succursales
         </h1>
@@ -97,6 +129,12 @@ export default function SuccursalesPage() {
           </Link>
         </div>
       </section>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
     </main>
   );
 }
