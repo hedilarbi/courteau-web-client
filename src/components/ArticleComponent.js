@@ -1,6 +1,7 @@
 "use client";
 import { useBasket } from "@/context/BasketContext";
-import React, { useMemo, useState } from "react";
+import { sendGTMEvent } from "@next/third-parties/google";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { FaCartPlus, FaCheck, FaRulerCombined } from "react-icons/fa";
 import { IoChatbubble } from "react-icons/io5";
@@ -48,6 +49,40 @@ const getSelectionSummaryText = (rule) => {
 
 const ArticleComponent = ({ item }) => {
   const { addToBasket } = useBasket();
+  const lastTrackedItemIdRef = useRef(null);
+  const trackedItemRef = useRef(item);
+  trackedItemRef.current = item;
+
+  useEffect(() => {
+    const trackedItem = trackedItemRef.current;
+    const itemId = String(trackedItem?._id || "");
+
+    if (!itemId) return;
+    if (lastTrackedItemIdRef.current === itemId) return;
+
+    lastTrackedItemIdRef.current = itemId;
+    const price = Number(trackedItem?.prices?.[0]?.price) || 0;
+
+    sendGTMEvent({ ecommerce: null });
+    sendGTMEvent({
+      event: "view_item",
+      ecommerce: {
+        currency: "CAD",
+        value: price,
+        items: [
+          {
+            item_id: itemId,
+            item_name: trackedItem.name,
+            price,
+            quantity: 1,
+            ...(trackedItem?.category?.name
+              ? { item_category: trackedItem.category.name }
+              : {}),
+          },
+        ],
+      },
+    });
+  }, [item?._id]);
 
   const [selectedSize, setSelectedSize] = useState(item.prices[0]);
   const customizationGroups = useMemo(

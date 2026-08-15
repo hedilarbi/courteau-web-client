@@ -1,7 +1,8 @@
 "use client";
 import { useBasket } from "@/context/BasketContext";
+import { sendGTMEvent } from "@next/third-parties/google";
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { FaCartPlus, FaCheck } from "react-icons/fa6";
 import { IoChatbubble } from "react-icons/io5";
@@ -92,6 +93,37 @@ const buildPricedSelectionsForGroups = (selectionList, groups) => {
 
 const OfferComponent = ({ offer }) => {
   const { addOfferToBasket } = useBasket();
+  const lastTrackedOfferIdRef = useRef(null);
+  const trackedOfferRef = useRef(offer);
+  trackedOfferRef.current = offer;
+
+  useEffect(() => {
+    const trackedOffer = trackedOfferRef.current;
+    const offerId = String(trackedOffer?._id || "");
+
+    if (!offerId) return;
+    if (lastTrackedOfferIdRef.current === offerId) return;
+
+    lastTrackedOfferIdRef.current = offerId;
+    const price = Number(trackedOffer?.price) || 0;
+
+    sendGTMEvent({ ecommerce: null });
+    sendGTMEvent({
+      event: "view_item",
+      ecommerce: {
+        currency: "CAD",
+        value: price,
+        items: [
+          {
+            item_id: offerId,
+            item_name: trackedOffer.name,
+            price,
+            quantity: 1,
+          },
+        ],
+      },
+    });
+  }, [offer?._id]);
 
   const initialCustomizations = {};
   offer.items.forEach((item) => {
