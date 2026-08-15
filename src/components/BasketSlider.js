@@ -91,6 +91,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
 
       <div className="flex justify-end mb-4">
         <button
+          aria-label="Fermer le panier"
           className="text-black cursor-pointer text-3xl "
           onClick={() => setShowBasketSlider(false)}
         >

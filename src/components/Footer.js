@@ -80,20 +80,26 @@ const Footer = () => {
         <div className="text-black font-inter space-x-4">
           <h3 className=" font-bold text-2xl">Suivez-nous</h3>
           <ul className="font-semibold text-black  mt-2 flex gap-4 items-center">
-            <a
-              href="https://www.facebook.com/cassecroutecourto"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaFacebook size={32} />
-            </a>
-            <a
-              href="https://www.instagram.com/casse_croute_courteau"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <AiFillInstagram size={32} />
-            </a>
+            <li>
+              <a
+                href="https://www.facebook.com/cassecroutecourto"
+                aria-label="Casse-Croûte Courteau sur Facebook"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaFacebook size={32} />
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.instagram.com/casse_croute_courteau"
+                aria-label="Casse-Croûte Courteau sur Instagram"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <AiFillInstagram size={32} />
+              </a>
+            </li>
           </ul>
         </div>
       </div>

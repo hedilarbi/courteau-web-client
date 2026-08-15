@@ -19,6 +19,7 @@ const CartButton = () => {
       />
       {isCheckoutPage || count === 0 ? null : (
         <button
+          aria-label="Ouvrir le panier"
           onClick={() => setShowBasketSlider(!showBasketSlider)}
           className="bg-pr rounded-full text-black flex justify-center cursor-pointer items-center h-14 w-14 ml-6 p-2 relative "
         >

@@ -18,6 +18,7 @@ const HamburgerMenuButton = () => {
       />
       <div className="md:hidden">
         <button
+          aria-label="Ouvrir le menu"
           className="text-white"
           onClick={() => setShowSidebar(!showSidebar)}
         >

@@ -38,8 +38,50 @@ import {
   useSelectBasketOffers,
 } from "@/context/BasketContext";
 import { useRouter } from "next/navigation";
+import { sendGTMEvent } from "@next/third-parties/google";
 import Spinner from "./spinner/Spinner";
 import Image from "next/image";
+
+const buildGa4PurchaseItems = (items, discountedSubtotal) => {
+  const lines = items.map((item) => ({
+    ...item,
+    priceCents: Math.round(Number(item.price || 0) * 100),
+  }));
+  const originalTotalCents = lines.reduce(
+    (sum, item) => sum + item.priceCents,
+    0,
+  );
+  const discountedSubtotalCents = Math.round(
+    Number(discountedSubtotal || 0) * 100,
+  );
+  const discountTotalCents = Math.max(
+    0,
+    originalTotalCents - discountedSubtotalCents,
+  );
+  const discounts = lines.map(() => 0);
+  const positiveLineIndexes = lines
+    .map((item, index) => (item.priceCents > 0 ? index : -1))
+    .filter((index) => index >= 0);
+
+  if (discountTotalCents > 0 && originalTotalCents > 0) {
+    const lastPositiveIndex = positiveLineIndexes.at(-1);
+    positiveLineIndexes.slice(0, -1).forEach((index) => {
+      const numerator = discountTotalCents * lines[index].priceCents;
+      discounts[index] = Math.floor(numerator / originalTotalCents);
+    });
+    discounts[lastPositiveIndex] =
+      discountTotalCents - discounts.reduce((sum, value) => sum + value, 0);
+  }
+
+  return lines.map(({ priceCents, ...item }, index) => {
+    const discountCents = discounts[index];
+    return {
+      ...item,
+      price: (priceCents - discountCents) / 100,
+      ...(discountCents > 0 ? { discount: discountCents / 100 } : {}),
+    };
+  });
+};
 
 const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
   const unavailableItems = Array.isArray(availabilityData?.unavailableItems)
@@ -1012,6 +1054,46 @@ export default function CheckoutCard({
           );
           window.sessionStorage.setItem("checkout_success_redirecting", "1");
         }
+        const ga4Items = buildGa4PurchaseItems(
+          [
+            ...basket.items.map((item) => ({
+              item_id: String(item.id),
+              item_name: item.name,
+              price: Number(item.price || 0),
+              quantity: 1,
+              ...(item.categoryName
+                ? { item_category: item.categoryName }
+                : {}),
+            })),
+            ...basket.offers.map((offer) => ({
+              item_id: String(offer.id),
+              item_name: offer.name,
+              price: Number(offer.price || 0),
+              quantity: 1,
+            })),
+            ...basket.rewards.map((reward) => ({
+              item_id: String(reward._id || reward.id),
+              item_name: reward.name,
+              price: Number(reward.extraPrice || 0),
+              quantity: 1,
+            })),
+          ],
+          order.order.subTotalAfterDiscount,
+        );
+
+        sendGTMEvent({ ecommerce: null });
+        sendGTMEvent({
+          event: "purchase",
+          ecommerce: {
+            transaction_id: String(response.data.orderId),
+            value: Number(order.order.subTotalAfterDiscount || 0),
+            currency: "CAD",
+            ...(order.order.promoCode?.code
+              ? { coupon: order.order.promoCode.code }
+              : {}),
+            items: ga4Items,
+          },
+        });
         clearBasket();
         if (onOrderSuccess) onOrderSuccess();
         router.replace("/success?id=" + response.data.orderId);

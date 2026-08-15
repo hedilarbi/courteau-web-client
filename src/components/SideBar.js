@@ -20,7 +20,11 @@ const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
       }  w-[90%] bg-black fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen min-h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
     >
       <div className="flex justify-end mb-4">
-        <button className="text-white " onClick={() => setShowSidebar(false)}>
+        <button
+          aria-label="Fermer le menu"
+          className="text-white "
+          onClick={() => setShowSidebar(false)}
+        >
           <MdClose size={28} />
         </button>
       </div>
@@ -110,13 +114,22 @@ const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
         </div>
       )}
       <div className="flex items-center justify-center mt-2 gap-4 ">
-        <Link href="https://www.facebook.com/">
+        <Link
+          href="https://www.facebook.com/"
+          aria-label="Casse-Croûte Courteau sur Facebook"
+        >
           <FaFacebook size={24} color="white" />
         </Link>
-        <Link href="https://www.facebook.com/">
+        <Link
+          href="https://www.facebook.com/"
+          aria-label="Casse-Croûte Courteau sur Facebook"
+        >
           <FaFacebook size={24} color="white" />
         </Link>
-        <Link href="https://www.facebook.com/">
+        <Link
+          href="https://www.facebook.com/"
+          aria-label="Casse-Croûte Courteau sur Facebook"
+        >
           <FaFacebook size={24} color="white" />
         </Link>
       </div>

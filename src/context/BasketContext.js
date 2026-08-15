@@ -7,6 +7,7 @@ import React, {
   useReducer,
 } from "react";
 
+import { sendGTMEvent } from "@next/third-parties/google";
 import { v4 as uuidv4 } from "uuid";
 
 // ---------- State ----------
@@ -195,7 +196,29 @@ export function BasketProvider({ children }) {
 
   // ---- actions (same names as your slice) ----
   const addToBasket = useCallback(
-    (payload) => dispatch({ type: "addToBasket", payload }),
+    (payload) => {
+      dispatch({ type: "addToBasket", payload });
+      const price = Number(payload.price) || 0;
+      sendGTMEvent({ ecommerce: null });
+      sendGTMEvent({
+        event: "add_to_cart",
+        ecommerce: {
+          currency: "CAD",
+          value: price,
+          items: [
+            {
+              item_id: String(payload.id),
+              item_name: payload.name,
+              price,
+              quantity: 1,
+              ...(payload.categoryName
+                ? { item_category: payload.categoryName }
+                : {}),
+            },
+          ],
+        },
+      });
+    },
     []
   );
   const deleteFromBasket = useCallback(
@@ -207,7 +230,26 @@ export function BasketProvider({ children }) {
     []
   );
   const addOfferToBasket = useCallback(
-    (payload) => dispatch({ type: "addOfferToBasket", payload }),
+    (payload) => {
+      dispatch({ type: "addOfferToBasket", payload });
+      const price = Number(payload.price) || 0;
+      sendGTMEvent({ ecommerce: null });
+      sendGTMEvent({
+        event: "add_to_cart",
+        ecommerce: {
+          currency: "CAD",
+          value: price,
+          items: [
+            {
+              item_id: String(payload.id),
+              item_name: payload.name,
+              price,
+              quantity: 1,
+            },
+          ],
+        },
+      });
+    },
     []
   );
   const removeOfferFromBasket = useCallback(
@@ -215,7 +257,26 @@ export function BasketProvider({ children }) {
     []
   );
   const addRewardToBasket = useCallback(
-    (payload) => dispatch({ type: "addRewardToBasket", payload }),
+    (payload) => {
+      dispatch({ type: "addRewardToBasket", payload });
+      const price = Number(payload.extraPrice) || 0;
+      sendGTMEvent({ ecommerce: null });
+      sendGTMEvent({
+        event: "add_to_cart",
+        ecommerce: {
+          currency: "CAD",
+          value: price,
+          items: [
+            {
+              item_id: String(payload._id || payload.id),
+              item_name: payload.name,
+              price,
+              quantity: 1,
+            },
+          ],
+        },
+      });
+    },
     []
   );
   const removeRewardFromBasket = useCallback(

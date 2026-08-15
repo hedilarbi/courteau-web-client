@@ -29,7 +29,11 @@ const HeaderLoginButton = () => {
           >
             Déconnexion
           </button>
-          <Link href="/profil" className="text-white hover:text-pr ml-6">
+          <Link
+            href="/profil"
+            aria-label="Voir mon profil"
+            className="text-white hover:text-pr ml-6"
+          >
             <FaUser size={28} />
           </Link>
         </div>
@@ -51,6 +55,7 @@ const HeaderLoginButton = () => {
       )}
 
       <button
+        aria-label="Ouvrir le panier"
         onClick={() => setShowBasketSlider(!showBasketSlider)}
         className="bg-pr rounded-full text-black flex justify-center cursor-pointer items-center h-10 w-10 ml-6 p-2 relative"
       >
