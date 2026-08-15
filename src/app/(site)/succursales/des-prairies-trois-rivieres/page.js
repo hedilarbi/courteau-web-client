@@ -19,6 +19,10 @@ export const metadata = {
 const restaurantJsonLd = {
   "@context": "https://schema.org",
   "@type": "Restaurant",
+  parentOrganization: {
+    "@type": "Organization",
+    "@id": "https://www.lecourteau.com/#organization",
+  },
   "@id":
     "https://www.lecourteau.com/succursales/des-prairies-trois-rivieres#restaurant",
   name: "Casse-Croûte Courteau – Rue des Prairies",

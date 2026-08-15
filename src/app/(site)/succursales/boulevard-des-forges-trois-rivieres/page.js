@@ -20,6 +20,10 @@ export const metadata = {
 const restaurantJsonLd = {
   "@context": "https://schema.org",
   "@type": "Restaurant",
+  parentOrganization: {
+    "@type": "Organization",
+    "@id": "https://www.lecourteau.com/#organization",
+  },
   "@id":
     "https://www.lecourteau.com/succursales/boulevard-des-forges-trois-rivieres#restaurant",
   name: "Casse-Croûte Courteau – Boulevard des Forges",

@@ -19,6 +19,10 @@ export const metadata = {
 const restaurantJsonLd = {
   "@context": "https://schema.org",
   "@type": "Restaurant",
+  parentOrganization: {
+    "@type": "Organization",
+    "@id": "https://www.lecourteau.com/#organization",
+  },
   "@id":
     "https://www.lecourteau.com/succursales/avenue-arseneault-becancour#restaurant",
   name: "Casse-Croûte Courteau – Avenue Arseneault",
