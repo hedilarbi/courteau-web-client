@@ -1,6 +1,7 @@
 import { useBasket, useSelectBasket } from "@/context/BasketContext";
+import { sendGTMEvent } from "@next/third-parties/google";
 import Image from "next/image";
-import React from "react";
+import React, { useRef } from "react";
 import { MdClose } from "react-icons/md";
 import { FaTrash } from "react-icons/fa";
 import { IoPencilSharp } from "react-icons/io5";
@@ -42,6 +43,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
   const [itemUID, setItemUID] = React.useState(null);
   const [offerUID, setOfferUID] = React.useState(null);
   const [showNoUserModal, setShowNoUserModal] = React.useState(false);
+  const beginCheckoutSentRef = useRef(false);
   const router = useRouter();
 
   const handleNav = () => {
@@ -49,7 +51,43 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
       setShowNoUserModal(true);
       return;
     }
+    if (beginCheckoutSentRef.current) return;
+    beginCheckoutSentRef.current = true;
     setShowBasketSlider(false);
+
+    const ecommerceItems = [
+      ...basket.items.map((item) => ({
+        item_id: String(item.id),
+        item_name: item.name,
+        price: Number(item.price) || 0,
+        quantity: 1,
+        ...(item.categoryName
+          ? { item_category: item.categoryName }
+          : {}),
+      })),
+      ...basket.offers.map((offer) => ({
+        item_id: String(offer.id),
+        item_name: offer.name,
+        price: Number(offer.price) || 0,
+        quantity: 1,
+      })),
+      ...basket.rewards.map((reward) => ({
+        item_id: String(reward._id || reward.id),
+        item_name: reward.name,
+        price: Number(reward.extraPrice) || 0,
+        quantity: 1,
+      })),
+    ];
+
+    sendGTMEvent({ ecommerce: null });
+    sendGTMEvent({
+      event: "begin_checkout",
+      ecommerce: {
+        currency: "CAD",
+        value: Number(basket.subtotal) || 0,
+        items: ecommerceItems,
+      },
+    });
     router.push("/checkout");
   };
 
