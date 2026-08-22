@@ -5,6 +5,7 @@ import {
   calculatePromoEligibleSubtotalForBasket,
   getPromoExcludedBasketEntries,
   toSafeNumber,
+  validatePromoCodeAgainstBasket,
 } from "@/utils/promoCodeHelpers";
 
 const PromoCodeBlock = ({
@@ -52,6 +53,13 @@ const PromoCodeBlock = ({
       const response = await verifyPromoCode(code, userId);
 
       if (response.status) {
+        const validation = validatePromoCodeAgainstBasket(response.data, basketItems);
+        if (!validation.isValid) {
+          setPromoCodeError(validation.message);
+          setPromoCodeIsValid(false);
+          return;
+        }
+
         const eligibleSubtotal = calculatePromoEligibleSubtotalForBasket({
           basketItems,
           basketOffers,

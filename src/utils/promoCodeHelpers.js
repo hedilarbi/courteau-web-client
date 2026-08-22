@@ -76,6 +76,7 @@ export const calculatePromoEligibleSubtotalForBasket = ({
 export const calculatePromoDiscountAmountForPromo = (
   promoCode,
   eligibleSubtotal,
+  basketItems = [],
 ) => {
   if (!promoCode) return 0;
 
@@ -91,6 +92,20 @@ export const calculatePromoDiscountAmountForPromo = (
       Math.min(toSafeNumber(promoCode?.amount, 0), eligibleSubtotal),
       0,
     );
+  }
+
+  if (promoCode.type === "free_item") {
+    const freeItemId = String(promoCode.freeItem?._id || promoCode.freeItem || "").trim();
+    if (!freeItemId) return 0;
+    
+    const matchingItem = basketItems.find(
+      (item) => String(item?.id || item?.item || "").trim() === freeItemId
+    );
+
+    if (matchingItem) {
+      // Returns the base price (price without customizations)
+      return roundMoney(toSafeNumber(matchingItem.basePrice ?? matchingItem.price, 0), 0);
+    }
   }
 
   return 0;
@@ -123,4 +138,23 @@ export const buildPromoExcludedItemsLabel = (items = []) => {
   return [...counts.entries()]
     .map(([name, count]) => (count > 1 ? `${name} x${count}` : name))
     .join(", ");
+};
+
+export const validatePromoCodeAgainstBasket = (promoCode, basketItems = []) => {
+  if (promoCode?.type === "free_item") {
+    const freeItemId = String(promoCode.freeItem?._id || promoCode.freeItem || "").trim();
+    if (!freeItemId) {
+      return { isValid: false, message: "Ce code promo est invalide." };
+    }
+    const matchingItem = basketItems.find(
+      (item) => String(item?.id || item?.item || "").trim() === freeItemId
+    );
+    if (!matchingItem) {
+      return {
+        isValid: false,
+        message: `Veuillez ajouter l'article ${promoCode.freeItem?.name || ""} à votre panier pour appliquer ce code promo.`,
+      };
+    }
+  }
+  return { isValid: true };
 };

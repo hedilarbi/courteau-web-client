@@ -46,6 +46,12 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
   const beginCheckoutSentRef = useRef(false);
   const router = useRouter();
 
+  React.useEffect(() => {
+    if (showBasketSlider) {
+      beginCheckoutSentRef.current = false;
+    }
+  }, [showBasketSlider]);
+
   const handleNav = () => {
     if (!user) {
       setShowNoUserModal(true);

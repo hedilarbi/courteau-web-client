@@ -15,6 +15,7 @@ import {
   createOrder,
   createZeroTotalSubscriptionOrder,
   createZeroTotalReferralOrder,
+  createZeroTotalPromoOrder,
   getPaymentIntentClientSecret,
   getPaymentMethods,
 } from "@/services/UserServices";
@@ -147,6 +148,7 @@ export default function CheckoutCard({
   referralDiscountApplied = 0,
   isZeroTotalSubscriptionOrder,
   isZeroTotalReferralOrder,
+  isZeroTotalPromoOrder,
   subTotalWithDiscount,
   canOrder,
   isBasketAvailable = true,
@@ -519,7 +521,9 @@ export default function CheckoutCard({
           ? "subscription_free_item"
           : paymentMethod === "cash_at_counter"
             ? "cash_at_counter"
-            : "card",
+            : options?.zeroTotalPromoFlow
+              ? "promo_code"
+              : "card",
         total: resolvedTotal,
         discount: orderDiscountPercent,
         subTotalAfterDiscount: resolvedSubTotalAfterDiscount,
@@ -752,13 +756,14 @@ export default function CheckoutCard({
         if (!hasPositiveTotal) {
           const isZeroReferral = Boolean(isZeroTotalReferralOrder);
           const isZeroSub = Boolean(isZeroTotalSubscriptionOrder);
-          if (!isZeroSub && !isZeroReferral) {
+          const isZeroPromo = Boolean(isZeroTotalPromoOrder);
+          if (!isZeroSub && !isZeroReferral && !isZeroPromo) {
             setError(
-              "Une commande à total 0 est possible uniquement avec un article gratuit ou un crédit de parrainage suffisant.",
+              "Une commande à total 0 est possible uniquement avec un article gratuit, un crédit de parrainage suffisant ou un code promo couvrant la totalité.",
             );
             return;
           }
-          const flowKey = isZeroSub ? "zeroTotalSubscriptionFlow" : "zeroTotalReferralFlow";
+          const flowKey = isZeroSub ? "zeroTotalSubscriptionFlow" : isZeroReferral ? "zeroTotalReferralFlow" : "zeroTotalPromoFlow";
           await handlePaymentReady(null, { [flowKey]: true });
           return;
         }
@@ -878,6 +883,46 @@ export default function CheckoutCard({
         }
 
         await handlePaymentReady(null, { zeroTotalReferralFlow: true });
+        return;
+      }
+
+      const isZeroPromo = Boolean(isZeroTotalPromoOrder);
+      if (isZeroPromo) {
+        const availabilityResponse = await checkRestaurantOrderAvailability(
+          selectedRestaurant._id,
+          basketItems.map((item) => ({
+            item: item.id,
+            customizations: (item.customization || []).map((c) => c._id || c).filter(Boolean),
+          })),
+          basketOffers.map((offer) => ({
+            offer: offer.id,
+            items: offer.customization
+              ? Object.keys(offer.customization).map((itemId) => ({
+                  item: itemId,
+                  customizations: (offer.customization[itemId]?.[0] || [])
+                    .map((c) => (typeof c === "string" ? c : c?._id))
+                    .filter(Boolean),
+                }))
+              : [],
+          }))
+        );
+
+        if (!availabilityResponse?.status) {
+          setError(
+            availabilityResponse?.message ||
+              "Impossible de vérifier la disponibilité des articles."
+          );
+          return;
+        }
+
+        if (availabilityResponse?.data?.isValid === false) {
+          setError(
+            buildOrderAvailabilityErrorMessage(availabilityResponse.data)
+          );
+          return;
+        }
+
+        await handlePaymentReady(null, { zeroTotalPromoFlow: true });
         return;
       }
 
@@ -1019,12 +1064,17 @@ export default function CheckoutCard({
         options?.zeroTotalReferralFlow ||
         checkoutAttemptRef.current?.zeroTotalReferralFlow,
       );
-      const isAnyZeroTotalFlow = isZeroTotalSubFlow || isZeroTotalRefFlow;
+      const isZeroTotalPromoFlow = Boolean(
+        options?.zeroTotalPromoFlow ||
+        checkoutAttemptRef.current?.zeroTotalPromoFlow,
+      );
+      const isAnyZeroTotalFlow = isZeroTotalSubFlow || isZeroTotalRefFlow || isZeroTotalPromoFlow;
       const order =
         cloneOrderPayload(checkoutAttemptRef.current?.orderPayload) ||
         buildOrderPayload(pi, {
           zeroTotalSubscriptionFlow: isZeroTotalSubFlow,
           zeroTotalReferralFlow: isZeroTotalRefFlow,
+          zeroTotalPromoFlow: isZeroTotalPromoFlow,
         });
 
       if (order?.order) {
@@ -1035,7 +1085,9 @@ export default function CheckoutCard({
         ? await createZeroTotalSubscriptionOrder(order)
         : isZeroTotalRefFlow
           ? await createZeroTotalReferralOrder(order)
-          : await createOrder(order);
+          : isZeroTotalPromoFlow
+            ? await createZeroTotalPromoOrder(order)
+            : await createOrder(order);
       if (!response?.status || !response.data) {
         if (pi && !isAnyZeroTotalFlow) {
           await cancelPaymentIntent(pi);

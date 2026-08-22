@@ -219,7 +219,8 @@ const calculateDiscountedSubtotal = ({
     });
     const promoDiscountAmount = calculatePromoDiscountAmountForPromo(
       promoCodeData,
-      eligibleSubtotal
+      eligibleSubtotal,
+      basketItems
     );
     nextSubtotal -= promoDiscountAmount;
   } else if (subscriptionActive) {
@@ -586,7 +587,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     promoCodeAllowed && promoCodeIsValid && promoCodeData
       ? calculatePromoDiscountAmountForPromo(
           promoCodeData,
-          promoEligibleSubtotal
+          promoEligibleSubtotal,
+          basketItems
         )
       : 0;
   const subscriptionFreeItemAmount = shouldApplyFreeItemDiscount
@@ -658,6 +660,12 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     normalizedTotal <= 0 &&
     !isZeroTotalSubscriptionOrder &&
     referralDiscountApplied > 0;
+
+  const isZeroTotalPromoOrder =
+    normalizedTotal <= 0 &&
+    !isZeroTotalSubscriptionOrder &&
+    !isZeroTotalReferralOrder &&
+    promoCodeApplied;
 
   const hasOrphanedSmartOfferFreeItem = Boolean(
     selectedSmartOfferFreeItem && !smartOfferAppliedToOrder
@@ -1559,6 +1567,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             referralDiscountApplied={referralDiscountApplied}
             isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
             isZeroTotalReferralOrder={isZeroTotalReferralOrder}
+            isZeroTotalPromoOrder={isZeroTotalPromoOrder}
             setPromoCodeData={setPromoCodeData}
             setPromoCodeIsValid={setPromoCodeIsValid}
             setPromoCodeError={setPromoCodeError}

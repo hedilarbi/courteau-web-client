@@ -29,6 +29,7 @@ const ProcessPaiement = ({
   referralDiscountApplied,
   isZeroTotalSubscriptionOrder,
   isZeroTotalReferralOrder,
+  isZeroTotalPromoOrder,
   setPromoCodeData,
   setPromoCodeIsValid,
   setPromoCodeError,
@@ -221,6 +222,7 @@ const ProcessPaiement = ({
             referralDiscountApplied={referralDiscountApplied}
             isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
             isZeroTotalReferralOrder={isZeroTotalReferralOrder}
+            isZeroTotalPromoOrder={isZeroTotalPromoOrder}
             setPromoCodeData={setPromoCodeData}
             setPromoCodeIsValid={setPromoCodeIsValid}
             setPromoCodeError={setPromoCodeError}
@@ -253,6 +255,7 @@ const ProcessPaiement = ({
           referralDiscountApplied={referralDiscountApplied}
           isZeroTotalSubscriptionOrder={isZeroTotalSubscriptionOrder}
           isZeroTotalReferralOrder={isZeroTotalReferralOrder}
+          isZeroTotalPromoOrder={isZeroTotalPromoOrder}
           setPromoCodeData={setPromoCodeData}
           setPromoCodeIsValid={setPromoCodeIsValid}
           setPromoCodeError={setPromoCodeError}

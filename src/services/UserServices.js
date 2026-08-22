@@ -468,6 +468,35 @@ const createZeroTotalReferralOrder = async (order) => {
     };
   }
 };
+
+const createZeroTotalPromoOrder = async (order) => {
+  try {
+    let response = await axios.post(
+      `${API_URL}/orders/create/promo-zero-total`,
+      {
+        order: order,
+      },
+    );
+    return {
+      status: true,
+      message: "Success",
+      data: response.data,
+    };
+  } catch (err) {
+    if (err.response) {
+      return {
+        status: false,
+        message: err.response.data.message,
+      };
+    } else {
+      return {
+        status: false,
+        message: "An error occurred while creating order.",
+      };
+    }
+  }
+};
+
 const deletePaymentMethod = async (paymentMethodId) => {
   try {
     const response = await axios.delete(
@@ -769,6 +798,7 @@ export {
   createOrder,
   createZeroTotalSubscriptionOrder,
   createZeroTotalReferralOrder,
+  createZeroTotalPromoOrder,
   confirmPaiment,
   cancelPaymentIntent,
 };
