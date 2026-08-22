@@ -65,6 +65,23 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="fr-CA">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('error', function(e) {
+                if (e.message && (e.message.indexOf('ChunkLoadError') !== -1 || e.message.indexOf('Loading chunk') !== -1)) {
+                  const reloadCount = parseInt(sessionStorage.getItem('chunk_reload') || '0', 10);
+                  if (reloadCount < 1) {
+                    sessionStorage.setItem('chunk_reload', String(reloadCount + 1));
+                    window.location.reload(true);
+                  }
+                }
+              });
+            `,
+          }}
+        />
+      </head>
       <body className={`${bebasNeue.variable} ${inter.variable} antialiased`}>
         <StripeProvider>
           <AppProviders>
