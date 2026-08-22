@@ -278,18 +278,7 @@ export default function CheckoutCard({
       };
     }
 
-    if (
-      nextPromoData?.type === "amount" &&
-      toSafeNumber(nextPromoData?.amount, 0) > eligibleSubtotal
-    ) {
-      return {
-        isValid: false,
-        message:
-          "Le montant du code promo ne peut pas être supérieur au total des articles éligibles.",
-        eligibleSubtotal,
-        promoDiscountAmount: 0,
-      };
-    }
+
 
     return {
       isValid: true,

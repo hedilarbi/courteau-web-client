@@ -78,16 +78,7 @@ const PromoCodeBlock = ({
           return;
         }
 
-        if (
-          response.data.type === "amount" &&
-          toSafeNumber(response.data.amount, 0) > eligibleSubtotal
-        ) {
-          setPromoCodeError(
-            "Le montant du code promo ne peut pas être supérieur au total des articles éligibles."
-          );
-          setPromoCodeIsValid(false);
-          return;
-        }
+
         setPromoCodeIsValid(true);
         setPromoCodeData(response.data);
       } else {

@@ -941,16 +941,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
       return;
     }
 
-    if (
-      promoCodeData.type === "amount" &&
-      toSafeNumber(promoCodeData.amount, 0) > promoEligibleSubtotal
-    ) {
-      setPromoCodeIsValid(false);
-      setPromoCodeData(null);
-      setPromoCodeError(
-        "Le montant du code promo ne peut pas être supérieur au total des articles éligibles."
-      );
-    }
+
   }, [
     promoCodeAllowed,
     promoCodeData,
