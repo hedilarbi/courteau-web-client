@@ -21,7 +21,7 @@ html { scroll-behavior: smooth; }
 @keyframes home-marquee { to { transform: translateX(-50%); } }
 @keyframes home-pulse { 50% { transform: scale(1.55); opacity: .45; } }
 
-.home-marquee-track { display: flex; width: max-content; white-space: nowrap; animation: home-marquee 26s linear infinite; }
+.home-marquee-track { display: flex; width: max-content; white-space: nowrap; animation: home-marquee 50s linear infinite; }
 .home-pulse { animation: home-pulse 1.7s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
