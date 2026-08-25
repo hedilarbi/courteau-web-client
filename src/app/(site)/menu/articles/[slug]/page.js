@@ -168,9 +168,7 @@ export default async function Page({ params }) {
               "@type": "ListItem",
               position: 2,
               name: item.category.name,
-              item: `${base}/menu?category=${encodeURIComponent(
-                item.category.slug
-              )}`,
+              item: `${base}/menu/${encodeURIComponent(item.category.slug)}`,
             },
           ]
         : []),
@@ -197,13 +195,7 @@ export default async function Page({ params }) {
             <>
               <li aria-hidden>›</li>
               <li>
-                <Link
-                  href={{
-                    pathname: "/menu",
-                    query: { category: item.category.slug ?? "" },
-                  }}
-                  className="hover:underline"
-                >
+                <Link href={`/menu/${item.category.slug ?? ""}`} className="hover:underline">
                   {item.category.name}
                 </Link>
               </li>

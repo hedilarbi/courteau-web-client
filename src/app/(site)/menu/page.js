@@ -1,179 +1,31 @@
-// app/menu/page.jsx
-export const dynamic = "force-dynamic";
-export const viewport = {
-  width: "device-width",
-  initialScale: 1,
-  minimumScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: "cover",
-};
+import MenuLanding from "@/components/MenuLanding";
 
+export const dynamic = "force-dynamic";
 export const metadata = {
-  title: {
-    absolute: "Menu – Poutines, pizzas et déjeuners | Casse-Croûte Courteau",
-  },
-  description:
-    "Découvrez le menu du Casse-Croûte Courteau à Trois-Rivières : poutines généreuses, pizzas, déjeuners, combos et autres classiques à commander en ligne.",
+  title: "Le menu | Casse-Croûte Courteau",
+  description: "Parcourez toutes les catégories du menu Courteau et commandez en ligne.",
   alternates: { canonical: "/menu" },
 };
 
-import MenuContent from "@/components/MenuContent";
-import Script from "next/script";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://api.lecourteau.com/api";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.API_URL ||
-  "https://api.lecourteau.com/api";
-
-// 👉 Remplace par tes vrais appels serveur (ou direct DB)
-async function fetchCategories() {
-  const res = await fetch(`${API_URL}/categories`, {
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    throw new Error("Impossible de récupérer les catégories.");
+export default async function MenuIndexPage({ searchParams }) {
+  const query = await searchParams;
+  if (typeof query?.category === "string" && query.category) {
+    const { redirect } = await import("next/navigation");
+    redirect(`/menu/${encodeURIComponent(query.category)}`);
   }
-  return res.json();
-}
-
-async function fetchItemsByCategory(categorySlug) {
-  const res = await fetch(
-    `${API_URL}/menuItems/category/slug/${categorySlug}`,
-    {
-      cache: "no-store",
-    },
-  );
-  if (!res.ok) {
-    throw new Error("Impossible de récupérer les items.");
-  }
-
-  return res.json();
-}
-
-async function fetchAwards() {
-  const res = await fetch(`${API_URL}/rewards`, {
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    throw new Error("Impossible de récupérer les récompenses.");
-  }
-  return res.json();
-}
-
-async function fetchOffers() {
-  const res = await fetch(`${API_URL}/offers`, {
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    throw new Error("Impossible de récupérer les offres.");
-  }
-  const offers = await res.json();
-  const now = Date.now();
-  return (Array.isArray(offers) ? offers : []).filter((offer) => {
-    const expireAt = new Date(offer?.expireAt).getTime();
-    return Number.isFinite(expireAt) && expireAt > now;
-  });
-}
-
-function sortItemsByOrder(items = []) {
-  if (!Array.isArray(items)) return [];
-
-  return [...items].sort((a, b) => {
-    const orderA = Number.isFinite(Number(a?.order))
-      ? Number(a.order)
-      : Number.POSITIVE_INFINITY;
-    const orderB = Number.isFinite(Number(b?.order))
-      ? Number(b.order)
-      : Number.POSITIVE_INFINITY;
-
-    if (orderA !== orderB) return orderA - orderB;
-
-    return String(a?.name || "").localeCompare(String(b?.name || ""), "fr", {
-      sensitivity: "base",
-    });
-  });
-}
-export default async function Page({ searchParams }) {
-  const resolvedSearchParams = await searchParams;
-  let categories = [
-    {
-      _id: "recompenses",
-      name: "Récompenses",
-      slug: "recompenses",
-      image: "/awards.png",
-    },
-    {
-      _id: "offers",
-      name: "Offres",
-      slug: "offres",
-      image: "/offres.webp", // Remplace par une image par défaut ou une
-    },
+  const [categoriesResponse, articlesResponse, offersResponse] = await Promise.all([
+    fetch(`${API_URL}/categories`, { cache: "no-store" }),
+    fetch(`${API_URL}/menuItems`, { cache: "no-store" }),
+    fetch(`${API_URL}/offers`, { cache: "no-store" }),
+  ]);
+  if (!categoriesResponse.ok || !articlesResponse.ok || !offersResponse.ok) throw new Error("Impossible de récupérer le menu.");
+  const [apiCategories, articles, offers] = await Promise.all([categoriesResponse.json(), articlesResponse.json(), offersResponse.json()]);
+  const categories = [
+    { _id: "offers", name: "Offres", slug: "offres", image: "/offres.webp" },
+    { _id: "recompenses", name: "Récompenses", slug: "recompenses", image: "/awards.png" },
+    ...(Array.isArray(apiCategories) ? apiCategories : []),
   ];
-  const res = await fetchCategories();
-
-  categories = [...categories, ...res];
-
-  const urlCategory =
-    typeof resolvedSearchParams?.category === "string"
-      ? resolvedSearchParams.category
-      : null;
-
-  const knownIds = new Set((categories ?? []).map((c) => c.slug));
-
-  const firstCategorySlug = categories?.[2]?.slug ?? null;
-  const isKnownCategory = urlCategory && knownIds.has(urlCategory);
-  let items = [];
-  // Récupère les items de la catégorie sélectionnée ou de la première catégorie
-  if (isKnownCategory && urlCategory === "offres") {
-    items = await fetchOffers();
-  } else if (isKnownCategory && urlCategory === "recompenses") {
-    items = await fetchAwards();
-  } else {
-    items = isKnownCategory
-      ? await fetchItemsByCategory(urlCategory)
-      : await fetchItemsByCategory(firstCategorySlug);
-  }
-  items = sortItemsByOrder(items);
-
-  const selectedCategorySlug = isKnownCategory
-    ? urlCategory
-    : firstCategorySlug;
-  // JSON-LD ItemList pour la catégorie active (bonus SEO)
-  const itemListLd = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    itemListElement:
-      items?.map((it, idx) => ({
-        "@type": "ListItem",
-        position: idx + 1,
-        url: `https://www.lecourteau.com/menu?category=${encodeURIComponent(
-          it.slug || it._id,
-        )}`,
-        name: it.name,
-        image: it.image,
-      })) ?? [],
-  };
-
-  return (
-    <div className="md:mt-28 mt-20">
-      <h1 className="sr-only">Menu du Casse-Croûte Courteau</h1>
-
-      {/* Contenu intercatif hydraté avec des données SSG */}
-      <MenuContent
-        categories={categories}
-        items={items}
-        selectedCategory={selectedCategorySlug}
-      />
-
-      {/* Données structurées ItemList */}
-      {items?.length > 0 && (
-        <Script
-          id="ld-itemlist"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
-        />
-      )}
-    </div>
-  );
+  return <MenuLanding categories={categories} articles={Array.isArray(articles) ? articles : []} offers={Array.isArray(offers) ? offers : []} />;
 }

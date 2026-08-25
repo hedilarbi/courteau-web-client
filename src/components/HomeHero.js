@@ -39,12 +39,10 @@ const HomeHero = () => {
       </picture>
       <div className="relative z-10">
         <h1 className="md:text-5xl text-3xl font-bebas-neue font-bold tracking-widest text-white text-center">
-          Bienvenue au Casse-Croûte Courteau
+          Casse-Croûte Courteau à Trois-Rivières : Poutines, Pizzas & Déjeuners
         </h1>
         <p className="md:text-xl text-base font-inter font-medium text-white mt-6 text-center md:px-36 px-0">
-          Venez découvrir les généreuses et délicieuses poutines ou les
-          succulentes pizzas du Casse-Croûte Courteau. Le meilleur menu à
-          Trois-Rivières.
+          Dégustez les meilleures poutines, pizzas et déjeuners de Trois-Rivières. Commandez en ligne dès maintenant et découvrez notre menu authentique et généreux.
         </p>
         <div className="flex md:flex-row flex-col items-center justify-center mt-10 md:gap-8 gap-4">
           <Link

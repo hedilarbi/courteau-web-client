@@ -618,12 +618,6 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
     }
   };
 
-  const activationButtonLabel = showActivationForm
-    ? "Masquer le paiement"
-    : isScheduledForCancellation
-      ? "Réactiver mon abonnement"
-      : "Activer mon abonnement";
-
   const handleCancelSubscription = async () => {
     if (!isSubscriptionActive || !user?._id) return;
 
@@ -650,10 +644,10 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
 
   if (loading || isLoading) {
     return (
-      <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 min-h-screen">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-xl p-6 shadow-md">
-            <p className="font-inter text-gray-700">Chargement...</p>
+      <div className="min-h-screen bg-[#fffdf9] px-5 pb-20 pt-28 md:px-14 md:pt-44">
+        <div className="mx-auto max-w-6xl">
+          <div className="h-80 animate-pulse rounded-3xl bg-[#eee7db] p-6">
+            <p className="font-inter text-[#8a8074]">Chargement du Club Courteau…</p>
           </div>
         </div>
       </div>
@@ -661,7 +655,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
   }
 
   return (
-    <div className="md:mt-28 mt-20 bg-[#F3F4F6] md:px-14 px-4 pt-8 pb-20 min-h-screen">
+    <main className="min-h-screen overflow-hidden bg-[#fffdf9] px-5 pb-24 pt-24 text-[#1a1714] md:px-14 md:pt-40">
       {showNoUserModal && (
         <NoUserModal
           showNoUserModal={showNoUserModal}
@@ -670,21 +664,35 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
           description="Connectez-vous ou créez votre compte pour activer votre abonnement."
         />
       )}
-      <div className="max-w-3xl mx-auto">
-        <div className="rounded-xl border border-[#0F172A] bg-[#111827] p-6 shadow-md">
-          <h1 className="font-bebas-neue text-4xl text-white">CLUB COURTEAU</h1>
-          <p className="font-inter font-semibold text-pr text-2xl mt-2">
-            {priceLabel}
-          </p>
-          <ul className="mt-4 text-white/90 font-inter text-sm space-y-2">
-            <li>• -{SUBSCRIPTION_DISCOUNT_PERCENT}% sur toutes les commandes</li>
-            <li>• Livraison gratuit</li>
-            <li>• 1 article gratuit par mois</li>
-          </ul>
-        </div>
+      <div className="mx-auto max-w-6xl">
+        <section className="relative overflow-hidden rounded-3xl bg-pr p-6 md:p-10 lg:p-12">
+          <span className="pointer-events-none absolute -bottom-20 left-4 font-bebas-neue text-[15rem] leading-none text-black/[.06] md:text-[22rem]">CLUB</span>
+          <div className="relative grid items-start gap-9 lg:grid-cols-[1.25fr_.75fr]">
+            <div>
+              <p className="inline-flex rounded-full bg-[#1a1714] px-4 py-2 text-[10px] font-bold tracking-[.16em] text-pr">ABONNEMENT MENSUEL · SANS ENGAGEMENT</p>
+              <h1 className="mt-6 font-bebas-neue text-7xl leading-[.82] md:text-[7rem]">CLUB<br />COURTEAU</h1>
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-black/75">Plus de Courteau, moins cher. Vos avantages s’appliquent automatiquement à chacune de vos commandes.</p>
+              <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Benefit value={`−${SUBSCRIPTION_DISCOUNT_PERCENT}%`} title="Sur le menu" />
+                <Benefit value="0$" title="Livraison" />
+                <Benefit value="1 / MOIS" title="Article gratuit" />
+                <Benefit value="0" title="Engagement" />
+              </div>
+            </div>
+            <div className="rounded-2xl bg-[#1a1714] p-6 text-white shadow-2xl md:p-8">
+              <p className="text-[10px] font-bold tracking-[.16em] text-white/45">ADHÉSION MENSUELLE</p>
+              <div className="mt-4 flex items-end gap-2"><strong className="font-bebas-neue text-6xl leading-none text-pr md:text-7xl">{pricing.subtotal.toFixed(2)}$</strong><span className="pb-2 text-sm text-white/55">/ {cycleLabel}</span></div>
+              <div className="my-6 h-px bg-white/10" />
+              <ul className="space-y-3 text-sm text-white/85"><li><span className="mr-2 text-pr">✓</span>{SUBSCRIPTION_DISCOUNT_PERCENT} % sur chaque commande</li><li><span className="mr-2 text-pr">✓</span>Livraison toujours gratuite</li><li><span className="mr-2 text-pr">✓</span>Un article offert par mois</li></ul>
+              {(!isSubscriptionActive || isScheduledForCancellation) && <button type="button" onClick={() => { if (!user?._id) { setShowNoUserModal(true); return; } setShowActivationForm((previous) => !previous); }} className="mt-7 w-full rounded-xl border-2 border-white bg-white p-4 font-bebas-neue text-xl tracking-wider text-[#1a1714] shadow-lg transition hover:-translate-y-0.5 hover:border-pr hover:bg-pr">{showActivationForm ? "MASQUER LE PAIEMENT" : isScheduledForCancellation ? "RÉACTIVER MON ABONNEMENT" : "ACTIVER MON ABONNEMENT"}</button>}
+            </div>
+          </div>
+        </section>
+
+        <div className="mx-auto mt-8 max-w-3xl">
 
         {!isOfferMode && (
-          <div className="bg-white rounded-xl p-5 shadow-md mt-4">
+          <div className="mt-6 rounded-2xl border border-[#ece5d9] bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-inter font-semibold text-black text-lg">
                 Mon abonnement
@@ -734,7 +742,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
         )}
 
         {(!isSubscriptionActive || isScheduledForCancellation) && (
-          <div className="bg-white rounded-xl p-5 shadow-md mt-4">
+          <div className="mt-6 rounded-2xl border border-[#ece5d9] bg-white p-6 shadow-sm md:p-8">
             {isScheduledForCancellation ? (
               <div className="rounded-xl border border-[#E3B341] bg-[#FFF8EA] px-4 py-4 mb-4">
                 <p className="font-inter font-semibold text-sm text-[#7A4D00]">
@@ -748,20 +756,6 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
                 </p>
               </div>
             ) : null}
-            <button
-              type="button"
-              className="bg-pr text-black font-bebas-neue text-xl px-4 py-3 rounded-md w-full cursor-pointer"
-              onClick={() => {
-                if (!user?._id) {
-                  setShowNoUserModal(true);
-                  return;
-                }
-                setShowActivationForm((prev) => !prev);
-              }}
-            >
-              {activationButtonLabel}
-            </button>
-
             {showActivationForm && user?._id && (
               <>
                 {cards?.length > 0 && (
@@ -775,7 +769,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
                           setSelectedPmId(card.id);
                           setShowCardField(false);
                         }}
-                        className={`w-full border rounded-md p-3 text-left flex items-center justify-between ${
+                        className={`flex w-full items-center justify-between rounded-xl border p-4 text-left transition ${
                           selectedPmId === card.id
                             ? "border-pr ring-1 ring-pr"
                             : "border-gray-300"
@@ -791,7 +785,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
                     ))}
                     <button
                       type="button"
-                      className="w-full border border-dashed border-gray-300 rounded-md p-3 text-sm font-inter"
+                      className="w-full rounded-xl border border-dashed border-[#d8d0c3] p-4 text-sm font-inter hover:border-pr"
                       onClick={() => {
                         setShowCardField(true);
                         setSelectedPmId(null);
@@ -807,7 +801,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
                     <p className="font-inter font-semibold text-sm mb-2">
                       Nouvelle carte
                     </p>
-                    <div className="border rounded-md p-3">
+                    <div className="rounded-xl border border-[#d8d0c3] p-4 focus-within:border-pr focus-within:ring-1 focus-within:ring-pr">
                       <CardElement
                         options={{ hidePostalCode: true }}
                         onChange={(event) => setCardComplete(Boolean(event.complete))}
@@ -824,7 +818,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
                   </div>
                 ) : null}
 
-                <div className="mt-4 rounded-xl border border-gray-200 p-4">
+                <div className="mt-5 rounded-2xl border border-[#ece5d9] bg-[#faf7f1] p-5">
                   <p className="font-inter font-semibold text-sm text-black">
                     Récapitulatif du paiement
                   </p>
@@ -858,7 +852,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
 
                 <button
                   type="button"
-                  className="bg-pr text-black font-bebas-neue text-xl px-4 py-3 rounded-md w-full cursor-pointer mt-4 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="mt-5 w-full cursor-pointer rounded-xl bg-pr px-4 py-4 font-bebas-neue text-xl tracking-wider text-black transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-gray-300"
                   disabled={isSubmitting}
                   onClick={handleSubscribe}
                 >
@@ -874,7 +868,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
         )}
 
         {isSubscriptionActive && !isOfferMode && (
-          <div className="bg-white rounded-xl p-5 shadow-md mt-4">
+          <div className="mt-6 rounded-2xl border border-[#ece5d9] bg-white p-6 shadow-sm">
             {!isScheduledForCancellation && (
               <button
                 type="button"
@@ -889,7 +883,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
         )}
 
         {isSubscriptionActive && isOfferMode && !isScheduledForCancellation && (
-          <div className="bg-white rounded-xl p-5 shadow-md mt-4">
+          <div className="mt-6 rounded-2xl border border-[#ece5d9] bg-white p-6 shadow-sm">
             <p className="font-inter font-semibold text-black text-sm">
               Votre abonnement est déjà actif.
             </p>
@@ -917,10 +911,18 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
             <p className="text-green-700 text-sm font-inter">{successMessage}</p>
           </div>
         ) : null}
+        </div>
       </div>
-    </div>
+    </main>
   );
 };
+
+const Benefit = ({ value, title }) => (
+  <div className="rounded-2xl bg-[#fffdf9]/95 p-4">
+    <p className="font-bebas-neue text-3xl leading-none md:text-4xl">{value}</p>
+    <p className="mt-2 text-xs font-bold md:text-sm">{title}</p>
+  </div>
+);
 
 const SubscriptionContent = ({ mode = "offer" }) => {
   return (

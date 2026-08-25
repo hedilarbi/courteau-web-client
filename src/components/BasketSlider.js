@@ -103,10 +103,17 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
   };
 
   return (
+    <>
+    <button
+      type="button"
+      aria-label="Fermer le panier"
+      onClick={() => setShowBasketSlider(false)}
+      className={`fixed inset-0 z-40 bg-[#1a1714]/45 backdrop-blur-[2px] transition-opacity duration-300 ${showBasketSlider ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
+    />
     <div
       className={`${
-        showBasketSlider ? "" : "translate-x-[100%]"
-      }  md:w-[40%] w-[100%]  bg-[#F3F4F6] flex flex-col  fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
+        showBasketSlider ? "translate-x-0" : "translate-x-full"
+      } fixed right-0 top-0 z-50 flex h-[100dvh] w-full max-w-[520px] flex-col border-l border-[#e5ddcf] bg-[#fffdf9] shadow-[-24px_0_60px_rgba(26,23,20,.2)] transition-transform duration-300 ease-out`}
     >
       {showNoUserModal && (
         <NoUserModal
@@ -133,17 +140,22 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
         />
       )}
 
-      <div className="flex justify-end mb-4">
+      <header className="flex items-center justify-between border-b border-[#ece5d9] bg-white px-5 py-4 md:px-7">
+        <div>
+          <p className="text-[10px] font-bold tracking-[.16em] text-[#9c9184]">VOTRE COMMANDE</p>
+          <h2 className="font-bebas-neue text-3xl leading-none">LE PANIER <span className="text-pr">({basket.size})</span></h2>
+        </div>
         <button
           aria-label="Fermer le panier"
-          className="text-black cursor-pointer text-3xl "
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#e5ddcf] text-black transition hover:border-pr hover:bg-[#fdf0d6]"
           onClick={() => setShowBasketSlider(false)}
         >
           <MdClose size={28} />
         </button>
-      </div>
+      </header>
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
       {smartOffer && (
-        <div className="bg-white border border-[#F7A600] rounded-xl p-4 mb-4 shadow-sm">
+        <div className="mb-4 rounded-2xl border border-pr bg-[#fdf0d6] p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-wider font-bold text-[#A16207]">
@@ -198,11 +210,8 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
         </div>
       )}
       {basket.size !== 0 ? (
-        <div className="bg-white rounded-md shadow-lg p-4  overflow-y-auto flex-1">
+        <div className="rounded-2xl border border-[#ece5d9] bg-white p-4 md:p-5">
           <div className="">
-            <p className="text-black font-bebas-neue md:text-2xl text-xl">
-              Votre panier
-            </p>
             {basket.items.length > 0 && (
               <div>
                 <p className="text-black font-inter text-base mt-4 font-semibold">
@@ -215,14 +224,14 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                       index === basket.items.length - 1
                         ? "border-b-0"
                         : "border-b-2"
-                    } flex md:flex-row flex-col gap-4  py-4 border-gray-200 items-start`}
+                    } flex flex-row gap-3 border-[#ece5d9] py-4 items-start`}
                   >
                     <Image
                       src={item.image}
                       alt={item.name}
                       width={70}
                       height={70}
-                      className="object-cover rounded-xl  md:w-40 w-full h-30"
+                      className="h-20 w-20 shrink-0 rounded-xl object-cover md:h-24 md:w-24"
                     />
 
                     <div className="flex-1 w-full flex-col">
@@ -266,7 +275,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                       )}
                       <div className="flex justify-between w-full mt-2">
                         <button
-                          className="bg-pr text-black text-sm font-semibold flex cursor-pointer items-center justify-center gap-2 px-3 py-2 rounded-md mt-2"
+                            className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-[#fdf0d6] px-3 py-2 text-xs font-semibold text-[#8a5f00]"
                           onClick={() => {
                             setItemId(item.id);
                             setItemUID(item.uid);
@@ -278,7 +287,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                           <p className="font-inter font-medium">Modifier</p>
                         </button>
                         <button
-                          className="bg-red-500 flex items-center justify-center cursor-pointer gap-2 text-white text-sm  px-3 py-2 rounded-md mt-2"
+                          className="flex cursor-pointer items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-[#a3342b] hover:bg-red-50"
                           onClick={() => removeFromBasket(item.uid)}
                         >
                           <FaTrash />
@@ -302,14 +311,14 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                       index === basket.offers.length - 1
                         ? "border-b-0"
                         : "border-b-2"
-                    } flex md:flex-row flex-col gap-4 py-4 border-gray-200 items-start`}
+                    } flex flex-row gap-3 py-4 border-[#ece5d9] items-start`}
                   >
                     <Image
                       src={item.image}
                       alt={item.name}
                       width={70}
                       height={70}
-                      className="object-cover rounded-xl md:w-40  w-full h-30"
+                      className="h-20 w-20 shrink-0 rounded-xl object-cover md:h-24 md:w-24"
                     />
 
                     <div className="flex-1 w-full flex-col">
@@ -375,7 +384,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                       )}
                       <div className="flex justify-between w-full mt-2">
                         <button
-                          className="bg-pr text-black text-sm font-semibold flex items-center cursor-pointer justify-center gap-2 px-3 py-2 rounded-md mt-2"
+                            className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-[#fdf0d6] px-3 py-2 text-xs font-semibold text-[#8a5f00]"
                           onClick={() => {
                             setOfferId(item.id);
                             setOfferUID(item.uid);
@@ -386,7 +395,7 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                           <p className="font-inter font-medium">Modifier</p>
                         </button>
                         <button
-                          className="bg-red-500 flex items-center justify-center gap-2 text-white text-sm cursor-pointer px-3 py-2 rounded-md mt-2"
+                          className="flex cursor-pointer items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-[#a3342b] hover:bg-red-50"
                           onClick={() => removeOfferFromBasket(item.uid)}
                         >
                           <FaTrash />
@@ -455,17 +464,19 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
           </div>
         </div>
       ) : (
-        <div>
-          <p className="text-black">Votre panier est vide</p>
+        <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[#ddd4c4] bg-white p-8 text-center">
+          <p className="font-bebas-neue text-3xl">VOTRE PANIER EST VIDE</p>
+          <p className="mt-2 max-w-xs text-sm leading-relaxed text-[#8a8074]">Ajoutez vos plats préférés depuis le menu pour commencer votre commande.</p>
         </div>
       )}
+      </div>
       {basket.size !== 0 && (
-        <div className="bg-white rounded-md shadow-lg p-4  mt-4">
+        <div className="border-t border-[#ece5d9] bg-white px-5 py-4 shadow-[0_-12px_30px_rgba(26,23,20,.06)] md:px-7">
           <div className="flex justify-between w-full">
             <p className="text-black font-semibold md:text-base text-sm">
-              Total:
+              Sous-total
             </p>
-            <p className="text-pr font-semibold md:text-base font-inter text-sm">
+            <p className="font-bebas-neue text-3xl text-black">
               ${basket.subtotal.toFixed(2)}
             </p>
           </div>
@@ -475,25 +486,25 @@ const BasketSlider = ({ setShowBasketSlider, showBasketSlider }) => {
                 basket.size === 0
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-pr cursor-pointer"
-              }  text-black font-semibold font-inter px-4 py-2 rounded-md mt-4 w-full`}
+              } w-full rounded-xl px-4 py-4 font-bebas-neue text-xl tracking-wider text-black transition hover:-translate-y-0.5`}
               disabled={basket.size === 0}
               onClick={handleNav}
             >
-              Passer à la caisse
+              PASSER LA COMMANDE
             </button>
-            <p className="text-center md:text-base text-sm mt-4 text-black font-inter">
-              Ou{" "}
+            <p className="mt-3 text-center text-sm text-[#6e6659]">
               <span
-                className="text-pr cursor-pointer"
+                className="cursor-pointer font-semibold underline decoration-pr decoration-2 underline-offset-4"
                 onClick={() => setShowBasketSlider(false)}
               >
-                continuer vos achats
+                Continuer mes achats
               </span>
             </p>
           </div>
         </div>
       )}
     </div>
+    </>
   );
 };
 

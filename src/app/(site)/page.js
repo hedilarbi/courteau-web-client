@@ -1,14 +1,5 @@
-import CategoriesSection from "@/components/CategoriesSection";
-import HomeBirthdayCard from "@/components/HomeBirthdayCard";
-import GetAppSection from "@/components/GetAppSection";
-import HomeHero from "@/components/HomeHero";
-import HomeSubscriptionCard from "@/components/HomeSubscriptionCard";
-import HomeSubscriptionFreeItemCard from "@/components/HomeSubscriptionFreeItemCard";
-import OffresSection from "@/components/OffresSection";
-import OrderOnlineSection from "@/components/OrderOnlineSection";
-import VedetteSection from "@/components/VedetteSection";
-import HomeSmartOfferCard from "@/components/HomeSmartOfferCard";
 import SmartOfferModal from "@/components/SmartOfferModal";
+import HomeV2 from "@/components/HomeV2";
 import React from "react";
 import { SITE_URL } from "@/lib/siteUrl";
 
@@ -66,16 +57,7 @@ const page = () => {
   return (
     <>
       <SmartOfferModal />
-      <HomeHero />
-      <HomeSmartOfferCard />
-      <HomeSubscriptionCard />
-      <HomeSubscriptionFreeItemCard />
-      <HomeBirthdayCard />
-      <VedetteSection />
-      <CategoriesSection />
-      <OffresSection />
-      <OrderOnlineSection />
-      <GetAppSection />
+      <HomeV2 />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

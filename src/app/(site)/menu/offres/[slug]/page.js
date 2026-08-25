@@ -141,7 +141,7 @@ export default async function Page({ params }) {
         "@type": "ListItem",
         position: 2,
         name: "Offres",
-        item: `${base}/menu?category=offres`,
+        item: `${base}/menu/offres`,
       },
       { "@type": "ListItem", position: 3, name: name, item: pageUrl },
     ],
@@ -160,7 +160,7 @@ export default async function Page({ params }) {
           </li>
           <li aria-hidden>›</li>
           <li>
-            <Link href="/menu?category=offres" className="hover:underline">
+            <Link href="/menu/offres" className="hover:underline">
               Offres
             </Link>
           </li>

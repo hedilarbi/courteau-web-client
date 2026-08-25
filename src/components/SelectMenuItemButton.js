@@ -1,15 +1,21 @@
 "use client";
 import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import MenuItemModal from "./MenuItemModal";
 import OfferModal from "./OfferModal";
 import { useUser } from "@/context/UserContext";
-const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
+const SelectMenuItemButton = ({ itemId, selectedCategory, reward, compact = false }) => {
   const [showMenuItemModal, setShowMenuItemModal] = React.useState(false);
   const [showOfferModal, setShowOfferModal] = React.useState(false);
   const [selectedItem, setSelectedItem] = React.useState(null);
   const [selectedOffer, setSelectedOffer] = React.useState(null);
   const { user, loading } = useUser();
   const [actifButton, setActifButton] = React.useState(true);
+  const [mounted, setMounted] = React.useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!user && selectedCategory === "recompenses") {
@@ -32,23 +38,27 @@ const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
 
   return (
     <>
-      {showMenuItemModal && (
-        <MenuItemModal
-          itemId={selectedItem}
-          setShowMenuItemModal={setShowMenuItemModal}
-          showMenuItemModal={showMenuItemModal}
-          reward={reward}
-          lockedSize={reward?.size || ""}
-        />
-      )}
+      {mounted && showMenuItemModal &&
+        createPortal(
+          <MenuItemModal
+            itemId={selectedItem}
+            setShowMenuItemModal={setShowMenuItemModal}
+            showMenuItemModal={showMenuItemModal}
+            reward={reward}
+            lockedSize={reward?.size || ""}
+          />,
+          document.body,
+        )}
 
-      {showOfferModal && (
-        <OfferModal
-          itemId={selectedOffer}
-          setShowOfferModal={setShowOfferModal}
-          showOfferModal={showOfferModal}
-        />
-      )}
+      {mounted && showOfferModal &&
+        createPortal(
+          <OfferModal
+            itemId={selectedOffer}
+            setShowOfferModal={setShowOfferModal}
+            showOfferModal={showOfferModal}
+          />,
+          document.body,
+        )}
 
       <button
         onClick={() => {
@@ -67,12 +77,12 @@ const SelectMenuItemButton = ({ itemId, selectedCategory, reward }) => {
           actifButton
             ? "bg-pr cursor-pointer"
             : "bg-gray-400 cursor-not-allowed"
-        } text-black font-bebas-neue text-center text-lg rounded-md px-4 py-2 mt-4 w-full `}
+        } text-black font-bebas-neue text-center rounded-lg px-4 py-2.5 mt-3 w-full ${compact ? "text-base" : "text-lg"}`}
         disabled={!actifButton}
       >
         {selectedCategory === "recompenses"
           ? "Ajouter au panier"
-          : "Sélectionner"}
+          : compact ? "Ajouter" : "Sélectionner"}
       </button>
     </>
   );

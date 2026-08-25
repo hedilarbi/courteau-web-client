@@ -48,7 +48,7 @@ export default function ConnexionPage() {
         local === "0000000004" ||
         local === "0000000005" ||
         local === "0000000006" ||
-        local === "0000000007"
+        local === "0000000015"
       ) {
         router.push(`/otp?phoneNumber=${formattedValue}`);
       } else {

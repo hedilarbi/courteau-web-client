@@ -8,42 +8,34 @@ export default function MenuCategoriesSection({
   if (!categories?.length) return null;
 
   return (
-    <div className="py-6 shadow-md border-b border-gray-200 md:px-24 px-6 flex gap-2 md:gap-4 overflow-x-auto">
+    <nav aria-label="Catégories du menu" className="sticky top-20 z-20 flex gap-2 overflow-x-auto border-b border-[#ece5d9] bg-white/95 px-5 py-3 shadow-sm backdrop-blur md:top-28 md:px-14">
       {categories.map((category) => {
         const active = category.slug === selectedCategory;
-        const href = {
-          pathname: "/menu",
-          query: { category: category.slug },
-        };
+        const href = `/menu/${category.slug}`;
         return (
           <Link
             key={category._id}
             href={href}
-            scroll={false}
             prefetch
             aria-current={active ? "page" : undefined} // 🔁 mieux que aria-pressed sur un lien
-            className={`${
-              active ? "ring-2 ring-pr" : ""
-            } rounded-full md:h-28 md:w-28 h-20 w-20 relative flex-none shadow-md flex justify-center items-center`}
+            className={`${active ? "ring-2 ring-pr" : ""
+              } relative flex h-11 flex-none items-center gap-2 rounded-full border border-[#e5ddcf] bg-white py-1 pl-1 pr-4 transition hover:border-pr ${active ? "bg-[#1a1714] text-white" : ""}`}
           >
             <Image
               src={category.image}
               alt={category.name}
-              fill
-              sizes="(max-width: 768px) 64px, 96px"
-              className="rounded-full object-cover"
+              width={36}
+              height={36}
+              className="h-9 w-9 rounded-full object-cover"
             />
-            <div className="absolute inset-0 z-10 bg-black/55 rounded-full" />
             <h2
-              className={`${
-                active ? "text-pr" : "text-white"
-              } text-xs md:text-lg absolute z-20 font-bebas-neue text-center`}
+              className={`${active ? "text-pr" : "text-[#3d372f]"} text-sm font-bold whitespace-nowrap`}
             >
               {category.name}
             </h2>
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }
