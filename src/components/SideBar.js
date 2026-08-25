@@ -4,6 +4,7 @@ import { MdClose } from "react-icons/md";
 import { FaFacebook } from "react-icons/fa";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions";
+import { AiFillInstagram } from "react-icons/ai";
 
 const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
   const pathname = usePathname();
@@ -15,9 +16,8 @@ const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
   };
   return (
     <div
-      className={`${
-        showSidebar ? "" : "translate-x-[100%]"
-      }  w-[90%] bg-black fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen min-h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
+      className={`${showSidebar ? "" : "translate-x-[100%]"
+        }  w-[90%] bg-black fixed top-0 right-0 border-l border-gray-200 shadow-md h-screen min-h-screen p-4 z-30 transition-width duration-300 ease-in-out`}
     >
       <div className="flex justify-end mb-4">
         <button
@@ -32,44 +32,39 @@ const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
         <Link
           href="/"
           onClick={() => setShowSidebar(false)}
-          className={` hover:text-pr  ${
-            pathname === "/" ? "text-pr" : "text-white"
-          } `}
+          className={` hover:text-pr  ${pathname === "/" ? "text-pr" : "text-white"
+            } `}
         >
           Accueil
         </Link>
         <Link
           href="/menu"
-          className={` hover:text-pr ${
-            pathname === "/menu" ? "text-pr" : "text-white"
-          } `}
+          className={` hover:text-pr ${pathname === "/menu" ? "text-pr" : "text-white"
+            } `}
           onClick={() => setShowSidebar(false)}
         >
           Menu
         </Link>
         <Link
           href="/a-propos"
-          className={` hover:text-pr ${
-            pathname === "/a-propos" ? "text-pr" : "text-white"
-          } `}
+          className={` hover:text-pr ${pathname === "/a-propos" ? "text-pr" : "text-white"
+            } `}
           onClick={() => setShowSidebar(false)}
         >
           À Propos
         </Link>
         <Link
           href="/blogue"
-          className={` hover:text-pr ${
-            pathname === "/blogue" ? "text-pr" : "text-white"
-          } `}
+          className={` hover:text-pr ${pathname === "/blogue" ? "text-pr" : "text-white"
+            } `}
           onClick={() => setShowSidebar(false)}
         >
           Blogue
         </Link>
         <Link
           href="/contact"
-          className={` hover:text-pr ${
-            pathname === "/contact" ? "text-pr" : "text-white"
-          } `}
+          className={` hover:text-pr ${pathname === "/contact" ? "text-pr" : "text-white"
+            } `}
           onClick={() => setShowSidebar(false)}
         >
           Contact
@@ -80,9 +75,8 @@ const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
         <div className="flex flex-col gap-4 mt-8 border-b pb-8 border-black">
           <Link
             href="/profil"
-            className={` hover:text-pr ${
-              pathname === "/profil" ? "text-pr" : "text-white"
-            } `}
+            className={` hover:text-pr ${pathname === "/profil" ? "text-pr" : "text-white"
+              } `}
             onClick={() => setShowSidebar(false)}
           >
             Profil
@@ -95,18 +89,16 @@ const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
         <div className="flex flex-col gap-4 mt-8 border-b pb-8 border-black">
           <Link
             href="/inscription"
-            className={`text-white hover:text-pr ${
-              pathname === "/inscription" && "text-pr"
-            } `}
+            className={`text-white hover:text-pr ${pathname === "/inscription" && "text-pr"
+              } `}
             onClick={() => setShowSidebar(false)}
           >
             S&apos;inscrire
           </Link>
           <Link
             href="/connexion"
-            className={`text-white hover:text-pr ${
-              pathname === "/connexion" && "text-pr"
-            } `}
+            className={`text-white hover:text-pr ${pathname === "/connexion" && "text-pr"
+              } `}
             onClick={() => setShowSidebar(false)}
           >
             Se connecter
@@ -115,23 +107,18 @@ const SideBar = ({ setShowSidebar, showSidebar, user, deleteUser }) => {
       )}
       <div className="flex items-center justify-center mt-2 gap-4 ">
         <Link
-          href="https://www.facebook.com/"
+          href="https://www.facebook.com/cassecroutecourto"
           aria-label="Casse-Croûte Courteau sur Facebook"
         >
           <FaFacebook size={24} color="white" />
         </Link>
         <Link
-          href="https://www.facebook.com/"
-          aria-label="Casse-Croûte Courteau sur Facebook"
+          href="https://www.instagram.com/casse_croute_courteau/"
+          aria-label="Casse-Croûte Courteau sur Instagram"
         >
-          <FaFacebook size={24} color="white" />
+          <AiFillInstagram size={24} color="white" />
         </Link>
-        <Link
-          href="https://www.facebook.com/"
-          aria-label="Casse-Croûte Courteau sur Facebook"
-        >
-          <FaFacebook size={24} color="white" />
-        </Link>
+
       </div>
     </div>
   );

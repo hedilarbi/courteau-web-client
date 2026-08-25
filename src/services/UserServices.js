@@ -130,14 +130,14 @@ const removeFromFavorites = async (userId, itemId) => {
 };
 const removeFromAddresses = async (userId, addressId) => {
   try {
-    let removeFromFavoritesResponse = await axios.put(
-      `${API_URL}/users/${userId}/delete/addresses/${addressId}`
+    let removeFromFavoritesResponse = await axios.delete(
+      `${API_URL}/users/${userId}/addresses/${addressId}`
     );
     if (removeFromFavoritesResponse?.status === 200) {
       return {
         status: true,
         message: "favorites added",
-        data: removeFromFavoritesResponse?.data,
+        data: removeFromFavoritesResponse?.data?.data,
       };
     } else {
       return {

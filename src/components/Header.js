@@ -10,10 +10,10 @@ const Header = () => {
     <header className="bg-black text-white md:px-14 px-4 md:py-6 py-4 flex items-center justify-between fixed top-0 left-0 right-0 z-40">
       <Link href="/" className="flex items-center">
         <Image
-          src="/logo.svg"
+          src="/logo.png"
           alt="Logo"
-          width={40}
-          height={40}
+          width={277}
+          height={100}
           priority
           className="md:w-44 h-auto w-32 "
         />

@@ -84,7 +84,7 @@ export default function ConnexionPage() {
       )}
       <div className="hidden  w-1/2 md:flex justify-center items-center bg-black shadow-2xl h-screen ">
         <Image
-          src="/logo.svg"
+          src="/logo.png"
           alt="Logo"
           className="h-48 w-auto"
           width={1920}
@@ -93,7 +93,7 @@ export default function ConnexionPage() {
       </div>
       <div className="flex justify-center md:hidden bg-black py-14">
         <Image
-          src="/logo.svg"
+          src="/logo.png"
           alt="Logo"
           className=""
           width={300}

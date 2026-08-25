@@ -6,20 +6,30 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import { FaTrashAlt } from "react-icons/fa";
 import { FaArrowLeftLong } from "react-icons/fa6";
+import toast from "react-hot-toast";
 const Page = () => {
   const router = useRouter();
 
   const { user, loading, createUser } = useUser();
+  const [deletingAddressId, setDeletingAddressId] = React.useState(null);
 
   const removeAddress = async (addressId) => {
+    if (!window.confirm("Supprimer cette adresse définitivement ?")) return;
+    setDeletingAddressId(addressId);
     try {
       const response = await removeFromAddresses(user._id, addressId);
 
       if (response.status) {
         createUser(response.data);
+        toast.success("Adresse supprimée.");
+      } else {
+        toast.error(response.message || "Impossible de supprimer l’adresse.");
       }
     } catch (error) {
       console.error("Erreur lors de la suppression de l'adresse:", error);
+      toast.error("Impossible de supprimer l’adresse.");
+    } finally {
+      setDeletingAddressId(null);
     }
   };
 
@@ -58,7 +68,7 @@ const Page = () => {
               className="bg-white p-4 rounded-md shadow-md flex justify-between items-center"
             >
               <h3 className="font-semibold">{address.address}</h3>
-              <button onClick={() => removeAddress(address._id)}>
+              <button disabled={deletingAddressId === address._id} aria-label={`Supprimer ${address.address}`} onClick={() => removeAddress(address._id)} className="rounded-full p-3 transition hover:bg-red-50 disabled:opacity-40">
                 <FaTrashAlt className="text-red-500 hover:text-red-700" />
               </button>
             </div>
