@@ -24,6 +24,45 @@ html { scroll-behavior: smooth; }
 .home-marquee-track { display: flex; width: max-content; white-space: nowrap; animation: home-marquee 50s linear infinite; }
 .home-pulse { animation: home-pulse 1.7s ease-in-out infinite; }
 
+.home-section-eyebrow {
+  color: #8e6200;
+  font-family: var(--font-bebas-neue);
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 13px;
+  font-size: .95rem;
+}
+
+.home-section-eyebrow::before {
+  content: "";
+  width: 28px;
+  height: 4px;
+  background: #f7a600;
+}
+
+.home-section-eyebrow--light {
+  color: #f7a600;
+}
+
+.home-section-eyebrow--on-yellow {
+  color: #1a1714;
+}
+
+.home-section-eyebrow--on-yellow::before {
+  background: #1a1714;
+}
+
+.home-section-heading {
+  margin: 0;
+  font-family: var(--font-bebas-neue);
+  font-size: clamp(3.7rem, 6.2vw, 6.8rem);
+  font-weight: 400;
+  line-height: .86;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-marquee-track, .home-pulse { animation: none; }
 }
