@@ -103,7 +103,7 @@ const Footer = () => {
             © {new Date().getFullYear()} Casse-Croûte Courteau. Tous droits réservés.
           </p>
           <div className="text-[10px] font-bold text-[#6e6659] uppercase tracking-widest">
-            Fier d'être d'ici
+            Fier d&apos;être d&apos;ici
           </div>
         </div>
       </div>
