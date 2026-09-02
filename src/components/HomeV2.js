@@ -8,6 +8,7 @@ import {
   getVedettes,
 } from "@/services/FoodServices";
 import HomeClubSection from "./HomeClubSection";
+import HeroCarousel from "./HeroCarousel";
 
 const locations = [
   {
@@ -90,16 +91,21 @@ export default async function HomeV2() {
   const heroName = offers[0]?.name || vedettes[0]?.name || "Notre poutine maison";
   const heroPrice = offers[0]?.price;
 
+  const carouselItems = promoItems.length > 0 ? promoItems : [
+    { name: heroName, price: heroPrice, image: heroImage, _id: 'fallback' }
+  ];
+
   return (
     <div className="home-v2 overflow-hidden bg-[#fffdf9] text-[#1a1714] font-inter">
       <section className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 pb-12 pt-24 md:grid-cols-[1.05fr_.95fr] md:px-14 md:pb-16 md:pt-40 lg:gap-16">
         <div>
 
-          <h1 className="max-w-3xl font-bebas-neue text-[3rem] leading-[.9] tracking-wide sm:text-[4rem] lg:text-[5rem]">
-            Casse-Croûte Courteau à <span className="home-highlight">Trois-Rivières</span> : Poutines, Pizzas & Déjeuners
+          <h1 className="max-w-3xl font-bebas-neue text-[3rem] leading-[.9] tracking-wide sm:text-[4rem] lg:text-[5rem] uppercase">
+            CASSE-CROÛTE COURTEAU À <span className="home-highlight">Trois-Rivières</span><br/>
+            FRAIS. GÉNÉREUX. UNIQUE.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-[#55504a] md:text-lg">
-            Dégustez les meilleures poutines, pizzas et déjeuners de Trois-Rivières. Commandez en ligne dès maintenant et découvrez notre menu authentique et généreux.
+            Savourez le vrai goût du casse-croûte avec nos poutines généreuses, nos pizzas savoureuses, nos burgers et hot-dogs audacieux, et bien plus encore ! Commandez en ligne dès maintenant et retrouvez tous vos classiques Courteau.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/menu" className="rounded-xl bg-pr px-7 py-4 font-bebas-neue text-xl tracking-wider transition hover:-translate-y-1 hover:shadow-[0_14px_28px_rgba(247,166,0,.4)]">
@@ -115,13 +121,7 @@ export default async function HomeV2() {
         </div>
         <div className="relative mx-3 mt-4 md:mx-0">
           <div className="absolute inset-0 translate-x-4 translate-y-4 rounded-[1.25rem] bg-pr" />
-          <div className="relative aspect-[1.2] overflow-hidden rounded-[1.25rem] bg-[#f3ede2]">
-            <Image src={heroImage} alt={heroName} fill priority sizes="(max-width: 768px) 100vw, 45vw" className="object-cover" />
-          </div>
-          <div className="absolute -bottom-5 -left-3 rounded-xl bg-white px-5 py-3 shadow-xl md:-left-6">
-            <p className="text-[10px] tracking-[.14em] text-[#8a8175]">PROMO DU MOMENT</p>
-            <p className="font-bebas-neue text-2xl">{heroName}{heroPrice != null ? ` · ${money(heroPrice)}` : ""}</p>
-          </div>
+          <HeroCarousel items={carouselItems} />
         </div>
       </section>
 
@@ -239,7 +239,7 @@ export default async function HomeV2() {
           <SectionEyebrow>Depuis 2020</SectionEyebrow>
           <h2 className="home-section-heading">Fier d’être d’ici.</h2>
           <p className="mt-6 max-w-2xl leading-[1.75] text-[#6e6659]">
-            Né à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et remplis de saveur. Aujourd’hui, nos cinq succursales gardent ce même esprit de proximité.
+            Né à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et originaux. Aujourd’hui, nos cinq succursales gardent ce même esprit de proximité.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-2">
             {[['Frais', 'Préparé avec soin'], ['Généreux', 'Des vraies portions'], ['Local', 'Fier de la Mauricie']].map(([title, copy]) => (

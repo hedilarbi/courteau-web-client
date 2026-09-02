@@ -10,7 +10,7 @@ const Footer = () => {
     <footer className="bg-[#1a1714] text-[#fffdf9] font-inter pt-16 pb-8 px-5 md:px-14 border-t border-[#3d372f]">
       <div className="mx-auto max-w-[1440px]">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
-          
+
           {/* Logo & Description */}
           <div className="md:col-span-4 flex flex-col gap-6">
             <div className="flex items-baseline gap-2">
@@ -25,22 +25,22 @@ const Footer = () => {
               </Link>
             </div>
             <p className="text-sm leading-relaxed text-[#9c9184] max-w-xs">
-              Né à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et remplis de saveur.
+              Né à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et originaux.
             </p>
             <div className="flex gap-4 items-center mt-2">
-              <a 
-                href="https://www.facebook.com/cassecroutecourto" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://www.facebook.com/cassecroutecourto"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="grid place-items-center w-11 h-11 rounded-full bg-[#2a2420] text-white transition hover:-translate-y-1 hover:bg-pr hover:text-black hover:shadow-[0_4px_14px_rgba(247,166,0,.4)]"
                 aria-label="Facebook"
               >
                 <FaFacebook size={20} />
               </a>
-              <a 
-                href="https://www.instagram.com/casse_croute_courteau" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://www.instagram.com/casse_croute_courteau"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="grid place-items-center w-11 h-11 rounded-full bg-[#2a2420] text-white transition hover:-translate-y-1 hover:bg-pr hover:text-black hover:shadow-[0_4px_14px_rgba(247,166,0,.4)]"
                 aria-label="Instagram"
               >

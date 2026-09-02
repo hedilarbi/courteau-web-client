@@ -162,7 +162,7 @@ export default function Page() {
           </h2>
           <p className="font-inter text-base md:text-lg mt-4 font-medium text-[#374151]">
             Malgré sa petite taille, le casse-croûte Courteau s&apos;est donné
-            l&apos;objectif de servir des repas frais et remplis de saveur à ses
+            l&apos;objectif de servir des repas frais et originaux à ses
             clients tous les jours dans son restaurant à Trois-Rivières. En
             effet, il n&apos;a jamais dérogé de sa mission depuis son ouverture
             en 2020. D&apos;abord un modeste comptoir servant des plats typiques
