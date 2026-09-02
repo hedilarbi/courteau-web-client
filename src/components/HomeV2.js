@@ -44,7 +44,7 @@ const money = (value) =>
     minimumFractionDigits: Number(value) % 1 ? 2 : 0,
   }).format(Number(value) || 0);
 
-const validImage = (item) => item?.image && item?.name && item?.slug;
+const validImage = (item) => item?.image && item?.name && (item?.slug || item?._id);
 
 export default async function HomeV2() {
   const [offersResponse, vedettesResponse, categoriesResponse] =
@@ -61,12 +61,10 @@ export default async function HomeV2() {
   const promoItemsResponse = promoCategory
     ? await getMenuItemsByCategory(promoCategory._id)
     : null;
-  const promoNames = (Array.isArray(promoItemsResponse?.data)
+  const promoItems = (Array.isArray(promoItemsResponse?.data)
     ? promoItemsResponse.data
     : []
-  )
-    .map((item) => item?.name)
-    .filter(Boolean);
+  ).filter(validImage).slice(0, 4);
 
   const now = Date.now();
   const offers = (Array.isArray(offersResponse?.data) ? offersResponse.data : [])
@@ -127,24 +125,38 @@ export default async function HomeV2() {
         </div>
       </section>
 
-      <div className="home-marquee bg-[#1a1714] py-3 text-pr" aria-label="Articles en promotion">
-        <div className="home-marquee-track font-bebas-neue text-lg tracking-wider">
-          {[0, 1].map((copy) => (
-            <span key={copy} aria-hidden={copy === 1}>
-              {promoNames.map(
-                (name) => `${name.toLocaleUpperCase("fr")}　◆　`
-              )}
-            </span>
-          ))}
-        </div>
-      </div>
 
       <HomeClubSection />
+      <section className="mx-auto max-w-[1440px] px-5 py-14 md:px-14 md:py-16">
+        <SectionTitle eyebrow="Promotions" title="Nos articles en promo" href={promoCategory ? `/menu/${promoCategory.slug}` : "/menu"} link="Voir tout →" />
+        {promoItems.length ? (
+          <div className="mt-7 grid gap-3 grid-cols-2 md:grid-cols-4 md:gap-4">
+            {promoItems.map((item) => (
+              <Link key={item.slug || item._id} href={`/menu/articles/${item.slug || item._id}`} className="group overflow-hidden rounded-2xl border border-[#ece5d9] bg-white transition hover:-translate-y-1 hover:shadow-xl">
+                <div className="relative aspect-[1.6] bg-[#f3ede2]">
+                  <Image src={item.image} alt={item.name} fill sizes="(max-width:768px) 50vw, 25vw" className="object-cover transition duration-500 group-hover:scale-105" />
+                </div>
+                <div className="p-4 md:p-5">
+                  <span className="rounded bg-pr px-2 py-1 text-[9px] font-bold tracking-widest text-black">EN PROMO</span>
+                  <h3 className="mt-3 font-bebas-neue text-2xl md:text-3xl leading-none">{item.name}</h3>
+                  <p className="mt-2 text-sm text-[#6e6659]">
+                    {item.prices?.length > 1 ? "À partir de " : ""}
+                    {money(item.prices?.[0]?.price)}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <EmptyState label="Les articles en promotion seront bientôt affichés." light />
+        )}
+      </section>
+
 
       <section id="offres" className="bg-[#1a1714] px-5 py-14 text-[#fffdf9] md:px-14 md:py-16">
         <div className="mx-auto max-w-[1350px]">
           <div className="mb-7 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div><SectionEyebrow light>Les promos de la semaine</SectionEyebrow><h2 className="home-section-heading">Nos offres <span className="text-pr">à saisir</span></h2><p className="mt-4 text-sm text-white/60">Des prix généreux pour encore mieux manger.</p></div>
+            <div><SectionEyebrow light>Nos offres actuelle</SectionEyebrow><h2 className="home-section-heading">Nos offres <span className="text-pr">à saisir</span></h2><p className="mt-4 text-sm text-white/60">Des prix généreux pour encore mieux manger.</p></div>
             {offers.length > 0 && <span className="self-start rounded-full border border-pr/50 bg-pr/10 px-4 py-2 text-xs font-bold text-pr md:self-auto">● Offres en cours</span>}
           </div>
           {offers.length ? <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
@@ -160,7 +172,7 @@ export default async function HomeV2() {
       <section className="mx-auto max-w-[1440px] px-5 py-14 md:px-14 md:py-16">
         <SectionTitle eyebrow="En vedette" title="Ce qu'on commande le plus" href="/menu" link="Voir tout le menu →" />
         {vedettes.length ? <div className="mt-7 grid gap-4 md:grid-cols-3">
-          {vedettes.map((item, index) => <Link key={item.slug} href={`/menu/articles/${item.slug}`} className={`group overflow-hidden rounded-2xl border border-[#ece5d9] ${index === 0 ? "bg-[#1a1714] text-white md:col-span-1" : "bg-white"} transition hover:-translate-y-1 hover:shadow-xl`}>
+          {vedettes.map((item, index) => <Link key={item.slug || item._id} href={`/menu/articles/${item.slug || item._id}`} className={`group overflow-hidden rounded-2xl border border-[#ece5d9] ${index === 0 ? "bg-[#1a1714] text-white md:col-span-1" : "bg-white"} transition hover:-translate-y-1 hover:shadow-xl`}>
             <div className="relative aspect-[1.6] bg-[#f3ede2]"><Image src={item.image} alt={item.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-500 group-hover:scale-105" /></div>
             <div className="p-5"><span className="rounded bg-pr px-2 py-1 text-[9px] font-bold tracking-widest text-black">{index === 0 ? "LE PLUS COMMANDÉ" : "EN VEDETTE"}</span><h3 className="mt-3 font-bebas-neue text-3xl leading-none">{item.name}</h3><p className={`mt-3 text-sm ${index === 0 ? "text-white/60" : "text-[#6e6659]"}`}>À partir de {money(item.prices?.[0]?.price)}</p></div>
           </Link>)}
@@ -170,7 +182,7 @@ export default async function HomeV2() {
       <section id="categories" className="mx-auto max-w-[1440px] px-5 pb-14 md:px-14 md:pb-20">
         <SectionTitle eyebrow="Le menu" title="Parcourir par catégorie" href="/menu" link="Toutes les catégories →" />
         {categories.length ? <div className="mt-7 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-          {categories.map((item) => <Link key={item._id} href={`/menu/${item.slug}`} className="group relative aspect-[1.55] overflow-hidden rounded-2xl bg-[#1a1714]">
+          {categories.map((item) => <Link key={item._id} href={`/menu/${item.slug || item._id}`} className="group relative aspect-[1.55] overflow-hidden rounded-2xl bg-[#1a1714]">
             <Image src={item.image} alt={item.name} fill sizes="(max-width:768px) 50vw, 25vw" className="object-cover opacity-75 transition duration-500 group-hover:scale-105 group-hover:opacity-90" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" /><h3 className="absolute bottom-4 left-4 right-4 font-bebas-neue text-2xl leading-none text-white md:text-3xl">{item.name}</h3>
           </Link>)}

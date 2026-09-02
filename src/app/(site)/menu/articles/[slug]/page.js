@@ -13,10 +13,16 @@ const API_URL =
   "https://api.lecourteau.com/api";
 
 async function fetchItem(slug) {
-  const res = await fetch(
+  let res = await fetch(
     `${API_URL}/menuItems/slug/${encodeURIComponent(slug)}`,
     { cache: "no-store" }
   );
+
+  // Fallback if not found and slug looks like a MongoDB ObjectId (24 hex chars)
+  if (!res.ok && /^[0-9a-fA-F]{24}$/.test(slug)) {
+    res = await fetch(`${API_URL}/menuItems/${slug}`, { cache: "no-store" });
+  }
+
   if (!res.ok) return null;
   return res.json();
 }
