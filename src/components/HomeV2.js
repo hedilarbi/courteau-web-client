@@ -101,8 +101,8 @@ export default async function HomeV2() {
         <div>
 
           <h1 className="max-w-3xl font-bebas-neue text-[3rem] leading-[.9] tracking-wide sm:text-[4rem] lg:text-[5rem] uppercase">
-            CASSE-CROÛTE COURTEAU À <span className="home-highlight">Trois-Rivières</span><br/>
-            FRAIS. GÉNÉREUX. UNIQUE.
+            CASSE-CROÛTE COURTEAU <span className="home-highlight"> FRAIS. GÉNÉREUX. UNIQUE.</span><br />
+
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-[#55504a] md:text-lg">
             Savourez le vrai goût du casse-croûte avec nos poutines généreuses, nos pizzas savoureuses, nos burgers et hot-dogs audacieux, et bien plus encore ! Commandez en ligne dès maintenant et retrouvez tous vos classiques Courteau.
