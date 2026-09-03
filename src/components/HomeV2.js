@@ -38,6 +38,25 @@ const locations = [
   },
 ];
 
+const partners = [
+  {
+    name: "McCain",
+    logo: "/partenaires/mccain logo.jfif",
+  },
+  {
+    name: "Pepsi — Alex Coulombe",
+    logo: "/partenaires/pepsi alex coulombe.webp",
+  },
+  {
+    name: "Hellmann's",
+    logo: "/partenaires/Hellmanns-Logo.png",
+  },
+  {
+    name: "Olymel",
+    logo: "/partenaires/Olymel_l_p__Olymel_unveils_new_brand_image.jpg",
+  },
+];
+
 const money = (value) =>
   new Intl.NumberFormat("fr-CA", {
     style: "currency",
@@ -97,7 +116,25 @@ export default async function HomeV2() {
 
   return (
     <div className="home-v2 overflow-hidden bg-[#fffdf9] text-[#1a1714] font-inter">
-      <section className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 pb-12 pt-24 md:grid-cols-[1.05fr_.95fr] md:px-14 md:pb-16 md:pt-40 lg:gap-16">
+      <section aria-label="Nos partenaires" className="border-b border-[#ece5d9]/70 px-5 pt-20 md:px-14 md:pt-32">
+        <div className="mx-auto max-w-[1000px]  ">
+          <div className="grid grid-cols-4 items-center gap-4 sm:gap-8 md:gap-12">
+            {partners.map((partner) => (
+              <div key={partner.name} className="relative h-7 opacity-75 transition duration-300 hover:opacity-100 md:h-9">
+                <Image
+                  src={partner.logo}
+                  alt={`Logo ${partner.name}`}
+                  fill
+                  sizes="(max-width: 640px) 20vw, 140px"
+                  className="object-contain mix-blend-multiply"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 pb-12 pt-10 md:grid-cols-[1.05fr_.95fr] md:px-14 md:pb-16 md:pt-14 lg:gap-16">
         <div>
 
           <h1 className="max-w-3xl font-bebas-neue text-[3rem] leading-[.9] tracking-wide sm:text-[4rem] lg:text-[5rem] uppercase">
