@@ -291,6 +291,24 @@ export default async function HomeV2() {
           </Link>
         </div>
       </section>
+
+      <section aria-label="Nos partenaires" className="border-t border-[#ece5d9]/70 px-5 md:px-14">
+        <div className="mx-auto max-w-[1000px]">
+          <div className="grid grid-cols-4 items-center gap-4 sm:gap-8 md:gap-12">
+            {partners.map((partner) => (
+              <div key={partner.name} className="relative h-7 opacity-75 transition duration-300 hover:opacity-100 md:h-9">
+                <Image
+                  src={partner.logo}
+                  alt={`Logo ${partner.name}`}
+                  fill
+                  sizes="(max-width: 640px) 20vw, 140px"
+                  className="object-contain mix-blend-multiply"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
