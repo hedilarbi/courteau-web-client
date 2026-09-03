@@ -41,7 +41,7 @@ const locations = [
 const partners = [
   {
     name: "McCain",
-    logo: "/partenaires/mccain logo.jfif",
+    logo: "/partenaires/mccain-logo.png",
   },
   {
     name: "Pepsi — Alex Coulombe",
