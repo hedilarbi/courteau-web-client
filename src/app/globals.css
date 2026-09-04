@@ -63,6 +63,14 @@ html { scroll-behavior: smooth; }
   line-height: .86;
 }
 
+.club-home-shell {
+  background-color: #f7a600;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .1) 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-marquee-track, .home-pulse { animation: none; }
 }
