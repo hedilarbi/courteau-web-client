@@ -23,8 +23,8 @@ export default async function MenuIndexPage({ searchParams }) {
   if (!categoriesResponse.ok || !articlesResponse.ok || !offersResponse.ok) throw new Error("Impossible de récupérer le menu.");
   const [apiCategories, articles, offers] = await Promise.all([categoriesResponse.json(), articlesResponse.json(), offersResponse.json()]);
   const categories = [
-    { _id: "offers", name: "Offres", slug: "offres", image: "/offres.webp" },
-    { _id: "recompenses", name: "Récompenses", slug: "recompenses", image: "/awards.png" },
+    { _id: "offers", name: "Offres", slug: "offres", image: "/offres.jpeg" },
+    { _id: "recompenses", name: "Récompenses", slug: "recompenses", image: "/recompenses.jpeg" },
     ...(Array.isArray(apiCategories) ? apiCategories : []),
   ];
   return <MenuLanding categories={categories} articles={Array.isArray(articles) ? articles : []} offers={Array.isArray(offers) ? offers : []} />;

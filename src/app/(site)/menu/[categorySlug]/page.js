@@ -6,8 +6,8 @@ import Script from "next/script";
 export const dynamic = "force-dynamic";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://api.lecourteau.com/api";
 const specialCategories = [
-  { _id: "recompenses", name: "Récompenses", slug: "recompenses", image: "/awards.png" },
-  { _id: "offers", name: "Offres", slug: "offres", image: "/offres.webp" },
+  { _id: "recompenses", name: "Récompenses", slug: "recompenses", image: "/recompenses.jpeg" },
+  { _id: "offers", name: "Offres", slug: "offres", image: "/offres.jpeg" },
 ];
 
 async function fetchJson(path, errorMessage) {
