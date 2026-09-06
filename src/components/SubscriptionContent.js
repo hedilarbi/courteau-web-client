@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   CardElement,
@@ -655,7 +656,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#fffdf9] px-5 pb-24 pt-24 text-[#1a1714] md:px-14 md:pt-40">
+    <main className="min-h-screen overflow-hidden bg-pr px-4 pb-10 pt-24 text-[#1a1714] sm:px-6 sm:pb-14 md:pt-36 lg:px-10 lg:pb-20">
       {showNoUserModal && (
         <NoUserModal
           showNoUserModal={showNoUserModal}
@@ -664,35 +665,66 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
           description="Connectez-vous ou créez votre compte pour activer votre abonnement."
         />
       )}
-      <div className="mx-auto max-w-6xl">
-        <section className="relative overflow-hidden rounded-3xl bg-pr p-6 md:p-10 lg:p-12">
-          <span className="pointer-events-none absolute -bottom-20 left-4 font-bebas-neue text-[15rem] leading-none text-black/[.06] md:text-[22rem]">CLUB</span>
-          <div className="relative grid items-start gap-9 lg:grid-cols-[1.25fr_.75fr]">
-            <div>
-              <p className="inline-flex rounded-full bg-[#1a1714] px-4 py-2 text-[10px] font-bold tracking-[.16em] text-pr">ABONNEMENT MENSUEL · SANS ENGAGEMENT</p>
-              <h1 className="mt-6 font-bebas-neue text-7xl leading-[.82] md:text-[7rem]">CLUB<br />COURTEAU</h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-black/75">Plus de Courteau, moins cher. Vos avantages s’appliquent automatiquement à chacune de vos commandes.</p>
-              <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Benefit value={`−${SUBSCRIPTION_DISCOUNT_PERCENT}%`} title="Sur le menu" />
-                <Benefit value="0$" title="Livraison" />
-                <Benefit value="1 / MOIS" title="Article gratuit" />
-                <Benefit value="0" title="Engagement" />
+      <div className="mx-auto max-w-[1480px]">
+        <section className="relative overflow-hidden bg-[#151513] text-white shadow-[0_24px_70px_rgba(62,38,0,.25)]">
+          <div className="grid lg:min-h-[690px] lg:grid-cols-[55%_45%]">
+            <div className="relative z-10 flex flex-col px-6 pb-10 pt-9 sm:px-10 sm:py-12 lg:px-16 lg:py-14 xl:px-20">
+              <div className="mb-7 flex items-center gap-3 font-bebas-neue text-sm tracking-[.18em] text-pr sm:text-base">
+                <span aria-hidden="true">★</span><span>ABONNEMENT MENSUEL</span><span aria-hidden="true">★</span>
               </div>
+
+              <div className="w-fit">
+                <span className="bg-white px-3 py-1 font-bebas-neue text-2xl tracking-[.18em] text-[#151513] sm:text-3xl">CLUB</span>
+                <h1 className="bg-pr px-3 pb-1 pt-2 font-bebas-neue text-[4.25rem] leading-[.82] tracking-wide text-[#151513] sm:text-[6.2rem] lg:text-[7.2rem]">COURTEAU</h1>
+              </div>
+
+              <p className="mt-8 font-bebas-neue text-[2.8rem] leading-[.9] tracking-wide sm:text-[4rem] lg:text-[4.5rem]">
+                VOS CLASSIQUES.<br /><span className="text-pr">À MEILLEUR PRIX.</span>
+              </p>
+              <p className="mt-6 max-w-[650px] text-sm leading-7 text-white/70 sm:text-base">
+                Les membres profitent de <strong className="text-white">{SUBSCRIPTION_DISCOUNT_PERCENT} % de rabais</strong> sur le menu, de la <strong className="text-white">livraison offerte</strong> et d&apos;un <strong className="text-white">article gratuit chaque mois</strong>. Les avantages s&apos;appliquent automatiquement.
+              </p>
+
+              <div className="mt-7 grid grid-cols-3 border-y border-white/15 py-5">
+                <Benefit value={`−${SUBSCRIPTION_DISCOUNT_PERCENT} %`} title="Sur tout le menu" />
+                <Benefit value="0 $" title="De frais de livraison" divided />
+                <Benefit value="1 / MOIS" title="Article offert" divided />
+              </div>
+
+              <div className="mt-7 flex flex-col gap-5 sm:flex-row sm:items-center">
+                <div className="flex items-end gap-2">
+                  <strong className="font-bebas-neue text-6xl leading-none sm:text-7xl">{pricing.subtotal.toFixed(2).replace(".", ",")} $</strong>
+                  <span className="pb-1 text-[10px] font-bold uppercase leading-4 text-white/60">Par {cycleLabel}<br />Sans engagement</span>
+                </div>
+                {(!isSubscriptionActive || isScheduledForCancellation) && (
+                  <button type="button" onClick={() => { if (!user?._id) { setShowNoUserModal(true); return; } setShowActivationForm((previous) => !previous); }} className="group flex min-h-14 flex-1 items-center justify-center gap-5 bg-pr px-6 font-bebas-neue text-xl tracking-wider text-[#151513] transition hover:bg-[#ffba2b] sm:max-w-[310px] sm:text-2xl">
+                    {showActivationForm ? "MASQUER LE PAIEMENT" : isScheduledForCancellation ? "RÉACTIVER" : "DEVENIR MEMBRE"}<span className="transition group-hover:translate-x-1">→</span>
+                  </button>
+                )}
+              </div>
+              <p className="mt-3 text-[10px] text-white/35">Annulable en tout temps. Avantages appliqués aux commandes admissibles.</p>
             </div>
-            <div className="rounded-2xl bg-[#1a1714] p-6 text-white shadow-2xl md:p-8">
-              <p className="text-[10px] font-bold tracking-[.16em] text-white/45">ADHÉSION MENSUELLE</p>
-              <div className="mt-4 flex items-end gap-2"><strong className="font-bebas-neue text-6xl leading-none text-pr md:text-7xl">{pricing.subtotal.toFixed(2)}$</strong><span className="pb-2 text-sm text-white/55">/ {cycleLabel}</span></div>
-              <div className="my-6 h-px bg-white/10" />
-              <ul className="space-y-3 text-sm text-white/85"><li><span className="mr-2 text-pr">✓</span>{SUBSCRIPTION_DISCOUNT_PERCENT} % sur chaque commande</li><li><span className="mr-2 text-pr">✓</span>Livraison toujours gratuite</li><li><span className="mr-2 text-pr">✓</span>Un article offert par mois</li></ul>
-              {(!isSubscriptionActive || isScheduledForCancellation) && <button type="button" onClick={() => { if (!user?._id) { setShowNoUserModal(true); return; } setShowActivationForm((previous) => !previous); }} className="mt-7 w-full rounded-xl border-2 border-white bg-white p-4 font-bebas-neue text-xl tracking-wider text-[#1a1714] shadow-lg transition hover:-translate-y-0.5 hover:border-pr hover:bg-pr">{showActivationForm ? "MASQUER LE PAIEMENT" : isScheduledForCancellation ? "RÉACTIVER MON ABONNEMENT" : "ACTIVER MON ABONNEMENT"}</button>}
+
+            <div className="relative min-h-[390px] overflow-hidden sm:min-h-[480px] lg:min-h-0">
+              <Image src="/HomeHero.jpg" alt="Poutine Courteau généreusement garnie" fill priority sizes="(max-width: 1024px) 100vw, 45vw" className="object-cover object-[62%_center]" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#151513]/10 via-transparent to-[#151513] lg:bg-gradient-to-r lg:from-[#151513] lg:via-[#151513]/5 lg:to-transparent" />
+              <div className="absolute right-5 top-5 rotate-2 border-[5px] border-[#151513] bg-pr px-5 py-4 text-[#151513] shadow-[8px_8px_0_rgba(0,0,0,.35)] sm:right-8 sm:top-8 sm:px-7 sm:py-5">
+                <p className="text-[10px] font-black tracking-[.12em] sm:text-xs">AVANTAGE MEMBRE</p>
+                <p className="font-bebas-neue text-4xl leading-[.82] sm:text-5xl">UN ARTICLE<br />GRATUIT</p>
+                <p className="mt-1 text-[10px] font-black tracking-wide">CHAQUE MOIS</p>
+              </div>
+              <div className="absolute bottom-7 left-6 right-6 border-l-4 border-pr pl-4 sm:bottom-10 sm:left-10 lg:left-12">
+                <p className="font-bebas-neue text-3xl leading-none sm:text-4xl">RENTABILISÉ EN 2 COMMANDES</p>
+                <p className="mt-2 max-w-md text-xs text-white/60">Plus vous commandez, plus votre abonnement vous récompense.</p>
+              </div>
             </div>
           </div>
         </section>
 
-        <div className="mx-auto mt-8 max-w-3xl">
+        <div className="mx-auto max-w-3xl">
 
         {!isOfferMode && (
-          <div className="mt-6 rounded-2xl border border-[#ece5d9] bg-white p-6 shadow-sm">
+          <div className="mt-6 rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-inter font-semibold text-black text-lg">
                 Mon abonnement
@@ -742,7 +774,7 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
         )}
 
         {(!isSubscriptionActive || isScheduledForCancellation) && (
-          <div className="mt-6 rounded-2xl border border-[#ece5d9] bg-white p-6 shadow-sm md:p-8">
+          <div className="mt-6 rounded-2xl border border-black/10 bg-white p-6 shadow-sm md:p-8">
             {isScheduledForCancellation ? (
               <div className="rounded-xl border border-[#E3B341] bg-[#FFF8EA] px-4 py-4 mb-4">
                 <p className="font-inter font-semibold text-sm text-[#7A4D00]">
@@ -917,10 +949,10 @@ const SubscriptionContentInner = ({ mode = "offer" }) => {
   );
 };
 
-const Benefit = ({ value, title }) => (
-  <div className="rounded-2xl bg-[#fffdf9]/95 p-4">
-    <p className="font-bebas-neue text-3xl leading-none md:text-4xl">{value}</p>
-    <p className="mt-2 text-xs font-bold md:text-sm">{title}</p>
+const Benefit = ({ value, title, divided = false }) => (
+  <div className={`min-w-0 px-3 first:pl-0 sm:px-5 ${divided ? "border-l border-white/15" : ""}`}>
+    <p className="font-bebas-neue text-3xl leading-none text-pr sm:text-4xl">{value}</p>
+    <p className="mt-1 text-[10px] leading-tight text-white/70 sm:text-xs">{title}</p>
   </div>
 );
 
