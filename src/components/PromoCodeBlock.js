@@ -16,8 +16,6 @@ const PromoCodeBlock = ({
   setPromoCodeData,
   promoCodeIsValid,
   setPromoCodeIsValid,
-  firstOrderDiscountAllowed,
-  subscriptionActive,
   promoCodeAllowed,
   subTotal,
   promoCodeError,
@@ -42,11 +40,6 @@ const PromoCodeBlock = ({
         setPromoCodeError(
           "Un abonnement actif est déjà appliqué. Les codes promo ne sont pas cumulables."
         );
-        return;
-      }
-
-      if (firstOrderDiscountAllowed && !subscriptionActive) {
-        setPromoCodeError("Une autre réduction est déjà appliquée.");
         return;
       }
 

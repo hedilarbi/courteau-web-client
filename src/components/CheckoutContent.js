@@ -38,6 +38,10 @@ const SUBSCRIPTION_DISCOUNT_PERCENT = 15;
 const BIRTHDAY_TIMEZONE = "America/Toronto";
 
 const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
+  if (availabilityData?.message) {
+    return availabilityData.message;
+  }
+
   const unavailableItems = Array.isArray(availabilityData?.unavailableItems)
     ? availabilityData.unavailableItems
     : [];
@@ -206,7 +210,7 @@ const calculateDiscountedSubtotal = ({
   }
 
   const shouldApplyFirstOrderDiscount =
-    firstOrderDiscountAllowed && !(subscriptionActive && shouldApplyPromoCode);
+    firstOrderDiscountAllowed && !shouldApplyPromoCode;
 
   if (shouldApplyFirstOrderDiscount) {
     nextSubtotal *= 0.8;
@@ -372,7 +376,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   );
   const shouldApplyFirstOrderDiscount =
     firstOrderDiscountAllowed &&
-    !(subscriptionActive && promoCodeApplied) &&
+    !promoCodeApplied &&
     !smartOfferAppliedToOrder;
   const currentCycleKey = getExpectedSubscriptionCycleKey(user, new Date());
   const userCycleKey = String(user?.subscriptionFreeItemCycleKey || "").trim();
@@ -756,7 +760,8 @@ const CheckoutContent = ({ restaurantsSettings }) => {
                     .filter(Boolean),
                 }))
               : [],
-          }))
+          })),
+          { orderType: deliveryMode }
         );
 
         if (
@@ -779,7 +784,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     };
 
     verifyAvailabilityOnRestaurantChange();
-  }, [selectedRestaurant?._id, basketItems, basketOffers]);
+  }, [selectedRestaurant?._id, basketItems, basketOffers, deliveryMode]);
 
 
   useEffect(() => {
@@ -1498,8 +1503,6 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             setPromoCodeData={setPromoCodeData}
             promoCodeIsValid={promoCodeIsValid}
             setPromoCodeIsValid={setPromoCodeIsValid}
-            firstOrderDiscountAllowed={firstOrderDiscountAllowed}
-            subscriptionActive={subscriptionActive}
             promoCodeAllowed={promoCodeAllowed}
             subTotal={subTotal}
             promoCodeError={promoCodeError}

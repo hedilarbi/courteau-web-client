@@ -85,6 +85,10 @@ const buildGa4PurchaseItems = (items, discountedSubtotal) => {
 };
 
 const buildOrderAvailabilityErrorMessage = (availabilityData = {}) => {
+  if (availabilityData?.message) {
+    return availabilityData.message;
+  }
+
   const unavailableItems = Array.isArray(availabilityData?.unavailableItems)
     ? availabilityData.unavailableItems
     : [];
@@ -811,7 +815,8 @@ export default function CheckoutCard({
                     .filter(Boolean),
                 }))
               : [],
-          }))
+          })),
+          { orderType: deliveryMode }
         );
 
         if (!availabilityResponse?.status) {
@@ -853,7 +858,8 @@ export default function CheckoutCard({
                     .filter(Boolean),
                 }))
               : [],
-          }))
+          })),
+          { orderType: deliveryMode }
         );
 
         if (!availabilityResponse?.status) {
@@ -893,7 +899,8 @@ export default function CheckoutCard({
                     .filter(Boolean),
                 }))
               : [],
-          }))
+          })),
+          { orderType: deliveryMode }
         );
 
         if (!availabilityResponse?.status) {
@@ -931,7 +938,8 @@ export default function CheckoutCard({
                   .filter(Boolean),
               }))
             : [],
-        }))
+        })),
+        { orderType: deliveryMode }
       );
 
       if (!availabilityResponse?.status) {
