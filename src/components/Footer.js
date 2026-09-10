@@ -26,7 +26,7 @@ const Footer = () => {
               </Link>
             </div>
             <p className="text-sm leading-relaxed text-[#9c9184] max-w-xs">
-              Né à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et originaux.
+              Fondé à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et originaux.
             </p>
             <div className="flex gap-4 items-center mt-2">
               <a
@@ -113,7 +113,7 @@ const Footer = () => {
             © {new Date().getFullYear()} Casse-Croûte Courteau. Tous droits réservés.
           </p>
           <div className="text-[10px] font-bold text-[#6e6659] uppercase tracking-widest">
-            Fier d&apos;être d&apos;ici
+            Fièrement d&apos;ici
           </div>
         </div>
       </div>

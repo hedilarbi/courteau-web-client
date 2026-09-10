@@ -153,7 +153,7 @@ export default async function HomeV2() {
             </Link>
           </div>
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs font-semibold text-[#8a8175]">
-            <span>★ 4,7 / 5 sur Google</span><span>Livraison Trois-Rivières</span><span>Ouvert 7 jours</span>
+            <span>Poutine #1 en Maurice lors de la poutine week</span><span>Livraison Trois-Rivières</span><span>Ouvert 7 jours</span>
           </div>
         </div>
         <div className="relative mx-3 mt-4 md:mx-0">
@@ -193,7 +193,7 @@ export default async function HomeV2() {
       <section id="offres" className="bg-[#1a1714] px-5 py-14 text-[#fffdf9] md:px-14 md:py-16">
         <div className="mx-auto max-w-[1350px]">
           <div className="mb-7 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div><SectionEyebrow light>Nos offres actuelle</SectionEyebrow><h2 className="home-section-heading">Nos offres <span className="text-pr">à saisir</span></h2><p className="mt-4 text-sm text-white/60">Des prix généreux pour encore mieux manger.</p></div>
+            <div><SectionEyebrow light>Nos offres actuelles</SectionEyebrow><h2 className="home-section-heading">Nos offres <span className="text-pr">à saisir</span></h2><p className="mt-4 text-sm text-white/60">Un bon repas à bon prix.</p></div>
             {offers.length > 0 && <span className="self-start rounded-full border border-pr/50 bg-pr/10 px-4 py-2 text-xs font-bold text-pr md:self-auto">● Offres en cours</span>}
           </div>
           {offers.length ? <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
@@ -276,13 +276,13 @@ export default async function HomeV2() {
           <SectionEyebrow>Depuis 2020</SectionEyebrow>
           <h2 className="home-section-heading">Fier d’être d’ici.</h2>
           <p className="mt-6 max-w-2xl leading-[1.75] text-[#6e6659]">
-            Né à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et originaux. Aujourd’hui, nos cinq succursales gardent ce même esprit de proximité.
+            Fondé à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et originaux. Aujourd’hui, nos cinq succursales gardent ce même esprit de proximité.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-2">
             {[['Frais', 'Préparé avec soin'], ['Généreux', 'Des vraies portions'], ['Local', 'Fier de la Mauricie']].map(([title, copy]) => (
               <div key={title} className="border-l-4 border-pr bg-white p-3 md:p-4">
                 <strong className="block font-bebas-neue text-xl font-normal tracking-wide md:text-2xl">{title}</strong>
-                <span className="mt-1 block text-[10px] text-[#6e6659] md:text-xs">{copy}</span>
+
               </div>
             ))}
           </div>
