@@ -8,7 +8,7 @@ export default function MenuCategoriesSection({
   if (!categories?.length) return null;
 
   return (
-    <nav aria-label="Catégories du menu" className="sticky top-20 z-20 flex gap-2 overflow-x-auto border-b border-[#ece5d9] bg-white/95 px-5 py-3 shadow-sm backdrop-blur md:top-28 md:px-14">
+    <nav aria-label="Catégories du menu" className="sticky top-28 z-20 flex gap-2 overflow-x-auto border-b border-[#ece5d9] bg-white/95 px-5 py-3 shadow-sm backdrop-blur md:top-37 md:px-14">
       {categories.map((category) => {
         const active = category.slug === selectedCategory;
         const href = `/menu/${category.slug}`;

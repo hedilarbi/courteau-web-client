@@ -4,6 +4,7 @@ import React from "react";
 import { FaPhoneAlt } from "react-icons/fa";
 import { FaFacebook } from "react-icons/fa6";
 import { AiFillInstagram } from "react-icons/ai";
+import { FaTiktok } from "react-icons/fa";
 
 const Footer = () => {
   return (
@@ -45,6 +46,15 @@ const Footer = () => {
                 aria-label="Instagram"
               >
                 <AiFillInstagram size={22} />
+              </a>
+              <a
+                href="https://www.tiktok.com/@cassecroutecourteau"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="grid place-items-center w-11 h-11 rounded-full bg-[#2a2420] text-white transition hover:-translate-y-1 hover:bg-pr hover:text-black hover:shadow-[0_4px_14px_rgba(247,166,0,.4)]"
+                aria-label="TikTok"
+              >
+                <FaTiktok size={19} />
               </a>
             </div>
           </div>
