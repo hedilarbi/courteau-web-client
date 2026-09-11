@@ -2,6 +2,7 @@ import MenuContent from "@/components/MenuContent";
 import { SITE_URL } from "@/lib/siteUrl";
 import { notFound } from "next/navigation";
 import Script from "next/script";
+import { categorySeo } from "@/lib/categorySeo";
 
 export const dynamic = "force-dynamic";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://api.lecourteau.com/api";
@@ -38,12 +39,21 @@ function sortItems(items = []) {
 }
 
 export async function generateMetadata({ params }) {
-  const { categorySlug } = await params;
-  const readableName = decodeURIComponent(categorySlug).replaceAll("-", " ");
+  const { categorySlug: encodedSlug } = await params;
+  const categorySlug = decodeURIComponent(encodedSlug);
+
+  const apiCategories = await fetchJson("/categories", "Impossible de récupérer les catégories.").catch(() => []);
+  const categories = [...specialCategories, ...(Array.isArray(apiCategories) ? apiCategories : [])];
+  const activeCategory = categories.find((c) => c.slug === categorySlug);
+
+  const categoryName = activeCategory?.name || categorySlug.replaceAll("-", " ");
+  const seo = categorySeo[categorySlug];
+
   return {
-    title: `${readableName} – Menu | Casse-Croûte Courteau`,
-    description: `Découvrez nos ${readableName} et commandez en ligne au Casse-Croûte Courteau.`,
-    alternates: { canonical: `/menu/${categorySlug}` },
+    title: seo?.title ? { absolute: seo.title } : `${categoryName} – Menu | Casse-Croûte Courteau`,
+    description: seo?.description || `Découvrez la catégorie ${categoryName} du menu du Casse-Croûte Courteau et consultez les articles disponibles.`,
+    alternates: { canonical: `https://www.lecourteau.com/menu/${encodeURIComponent(categorySlug)}` },
+    robots: { index: true, follow: true },
   };
 }
 
@@ -72,9 +82,36 @@ export default async function MenuCategoryPage({ params }) {
       name: item.name, image: item.image,
     })),
   };
+  const seoConfig = categorySeo[categorySlug] || null;
+
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Accueil",
+        "item": "https://www.lecourteau.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Menu",
+        "item": "https://www.lecourteau.com/menu"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": activeCategory.name,
+        "item": `https://www.lecourteau.com/menu/${encodeURIComponent(categorySlug)}`
+      }
+    ]
+  };
+
   return <div className="md:pt-28 pt-16">
-    <h1 className="sr-only">Menu {activeCategory.name}</h1>
-    <MenuContent categories={categories} items={items} selectedCategory={categorySlug} searchArticles={Array.isArray(searchArticles) ? searchArticles : []} searchOffers={Array.isArray(searchOffers) ? searchOffers : []} />
+    <MenuContent categories={categories} items={items} selectedCategory={categorySlug} searchArticles={Array.isArray(searchArticles) ? searchArticles : []} searchOffers={Array.isArray(searchOffers) ? searchOffers : []} seoConfig={seoConfig} />
     {items.length > 0 && <Script id="ld-itemlist" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />}
+    <Script id="ld-breadcrumb" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c") }} />
   </div>;
 }
