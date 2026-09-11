@@ -50,7 +50,9 @@ export async function generateMetadata({ params }) {
   const seo = categorySeo[categorySlug];
 
   return {
-    title: seo?.title ? { absolute: seo.title } : `${categoryName} – Menu | Casse-Croûte Courteau`,
+    title: {
+      absolute: seo?.title || `${categoryName} – Menu | Casse-Croûte Courteau`,
+    },
     description: seo?.description || `Découvrez la catégorie ${categoryName} du menu du Casse-Croûte Courteau et consultez les articles disponibles.`,
     alternates: { canonical: `https://www.lecourteau.com/menu/${encodeURIComponent(categorySlug)}` },
     robots: { index: true, follow: true },
