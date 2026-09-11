@@ -8,4 +8,20 @@ module.exports = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/menu",
+        has: [
+          {
+            type: "query",
+            key: "category",
+            value: "(?<slug>.+)",
+          },
+        ],
+        destination: "/menu/:slug",
+        permanent: true,
+      },
+    ];
+  },
 };

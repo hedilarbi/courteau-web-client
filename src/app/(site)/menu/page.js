@@ -9,12 +9,7 @@ export const metadata = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://api.lecourteau.com/api";
 
-export default async function MenuIndexPage({ searchParams }) {
-  const query = await searchParams;
-  if (typeof query?.category === "string" && query.category) {
-    const { permanentRedirect } = await import("next/navigation");
-    permanentRedirect(`/menu/${encodeURIComponent(query.category)}`);
-  }
+export default async function MenuIndexPage() {
   const [categoriesResponse, articlesResponse, offersResponse] = await Promise.all([
     fetch(`${API_URL}/categories`, { cache: "no-store" }),
     fetch(`${API_URL}/menuItems`, { cache: "no-store" }),
