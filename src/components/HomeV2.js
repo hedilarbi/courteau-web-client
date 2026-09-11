@@ -153,7 +153,7 @@ export default async function HomeV2() {
             </Link>
           </div>
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs font-semibold text-[#8a8175]">
-            <span>Poutine #1 en Maurice lors de la poutine week</span><span>Livraison Trois-Rivières</span><span>Ouvert 7 jours</span>
+            <span>Poutines généreuses à Trois-Rivières</span><span>Livraison Trois-Rivières</span><span>Ouvert 7 jours</span>
           </div>
         </div>
         <div className="relative mx-3 mt-4 md:mx-0">

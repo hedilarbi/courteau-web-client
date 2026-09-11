@@ -41,12 +41,21 @@ export const metadata = {
     description:
       "Venez découvrir les généreuses et délicieuses poutines ou les succulentes pizzas du Casse-Croûte Courteau. Le meilleur menu à Trois-Rivières.",
     locale: "fr_CA",
+    images: [
+      {
+        url: `${BASE}/preview.png`,
+        width: 1200,
+        height: 630,
+        alt: "Casse-Croûte Courteau",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: BRAND,
     description:
       "Venez découvrir les généreuses et délicieuses poutines ou les succulentes pizzas du Casse-Croûte Courteau. Le meilleur menu à Trois-Rivières.",
+    images: [`${BASE}/preview.png`],
   },
   icons: {
     icon: "/favicon.ico",
