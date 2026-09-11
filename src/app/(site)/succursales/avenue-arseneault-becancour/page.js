@@ -63,8 +63,12 @@ export default function AvenueArseneaultPage() {
           </ol>
         </nav>
         <h1 className="font-bebas-neue text-3xl font-bold md:text-5xl">
-          Casse-Croûte Courteau – Avenue Arseneault
+          Casse-Croûte Courteau – Bécancour, Avenue Arseneault
         </h1>
+
+        <p className="mt-4 font-inter text-base leading-relaxed text-gray-700 md:text-lg">
+          Découvrez notre restaurant Casse-Croûte Courteau à Bécancour, situé au 3840 Avenue Arseneault. Retrouvez nos poutines, pizzas, déjeuners et autres classiques du menu, puis commandez en ligne.
+        </p>
 
         <address className="mt-6 font-inter text-base not-italic leading-7 text-gray-700 md:text-lg">
           3840 Avenue Arseneault
