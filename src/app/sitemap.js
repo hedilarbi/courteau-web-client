@@ -54,15 +54,17 @@ function getProductLastModified(product) {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
-async function fetchMenuProducts() {
+async function fetchCategoriesAndProducts() {
   try {
     const categoriesResponse = await fetch(`${API_URL}/categories`, {
       cache: "no-store",
     });
-    if (!categoriesResponse.ok) return [];
+    if (!categoriesResponse.ok) return { categories: [], products: [] };
 
     const categories = await categoriesResponse.json();
-    const categorySlugs = (Array.isArray(categories) ? categories : [])
+    const validCategories = Array.isArray(categories) ? categories : [];
+
+    const categorySlugs = validCategories
       .map((category) => category?.slug)
       .filter(Boolean);
 
@@ -79,11 +81,13 @@ async function fetchMenuProducts() {
       }),
     );
 
-    return results.flatMap((result) =>
+    const products = results.flatMap((result) =>
       result.status === "fulfilled" ? result.value : [],
     );
+
+    return { categories: validCategories, products };
   } catch {
-    return [];
+    return { categories: [], products: [] };
   }
 }
 
@@ -150,7 +154,27 @@ export default async function sitemap() {
     };
   });
 
-  const products = await fetchMenuProducts();
+  const { categories, products } = await fetchCategoriesAndProducts();
+
+  const categoryPagesRaw = categories
+    .filter((cat) => typeof cat?.slug === "string" && cat.slug.trim() !== "")
+    .map((cat) => {
+      const url = `${SITE_URL}/menu/${encodeURIComponent(cat.slug.trim())}`;
+      const lastModified = getProductLastModified(cat);
+
+      return {
+        url,
+        ...(lastModified ? { lastModified } : {}),
+      };
+    });
+
+  const existingUrls = new Set([...staticPages, ...blogPages].map(p => p.url));
+  const categoryPages = categoryPagesRaw.filter((p) => {
+    if (existingUrls.has(p.url)) return false;
+    existingUrls.add(p.url);
+    return true;
+  });
+
   const uniqueProducts = [
     ...new Map(
       products
@@ -177,5 +201,11 @@ export default async function sitemap() {
     url: `${SITE_URL}/menu/offres/${encodeURIComponent(slug)}`,
   }));
 
-  return [...staticPages, ...blogPages, ...productPages, ...offerPages];
+  return [
+    ...staticPages,
+    ...blogPages,
+    ...categoryPages,
+    ...productPages,
+    ...offerPages,
+  ];
 }
