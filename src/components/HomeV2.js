@@ -228,7 +228,7 @@ export default async function HomeV2() {
 
       <section className="border-t border-[#ece5d9] bg-[#f6f1e8] px-5 py-14 md:px-14 md:py-16">
         <div className="mx-auto grid max-w-[1350px] items-center gap-9 md:grid-cols-[1.05fr_.95fr]">
-          <div><SectionEyebrow>Application Courteau</SectionEyebrow><h2 className="home-section-heading">Commandez facilement avec l&apos;application</h2><p className="mt-5 max-w-lg leading-relaxed text-[#55504a]">Vos commandes favorites enregistrées, les offres membres en premier et les points qui s’accumulent tout seuls.</p><div className="mt-6 flex flex-wrap gap-3"><StoreLink href="https://apps.apple.com/us/app/casse-croûte-courteau/id6476014838" icon={<FaApple />} label="App Store" /><StoreLink href="https://play.google.com/store/apps/details?id=com.hedilarbi95.lecourteauclient" icon={<FaGooglePlay />} label="Google Play" /><Link href="/menu" className="rounded-xl border-2 border-[#d8d0c3] px-5 py-3 text-sm font-bold hover:border-pr">Commander sur le web</Link></div></div>
+          <div><SectionEyebrow>Application Courteau</SectionEyebrow><h2 className="home-section-heading">Commandez facilement avec l&apos;application</h2><p className="mt-5 max-w-lg leading-relaxed text-[#55504a]">Vos commandes favorites enregistrées, les offres membres en premier et les points qui s’accumulent automatiquement.</p><div className="mt-6 flex flex-wrap gap-3"><StoreLink href="https://apps.apple.com/us/app/casse-croûte-courteau/id6476014838" icon={<FaApple />} label="App Store" /><StoreLink href="https://play.google.com/store/apps/details?id=com.hedilarbi95.lecourteauclient" icon={<FaGooglePlay />} label="Google Play" /><Link href="/menu" className="rounded-xl border-2 border-[#d8d0c3] px-5 py-3 text-sm font-bold hover:border-pr">Commander sur le web</Link></div></div>
           <div className="relative aspect-[1.7] overflow-hidden rounded-2xl bg-[#e7ddce]"><Image src="/hero2.jpg" alt="Commande Courteau sur mobile" fill sizes="(max-width:768px) 100vw, 45vw" className="object-cover" /></div>
         </div>
       </section>
@@ -274,7 +274,7 @@ export default async function HomeV2() {
         </div>
         <div>
           <SectionEyebrow>Depuis 2020</SectionEyebrow>
-          <h2 className="home-section-heading">Fier d’être d’ici.</h2>
+          <h2 className="home-section-heading">Fièrement d’ici.</h2>
           <p className="mt-6 max-w-2xl leading-[1.75] text-[#6e6659]">
             Fondé à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et originaux. Aujourd’hui, nos cinq succursales gardent ce même esprit de proximité.
           </p>
