@@ -136,7 +136,9 @@ export default async function HomeV2() {
 
       <section className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 pb-12 pt-10 md:grid-cols-[1.05fr_.95fr] md:px-14 md:pb-16 md:pt-14 lg:gap-16">
         <div>
-
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-pr px-4 py-2 text-sm font-bold text-black shadow-sm">
+            🏆 Poutine #1 en Mauricie lors de la Poutine Week
+          </div>
           <h1 className="max-w-3xl font-bebas-neue text-[3rem] leading-[.9] tracking-wide sm:text-[4rem] lg:text-[5rem] uppercase">
             CASSE-CROÛTE COURTEAU <span className="home-highlight"> FRAIS. GÉNÉREUX. UNIQUE.</span><br />
 
@@ -153,7 +155,7 @@ export default async function HomeV2() {
             </Link>
           </div>
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs font-semibold text-[#8a8175]">
-            <span>Poutine #1 en Mauricie lors de la poutine week</span><span>Livraison Trois-Rivières</span><span>Ouvert 7 jours</span>
+            <span>Poutine généreuse à Trois-Rivières</span><span>Livraison Trois-Rivières</span><span>Ouvert 7 jours</span>
           </div>
         </div>
         <div className="relative mx-3 mt-4 md:mx-0">
