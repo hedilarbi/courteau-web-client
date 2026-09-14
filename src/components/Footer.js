@@ -73,6 +73,7 @@ const Footer = () => {
           <div className="md:col-span-2 flex flex-col gap-5">
             <h3 className="font-bebas-neue text-2xl tracking-wide text-white">Infos</h3>
             <ul className="flex flex-col gap-3 text-sm font-semibold text-[#9c9184]">
+              <li><Link href="/livraison" className="hover:text-pr transition">Livraison</Link></li>
               <li><Link href="/blogue" className="hover:text-pr transition">Blogue</Link></li>
               <li><Link href="/contact" className="hover:text-pr transition">Contact</Link></li>
               <li><Link href="/termes-conditions" className="hover:text-pr transition">Conditions</Link></li>

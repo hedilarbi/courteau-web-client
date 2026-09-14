@@ -143,6 +143,7 @@ export default async function sitemap() {
     {
       url: `${SITE_URL}/succursales/boulevard-trudel-est-saint-boniface`,
     },
+    { url: `${SITE_URL}/livraison` },
   ];
 
   const blogPages = blogueList.filter(isPublishedArticle).map((article) => {
