@@ -2,11 +2,10 @@ import Link from "next/link";
 
 export const metadata = {
   title: {
-    absolute:
-      "Casse-Croûte Courteau – Chemin Ste-Marguerite | Trois-Rivières",
+    absolute: "Restaurant à Pointe-du-Lac | Casse-Croûte Courteau",
   },
   description:
-    "Découvrez le Casse-Croûte Courteau situé au 9866 Chemin Ste-Marguerite à Trois-Rivières. Consultez le menu et commandez en ligne.",
+    "Découvrez le Casse-Croûte Courteau à Pointe-du-Lac, situé au 9866 Chemin Ste-Marguerite à Trois-Rivières. Consultez le menu et commandez en ligne.",
   alternates: {
     canonical:
       "https://www.lecourteau.com/succursales/chemin-ste-marguerite-trois-rivieres",
@@ -45,7 +44,7 @@ const breadcrumbJsonLd = {
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Accueil", item: "https://www.lecourteau.com" },
     { "@type": "ListItem", position: 2, name: "Succursales", item: "https://www.lecourteau.com/succursales" },
-    { "@type": "ListItem", position: 3, name: "Chemin Ste-Marguerite", item: "https://www.lecourteau.com/succursales/chemin-ste-marguerite-trois-rivieres" },
+    { "@type": "ListItem", position: 3, name: "Pointe-du-Lac", item: "https://www.lecourteau.com/succursales/chemin-ste-marguerite-trois-rivieres" },
   ],
 };
 
@@ -59,12 +58,16 @@ export default function CheminSteMargueritePage() {
             <li aria-hidden="true">›</li>
             <li><Link href="/succursales" className="hover:underline">Succursales</Link></li>
             <li aria-hidden="true">›</li>
-            <li aria-current="page" className="text-gray-900 font-medium">Chemin Ste-Marguerite</li>
+            <li aria-current="page" className="text-gray-900 font-medium">Pointe-du-Lac</li>
           </ol>
         </nav>
         <h1 className="font-bebas-neue text-3xl font-bold md:text-5xl">
-          Casse-Croûte Courteau – Chemin Ste-Marguerite
+          Casse-Croûte Courteau – Pointe-du-Lac
         </h1>
+
+        <p className="mt-4 font-inter text-base leading-relaxed text-gray-700 md:text-lg">
+          Découvrez notre restaurant Casse-Croûte Courteau à Pointe-du-Lac, situé au 9866 Chemin Ste-Marguerite à Trois-Rivières. Consultez le menu et commandez en ligne.
+        </p>
 
         <address className="mt-6 font-inter text-base not-italic leading-7 text-gray-700 md:text-lg">
           9866 Chemin Ste-Marguerite
