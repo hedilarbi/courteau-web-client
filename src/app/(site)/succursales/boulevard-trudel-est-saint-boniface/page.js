@@ -2,11 +2,10 @@ import Link from "next/link";
 
 export const metadata = {
   title: {
-    absolute:
-      "Casse-Croûte Courteau – Boulevard Trudel Est | Saint-Boniface",
+    absolute: "Restaurant à Saint-Boniface | Casse-Croûte Courteau",
   },
   description:
-    "Découvrez le Casse-Croûte Courteau situé au 1620 Boulevard Trudel Est à Saint-Boniface. Consultez le menu et commandez en ligne.",
+    "Découvrez le Casse-Croûte Courteau à Saint-Boniface, situé au 1620 Boulevard Trudel Est. Consultez le menu et commandez en ligne.",
   alternates: {
     canonical:
       "https://www.lecourteau.com/succursales/boulevard-trudel-est-saint-boniface",
@@ -45,7 +44,7 @@ const breadcrumbJsonLd = {
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Accueil", item: "https://www.lecourteau.com" },
     { "@type": "ListItem", position: 2, name: "Succursales", item: "https://www.lecourteau.com/succursales" },
-    { "@type": "ListItem", position: 3, name: "Boulevard Trudel Est", item: "https://www.lecourteau.com/succursales/boulevard-trudel-est-saint-boniface" },
+    { "@type": "ListItem", position: 3, name: "Saint-Boniface", item: "https://www.lecourteau.com/succursales/boulevard-trudel-est-saint-boniface" },
   ],
 };
 
@@ -59,12 +58,16 @@ export default function BoulevardTrudelEstPage() {
             <li aria-hidden="true">›</li>
             <li><Link href="/succursales" className="hover:underline">Succursales</Link></li>
             <li aria-hidden="true">›</li>
-            <li aria-current="page" className="text-gray-900 font-medium">Boulevard Trudel Est</li>
+            <li aria-current="page" className="text-gray-900 font-medium">Saint-Boniface</li>
           </ol>
         </nav>
         <h1 className="font-bebas-neue text-3xl font-bold md:text-5xl">
-          Casse-Croûte Courteau – Boulevard Trudel Est
+          Casse-Croûte Courteau – Saint-Boniface
         </h1>
+
+        <p className="mt-4 font-inter text-base leading-relaxed text-gray-700 md:text-lg">
+          Découvrez notre restaurant Casse-Croûte Courteau à Saint-Boniface, situé au 1620 Boulevard Trudel Est. Consultez le menu et commandez en ligne.
+        </p>
 
         <address className="mt-6 font-inter text-base not-italic leading-7 text-gray-700 md:text-lg">
           1620 Boulevard Trudel Est
