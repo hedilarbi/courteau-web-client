@@ -2,10 +2,10 @@ import Link from "next/link";
 
 export const metadata = {
   title: {
-    absolute: "Casse-Croûte Courteau – Avenue Arseneault | Bécancour",
+    absolute: "Restaurant à Bécancour | Casse-Croûte Courteau",
   },
   description:
-    "Découvrez le Casse-Croûte Courteau situé au 3840 Avenue Arseneault à Bécancour. Consultez le menu et commandez en ligne.",
+    "Découvrez le Casse-Croûte Courteau à Bécancour, dans le secteur Saint-Grégoire, au 3840 Avenue Arseneault. Consultez le menu et commandez en ligne.",
   alternates: {
     canonical:
       "https://www.lecourteau.com/succursales/avenue-arseneault-becancour",
@@ -45,7 +45,7 @@ const breadcrumbJsonLd = {
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Accueil", item: "https://www.lecourteau.com" },
     { "@type": "ListItem", position: 2, name: "Succursales", item: "https://www.lecourteau.com/succursales" },
-    { "@type": "ListItem", position: 3, name: "Avenue Arseneault", item: "https://www.lecourteau.com/succursales/avenue-arseneault-becancour" },
+    { "@type": "ListItem", position: 3, name: "Bécancour – Saint-Grégoire", item: "https://www.lecourteau.com/succursales/avenue-arseneault-becancour" },
   ],
 };
 
@@ -59,15 +59,15 @@ export default function AvenueArseneaultPage() {
             <li aria-hidden="true">›</li>
             <li><Link href="/succursales" className="hover:underline">Succursales</Link></li>
             <li aria-hidden="true">›</li>
-            <li aria-current="page" className="text-gray-900 font-medium">Avenue Arseneault</li>
+            <li aria-current="page" className="text-gray-900 font-medium">Bécancour – Saint-Grégoire</li>
           </ol>
         </nav>
         <h1 className="font-bebas-neue text-3xl font-bold md:text-5xl">
-          Casse-Croûte Courteau – Bécancour, Avenue Arseneault
+          Casse-Croûte Courteau – Bécancour, secteur Saint-Grégoire
         </h1>
 
         <p className="mt-4 font-inter text-base leading-relaxed text-gray-700 md:text-lg">
-          Découvrez notre restaurant Casse-Croûte Courteau à Bécancour, situé au 3840 Avenue Arseneault. Retrouvez nos poutines, pizzas, déjeuners et autres classiques du menu, puis commandez en ligne.
+          Découvrez notre restaurant Casse-Croûte Courteau à Bécancour, dans le secteur Saint-Grégoire, situé au 3840 Avenue Arseneault. Retrouvez nos poutines, pizzas, déjeuners et autres classiques du menu, puis commandez en ligne.
         </p>
 
         <address className="mt-6 font-inter text-base not-italic leading-7 text-gray-700 md:text-lg">
