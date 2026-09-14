@@ -278,7 +278,7 @@ export default async function HomeV2() {
           <SectionEyebrow>Depuis 2020</SectionEyebrow>
           <h2 className="home-section-heading">Fièrement d’ici.</h2>
           <p className="mt-6 max-w-2xl leading-[1.75] text-[#6e6659]">
-            Fondé à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : préparer des repas frais, généreux et originaux. Aujourd’hui, nos cinq succursales gardent ce même esprit de proximité.
+            Fondé à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : proposer une restauration rapide fraîche, généreuse et originale, dans l’esprit du casse-croûte québécois. Aujourd’hui, nos cinq succursales gardent ce même esprit de proximité.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-2">
             {[['Frais', 'Préparé avec soin'], ['Généreux', 'Des vraies portions'], ['Local', 'Fier de la Mauricie']].map(([title, copy]) => (
