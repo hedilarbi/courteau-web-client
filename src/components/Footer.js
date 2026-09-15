@@ -82,7 +82,11 @@ const Footer = () => {
 
           {/* Succursales */}
           <div className="md:col-span-2 flex flex-col gap-5">
-            <h3 className="font-bebas-neue text-2xl tracking-wide text-white">Succursales</h3>
+            <h3 className="font-bebas-neue text-2xl tracking-wide text-white">
+              <Link href="/succursales" className="hover:text-pr transition">
+                Succursales
+              </Link>
+            </h3>
             <ul className="flex flex-col gap-3 text-sm font-semibold text-[#9c9184]">
               <li><Link href="/succursales/des-prairies-trois-rivieres" className="hover:text-pr transition">Cap-de-la-Madeleine</Link></li>
               <li><Link href="/succursales/boulevard-des-forges-trois-rivieres" className="hover:text-pr transition">Des Forges</Link></li>

@@ -144,7 +144,11 @@ export default async function HomeV2() {
 
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-[#55504a] md:text-lg">
-            Savourez le vrai goût du casse-croûte avec nos poutines généreuses, nos pizzas savoureuses, nos burgers et hot-dogs audacieux, et bien plus encore ! Commandez en ligne dès maintenant et retrouvez tous vos classiques Courteau.
+            Savourez le vrai goût du casse-croûte avec nos{" "}
+            <Link href="/menu/nos-poutines-classiques" className="font-semibold text-pr hover:underline">poutines généreuses</Link>
+            , nos{" "}
+            <Link href="/menu/nos-pizzas" className="font-semibold text-pr hover:underline">pizzas savoureuses</Link>
+            , nos burgers et hot-dogs audacieux, et bien plus encore ! Commandez en ligne dès maintenant et retrouvez tous vos classiques Courteau.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/menu" className="rounded-xl bg-pr px-7 py-4 font-bebas-neue text-xl tracking-wider transition hover:-translate-y-1 hover:shadow-[0_14px_28px_rgba(247,166,0,.4)]">

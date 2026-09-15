@@ -33,16 +33,26 @@ const blogueList = [
     title: "Faites-vous livrer du Courteau à la maison !",
     slug: "livraison-maison",
     content:
-      "Toutes nos succursales offrent la livraison pour déguster nos délicieux plats dans le confort de votre foyer !",
+      "Envie de déguster vos classiques Courteau sans sortir de chez vous ? Découvrez comment commander nos plats et vous régaler dans le confort de votre foyer.",
     image: "/blogue2.jpg",
     link: "/blogue/livraison-maison",
     full_content:
-      "Toutes nos succursales offrent la livraison pour déguster nos délicieux plats dans le confort de votre foyer !",
+      "Vous avez envie d’un bon repas mais vous préférez rester confortablement chez vous ? Il est possible de commander vos plats Courteau favoris pour les déguster à la maison.",
     paragraphs: [
       {
-        subtitle: "Pas besoin de vous déplacer en succursale",
+        subtitle: "Une livraison selon votre adresse",
         content:
-          "Grâce à notre application mobile Courteau, vous pouvez déguster une bonne poutine ou une pizza bien chaude sans devoir vous déplacer. En voilà une bonne façon de vous gâter!",
+          "La disponibilité de notre [service de livraison](/livraison) dépend de l’adresse saisie lors de la commande. Votre adresse est vérifiée afin de confirmer si la livraison est disponible chez vous.",
+      },
+      {
+        subtitle: "De la cuisine à votre table",
+        content:
+          "Envie d’une de nos [poutines](/menu/nos-poutines-classiques), de nos [pizzas](/menu/nos-pizzas) ou d’un autre classique du menu ? Consultez les choix disponibles et passez votre commande en ligne.",
+      },
+      {
+        subtitle: "Comment vérifier votre admissibilité ?",
+        content:
+          "Pour comprendre le fonctionnement du service et vérifier la disponibilité de la livraison à votre adresse, consultez notre [page Livraison](/livraison).",
       },
     ],
   },

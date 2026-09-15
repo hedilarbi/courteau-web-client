@@ -22,6 +22,43 @@ function summarize(text = "", max = 160) {
   return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
 }
 
+function stripLinks(text) {
+  if (!text) return text;
+  return String(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");
+}
+
+function renderWithLinks(text) {
+  if (!text) return null;
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const linkText = match[1];
+    const linkUrl = match[2];
+
+    if (linkUrl.startsWith("/")) {
+      parts.push(
+        <Link key={match.index} href={linkUrl} className="font-semibold text-pr hover:underline">
+          {linkText}
+        </Link>
+      );
+    } else {
+      parts.push(linkText);
+    }
+    lastIndex = linkRegex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+}
+
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const post = (blogueList || []).find((b) => b.slug === slug);
@@ -35,9 +72,11 @@ export async function generateMetadata({ params }) {
   const description =
     post.excerpt ||
     summarize(
-      post.full_content ||
-        post.paragraphs?.map((p) => p.content).join(" ") ||
-        ""
+      stripLinks(
+        post.full_content ||
+          post.paragraphs?.map((p) => p.content).join(" ") ||
+          ""
+      )
     );
   const canonical = `${BASE}/blogue/${post.slug}`;
   const imgAbs = (post.image || "").startsWith("http")
@@ -85,12 +124,14 @@ export default async function Page({ params }) {
   const authorName = blogue.author || "Équipe Le Courteau";
 
   // Temps de lecture (approx. 200 mots/min)
-  const bodyText = [
-    blogue.full_content || "",
-    ...(Array.isArray(blogue.paragraphs)
-      ? blogue.paragraphs.map((p) => p.content || "")
-      : []),
-  ].join(" ");
+  const bodyText = stripLinks(
+    [
+      blogue.full_content || "",
+      ...(Array.isArray(blogue.paragraphs)
+        ? blogue.paragraphs.map((p) => p.content || "")
+        : []),
+    ].join(" ")
+  );
   const words = bodyText.trim().split(/\s+/).filter(Boolean).length;
   const readMins = Math.max(1, Math.round(words / 200));
 
@@ -177,7 +218,7 @@ export default async function Page({ params }) {
 
           {blogue.full_content && (
             <p className="text-lg/relaxed md:text-xl font-inter mb-6 font-medium">
-              {blogue.full_content}
+              {renderWithLinks(blogue.full_content)}
             </p>
           )}
         </article>
@@ -210,7 +251,7 @@ export default async function Page({ params }) {
                   </h2>
                 )}
                 <p className="text-lg/relaxed font-inter">
-                  {paragraph.content}
+                  {renderWithLinks(paragraph.content)}
                 </p>
               </section>
             ))}

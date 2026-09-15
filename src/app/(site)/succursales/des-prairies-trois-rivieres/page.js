@@ -2,10 +2,10 @@ import Link from "next/link";
 
 export const metadata = {
   title: {
-    absolute: "Casse-Croûte Courteau – Rue des Prairies | Trois-Rivières",
+    absolute: "Restaurant au Cap-de-la-Madeleine | Casse-Croûte Courteau",
   },
   description:
-    "Découvrez le Casse-Croûte Courteau situé au 3331 Rue des Prairies à Trois-Rivières. Consultez le menu et commandez en ligne.",
+    "Découvrez le Casse-Croûte Courteau au Cap-de-la-Madeleine, situé au 3331 Rue des Prairies. Consultez le menu et commandez en ligne.",
   alternates: {
     canonical:
       "https://www.lecourteau.com/succursales/des-prairies-trois-rivieres",
@@ -58,7 +58,7 @@ const breadcrumbJsonLd = {
     {
       "@type": "ListItem",
       position: 3,
-      name: "Rue des Prairies",
+      name: "Cap-de-la-Madeleine",
       item: "https://www.lecourteau.com/succursales/des-prairies-trois-rivieres",
     },
   ],
@@ -79,13 +79,20 @@ export default function DesPrairiesPage() {
             </li>
             <li aria-hidden="true">›</li>
             <li aria-current="page" className="text-gray-900 font-medium">
-              Rue des Prairies
+              Cap-de-la-Madeleine
             </li>
           </ol>
         </nav>
         <h1 className="font-bebas-neue text-3xl font-bold md:text-5xl">
-          Casse-Croûte Courteau – Rue des Prairies
+          Casse-Croûte Courteau – Cap-de-la-Madeleine
         </h1>
+
+        <p className="mt-4 font-inter text-base leading-relaxed text-gray-700 md:text-lg">
+          Découvrez notre restaurant Casse-Croûte Courteau au
+          Cap-de-la-Madeleine, situé au 3331 Rue des Prairies à Trois-Rivières.
+          Retrouvez nos poutines, pizzas, déjeuners et autres classiques du
+          menu, puis commandez en ligne.
+        </p>
 
         <address className="mt-6 font-inter text-base not-italic leading-7 text-gray-700 md:text-lg">
           3331 Rue des Prairies
