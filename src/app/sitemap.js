@@ -128,6 +128,7 @@ export default async function sitemap() {
   const staticPages = [
     { url: `${SITE_URL}/` },
     { url: `${SITE_URL}/menu` },
+    { url: `${SITE_URL}/menu/offres` },
     { url: `${SITE_URL}/contact` },
     { url: `${SITE_URL}/blogue` },
     { url: `${SITE_URL}/a-propos` },
