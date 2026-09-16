@@ -2,7 +2,9 @@ import MenuLanding from "@/components/MenuLanding";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Le menu | Casse-Croûte Courteau",
+  title: {
+    absolute: "Le menu | Casse-Croûte Courteau"
+  },
   description: "Parcourez toutes les catégories du menu Courteau et commandez en ligne.",
   alternates: { canonical: "/menu" },
 };
