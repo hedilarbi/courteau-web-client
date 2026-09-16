@@ -133,6 +133,7 @@ export default async function sitemap() {
     { url: `${SITE_URL}/contact` },
     { url: `${SITE_URL}/blogue` },
     { url: `${SITE_URL}/a-propos` },
+    { url: `${SITE_URL}/abonnement` },
     { url: `${SITE_URL}/succursales` },
     { url: `${SITE_URL}/succursales/des-prairies-trois-rivieres` },
     {
