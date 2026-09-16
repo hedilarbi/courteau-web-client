@@ -6,9 +6,15 @@ export function middleware(request) {
   const hostname = hostHeader.split(",")[0].trim().split(":")[0].toLowerCase();
 
   if (request.nextUrl.pathname === "/menu") {
-    const category = request.nextUrl.searchParams.get("category");
+    let category = request.nextUrl.searchParams.get("category");
     if (category) {
       const destination = request.nextUrl.clone();
+
+      if (category === "nos-wraps-" && destination.searchParams.has("-pitas")) {
+        category = "nos-wraps-&-pitas";
+        destination.searchParams.delete("-pitas");
+      }
+
       destination.pathname = `/menu/${encodeURIComponent(category)}`;
       destination.searchParams.delete("category");
 
