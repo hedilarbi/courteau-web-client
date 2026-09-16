@@ -129,6 +129,7 @@ export default async function sitemap() {
     { url: `${SITE_URL}/` },
     { url: `${SITE_URL}/menu` },
     { url: `${SITE_URL}/menu/offres` },
+    { url: `${SITE_URL}/menu/recompenses` },
     { url: `${SITE_URL}/contact` },
     { url: `${SITE_URL}/blogue` },
     { url: `${SITE_URL}/a-propos` },
