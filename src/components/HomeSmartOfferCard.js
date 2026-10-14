@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { useSmartOffer } from "@/context/SmartOfferContext";
 import { logOfferEvent } from "@/services/PersonalizedOffersServices";
+import { getDeferredActivationLabel } from "@/utils/smartOfferHandlers";
 import { useRouter } from "next/navigation";
 
 const OFFER_ICONS = {
@@ -15,6 +16,9 @@ const OFFER_ICONS = {
   loyalty_points: "⭐",
   split_discount: "📉",
   buy_one_get_one: "🎁",
+  deferred_cashback: "🔒",
+  tiered_discount: "📈",
+  mystery_gift: "🎁",
 };
 
 const getOfferLabel = (offer) => {
@@ -47,6 +51,12 @@ const getOfferLabel = (offer) => {
         : "Article offert";
     case "loyalty_points":
       return `${Math.floor(Number(offer.bonusPoints) || 0)} points bonus dès ${Number(offer.bonusThreshold) || 0}$`;
+    case "deferred_cashback":
+      return `Cashback : ${offer.deferredDiscountValue || 0}% dès ${offer.deferredThreshold || offer.bonusThreshold || 0}$ (${getDeferredActivationLabel(offer)})`;
+    case "tiered_discount":
+      return `Jusqu'à ${offer.tieredDiscounts?.[offer.tieredDiscounts.length - 1]?.discountValue || 0}% de rabais progressif`;
+    case "mystery_gift":
+      return `Cadeau Mystère dès ${offer.mysteryThreshold || 0}$ d'achat`;
     default:
       return "Offre exclusive";
   }

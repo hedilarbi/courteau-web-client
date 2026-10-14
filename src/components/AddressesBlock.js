@@ -38,7 +38,7 @@ const AddressesBlock = ({
       : _localSetShowRestaurantModal;
 
   return (
-    <div className="rounded-md bg-white p-6 shadow-md mt-4">
+    <div id="checkout-addresses" className="rounded-md bg-white p-6 shadow-md mt-4">
       <h2 className="font-inter font-semibold text-black md:text-xl text-base">
         Adresses
       </h2>

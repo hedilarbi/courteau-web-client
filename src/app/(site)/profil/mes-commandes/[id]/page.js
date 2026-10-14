@@ -1,5 +1,6 @@
 "use client";
 import BackButton from "@/components/BackButton";
+import { getPersonalizedOfferBenefitLabel } from "@/utils/smartOfferDisplay";
 import Spinner from "@/components/spinner/Spinner";
 import { useUser } from "@/context/UserContext";
 import { getOrder } from "@/services/UserServices";
@@ -216,7 +217,9 @@ const Page = () => {
     subscriptionBenefits?.discountPercent,
     0,
   );
-  const orderDiscountPercent = toSafeNumber(order?.discount, 0);
+  // Une offre perso appliquée exclut 1re commande / abonnement côté serveur ; d'anciennes
+  // commandes ont pourtant gardé discount=20 envoyé par le client.
+  const orderDiscountPercent = order?.personalizedOfferApplied ? 0 : toSafeNumber(order?.discount, 0);
   const isFirstOrderDiscountApplied = orderDiscountPercent >= 20;
   const showSubscriptionDiscountInfo =
     subscriptionUsed &&
@@ -230,6 +233,36 @@ const Page = () => {
     0,
     toSafeNumber(order?.sub_total, 0) - toSafeNumber(order?.sub_total_after_discount, 0),
   );
+  const personalizedOffer =
+    order?.personalizedOfferApplied && order?.personalizedOffer && typeof order.personalizedOffer === "object"
+      ? order.personalizedOffer
+      : null;
+  const isPersonalizedGiftOffer = ["free_item", "buy_one_get_one", "mystery_gift"].includes(personalizedOffer?.offerType);
+  const personalizedGiftOrderItem = isPersonalizedGiftOffer
+    ? (order?.orderItems || []).find((item) => item?.isSmartOfferFreeItem)
+    : null;
+  const personalizedGiftItemName =
+    personalizedGiftOrderItem?.item?.name ||
+    personalizedOffer?.freeItem?.name ||
+    personalizedOffer?.freeItems?.[0]?.item?.name ||
+    "";
+  const personalizedOfferBenefitLabel = personalizedOffer
+    ? getPersonalizedOfferBenefitLabel(personalizedOffer, order, personalizedGiftItemName)
+    : "";
+  // Rabais fondu dans sub_total_after_discount : isolable seulement sans autre remise. Cashback
+  // (étape 1), livraison offerte, points bonus : aucune remise sur le sous-total, l'écart vient
+  // d'une autre remise (abonnement, 1re commande) et ne doit pas être attribué à l'offre.
+  const personalizedOfferHasNoSubtotalDiscount = ["deferred_cashback", "free_delivery", "loyalty_points"].includes(
+    personalizedOffer?.offerType,
+  );
+  const personalizedOfferSubtotalDiscount =
+    personalizedOffer && !isPersonalizedGiftOffer && !personalizedOfferHasNoSubtotalDiscount &&
+    !order?.promoCode && !order?.referralDiscountApplied
+      ? orderDiscountAmount
+      : 0;
+  const personalizedOfferSavedAmount = isPersonalizedGiftOffer
+    ? Math.max(0, toSafeNumber(personalizedGiftOrderItem?.basePrice, 0) - toSafeNumber(personalizedGiftOrderItem?.price, 0))
+    : personalizedOfferSubtotalDiscount;
 
   return (
     <div className="md:mt-28 mt-20  min-h-[80vh]  bg-[#F3F4F6] p-4 pb-20">
@@ -485,6 +518,24 @@ const Page = () => {
             )}
           </div>
 
+          {personalizedOffer && (
+            <div className="shadow-lg bg-white p-6 rounded-xl mb-6 border-l-4 border-[#F7A600]">
+              <p className="text-lg font-bold mb-2">Offre personnalisée</p>
+              {personalizedOffer.notificationTitle && (
+                <p className="font-semibold">{personalizedOffer.notificationTitle}</p>
+              )}
+              {personalizedOfferBenefitLabel && (
+                <p className="text-[#B45309] mt-1">{personalizedOfferBenefitLabel}</p>
+              )}
+              {personalizedOfferSavedAmount > 0 && (
+                <div className="flex justify-between mt-3 pt-3 border-t border-gray-200">
+                  <span className="text-gray-500">Économie</span>
+                  <span className="font-bold text-green-600">-${personalizedOfferSavedAmount.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="shadow-lg bg-white p-6 rounded-xl mb-6">
             <div className="space-y-3 ">
               <div className="flex justify-between">
@@ -513,6 +564,12 @@ const Page = () => {
                   <span className="text-red-600">
                     -${orderDiscountAmount.toFixed(2)}
                   </span>
+                </div>
+              )}
+              {personalizedOfferSubtotalDiscount > 0 && (
+                <div className="flex justify-between">
+                  <span className="font-semibold text-pr-500">Offre personnalisée</span>
+                  <span className="text-red-600">-${personalizedOfferSubtotalDiscount.toFixed(2)}</span>
                 </div>
               )}
               {order.promoCode && (

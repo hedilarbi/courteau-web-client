@@ -9,6 +9,8 @@ import {
 } from "@/services/FoodServices";
 import HomeClubSection from "./HomeClubSection";
 import HeroCarousel from "./HeroCarousel";
+import HomeOfferBanner from "./HomeOfferBanner";
+import { getItemsToChoose } from "@/utils/offerChoices";
 
 const locations = [
   {
@@ -65,6 +67,10 @@ const money = (value) =>
   }).format(Number(value) || 0);
 
 const validImage = (item) => item?.image && item?.name && (item?.slug || item?._id);
+const getProductPath = (article) =>
+  article.slug
+    ? `/menu/articles/${encodeURIComponent(article.slug)}`
+    : `/menu/articles/${article._id}`;
 
 export default async function HomeV2() {
   const [offersResponse, vedettesResponse, categoriesResponse] =
@@ -169,13 +175,17 @@ export default async function HomeV2() {
       </section>
 
 
+      {/* Offre perso juste après le hero, AVANT la section Club : celle-ci apparaît ou disparaît
+          une fois le compte chargé (masquée pour les abonnés), ce qui déplaçait la bannière. */}
+      <HomeOfferBanner />
       <HomeClubSection />
+
       <section className="mx-auto max-w-[1440px] px-5 py-14 md:px-14 md:py-16">
         <SectionTitle eyebrow="Promotions" title="Nos articles en promo" href={promoCategory ? `/menu/${promoCategory.slug}` : "/menu"} link="Voir tout →" />
         {promoItems.length ? (
           <div className="mt-7 grid gap-3 grid-cols-2 md:grid-cols-4 md:gap-4">
             {promoItems.map((item) => (
-              <Link key={item.slug || item._id} href={`/menu/articles/${item.slug || item._id}`} className="group overflow-hidden rounded-2xl border border-[#ece5d9] bg-white transition hover:-translate-y-1 hover:shadow-xl">
+              <Link key={item.slug || item._id} href={getProductPath(item)} className="group overflow-hidden rounded-2xl border border-[#ece5d9] bg-white transition hover:-translate-y-1 hover:shadow-xl">
                 <div className="relative aspect-[1.6] bg-[#f3ede2]">
                   <Image src={item.image} alt={item.name} fill sizes="(max-width:768px) 50vw, 25vw" className="object-cover transition duration-500 group-hover:scale-105" />
                 </div>
@@ -204,7 +214,7 @@ export default async function HomeV2() {
           </div>
           {offers.length ? <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             {offers.map((item) => <Link key={item._id} href={`/menu/offres/${item.slug}`} className="group overflow-hidden rounded-2xl border border-white/10 bg-[#241f1b] transition hover:-translate-y-1 hover:shadow-2xl">
-              <div className="relative aspect-[1.35] bg-[#2a2420]"><Image src={item.image} alt={item.name} fill sizes="(max-width:768px) 50vw, 25vw" className="object-cover" /><span className="absolute left-2 top-2 rounded bg-pr px-2 py-1 text-[9px] font-bold tracking-widest text-black">OFFRE</span></div>
+              <div className="relative aspect-[1.35] bg-[#2a2420]"><Image src={item.image} alt={item.name} fill sizes="(max-width:768px) 50vw, 25vw" className="object-cover" /><span className="absolute left-2 top-2 rounded bg-pr px-2 py-1 text-[9px] font-bold tracking-widest text-black">OFFRE{getItemsToChoose(item) > 0 ? ` · ${getItemsToChoose(item)} AU CHOIX` : ""}</span></div>
               <div className="flex min-h-28 flex-col p-4"><h3 className="font-bebas-neue text-xl leading-none md:text-2xl">{item.name}</h3><div className="mt-auto flex items-end justify-between pt-4"><span className="font-bebas-neue text-2xl text-pr md:text-3xl">{money(item.price)}</span><span className="rounded-lg bg-white/10 px-3 py-2 text-xs font-bold transition group-hover:bg-pr group-hover:text-black">Voir</span></div></div>
             </Link>)}
           </div> : <EmptyState label="Les prochaines offres arrivent bientôt." />}
@@ -215,7 +225,7 @@ export default async function HomeV2() {
       <section className="mx-auto max-w-[1440px] px-5 py-14 md:px-14 md:py-16">
         <SectionTitle eyebrow="En vedette" title="Ce qu'on commande le plus" href="/menu" link="Voir tout le menu →" />
         {vedettes.length ? <div className="mt-7 grid gap-4 md:grid-cols-3">
-          {vedettes.map((item, index) => <Link key={item.slug || item._id} href={`/menu/articles/${item.slug || item._id}`} className={`group overflow-hidden rounded-2xl border border-[#ece5d9] ${index === 0 ? "bg-[#1a1714] text-white md:col-span-1" : "bg-white"} transition hover:-translate-y-1 hover:shadow-xl`}>
+          {vedettes.map((item, index) => <Link key={item.slug || item._id} href={getProductPath(item)} className={`group overflow-hidden rounded-2xl border border-[#ece5d9] ${index === 0 ? "bg-[#1a1714] text-white md:col-span-1" : "bg-white"} transition hover:-translate-y-1 hover:shadow-xl`}>
             <div className="relative aspect-[1.6] bg-[#f3ede2]"><Image src={item.image} alt={item.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover transition duration-500 group-hover:scale-105" /></div>
             <div className="p-5"><span className="rounded bg-pr px-2 py-1 text-[9px] font-bold tracking-widest text-black">{index === 0 ? "LE PLUS COMMANDÉ" : "EN VEDETTE"}</span><h3 className="mt-3 font-bebas-neue text-3xl leading-none">{item.name}</h3><p className={`mt-3 text-sm ${index === 0 ? "text-white/60" : "text-[#6e6659]"}`}>À partir de {money(item.prices?.[0]?.price)}</p></div>
           </Link>)}

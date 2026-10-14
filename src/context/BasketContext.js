@@ -173,11 +173,41 @@ function basketReducer(state, action) {
         customizations: action.payload.customizations,
         price: action.payload.price,
         comment: action.payload.comment,
+        // Offre à choix : les articles choisis peuvent changer à la modification.
+        items: Array.isArray(action.payload.items) ? action.payload.items : old.items,
       };
       const subtotal = round2(
         state.subtotal - (old?.price || 0) + (action.payload?.price || 0)
       );
       return { ...state, offers, subtotal };
+    }
+
+    // Cadeau d'offre gardé au prix normal quand le client désactive l'offre (prix normal =
+    // basePrice + suppléments) ; la taille est mémorisée : changer de taille invalide le cadeau.
+    case "convertSmartOfferGiftToPaid": {
+      const idx = state.items.findIndex((it) => it.uid === action.payload);
+      if (idx < 0 || !state.items[idx].isSmartOfferFreeItem) return state;
+      const old = state.items[idx];
+      const paidPrice = round2((Number(old.basePrice) || 0) + (Number(old.price) || 0));
+      const items = [...state.items];
+      items[idx] = {
+        ...old,
+        price: paidPrice,
+        isSmartOfferFreeItem: false,
+        wasSmartOfferGift: true,
+        smartOfferGiftSize: String(old.size?.size ?? old.size ?? "").trim().toLowerCase(),
+      };
+      return { ...state, items, subtotal: round2(state.subtotal - (old.price || 0) + paidPrice) };
+    }
+
+    case "restoreSmartOfferGift": {
+      const idx = state.items.findIndex((it) => it.uid === action.payload);
+      if (idx < 0 || !state.items[idx].wasSmartOfferGift) return state;
+      const old = state.items[idx];
+      const giftPrice = round2(Math.max(0, (Number(old.price) || 0) - (Number(old.basePrice) || 0)));
+      const items = [...state.items];
+      items[idx] = { ...old, price: giftPrice, isSmartOfferFreeItem: true, wasSmartOfferGift: false };
+      return { ...state, items, subtotal: round2(state.subtotal - (old.price || 0) + giftPrice) };
     }
 
     case "clearBasket":
@@ -292,6 +322,14 @@ export function BasketProvider({ children }) {
     []
   );
   const clearBasket = useCallback(() => dispatch({ type: "clearBasket" }), []);
+  const convertSmartOfferGiftToPaid = useCallback(
+    (uid) => dispatch({ type: "convertSmartOfferGiftToPaid", payload: uid }),
+    []
+  );
+  const restoreSmartOfferGift = useCallback(
+    (uid) => dispatch({ type: "restoreSmartOfferGift", payload: uid }),
+    []
+  );
 
   const value = useMemo(
     () => ({
@@ -307,6 +345,8 @@ export function BasketProvider({ children }) {
       updateItemInBasket,
       updateOfferInBasket,
       clearBasket,
+      convertSmartOfferGiftToPaid,
+      restoreSmartOfferGift,
     }),
     [
       state,
@@ -320,6 +360,8 @@ export function BasketProvider({ children }) {
       updateItemInBasket,
       updateOfferInBasket,
       clearBasket,
+      convertSmartOfferGiftToPaid,
+      restoreSmartOfferGift,
     ]
   );
 

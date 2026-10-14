@@ -232,6 +232,7 @@ const ArticleComponent = ({ item }) => {
       price: calculateTotalPrice(),
       category: item?.category?._id || item?.category || null,
       categoryName: item?.category?.name || "",
+      promoLocked: Boolean(item?.promo_locked),
       size: selectedSize,
       customization: selectedItems,
       comment: comment,

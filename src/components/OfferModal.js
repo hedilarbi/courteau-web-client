@@ -12,6 +12,11 @@ import { FaCartPlus } from "react-icons/fa";
 import { FaCheck } from "react-icons/fa";
 import { IoChatbubble } from "react-icons/io5";
 import ItemLoadingSkeleton from "./ItemLoadingSkeleton";
+import OfferChoicePicker, {
+  getInitialOfferCustomizations,
+  getOfferChoiceState,
+  toggleOfferChoice,
+} from "./OfferChoicePicker";
 const parseRuleValue = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
@@ -112,14 +117,8 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
 
         setOffer(response.data);
         if (!offerFromBasket) {
-          const initialCustomizations = {};
-          response.data.items.forEach((item) => {
-            initialCustomizations[item.item._id] = Array.from(
-              { length: item.quantity },
-              () => []
-            );
-          });
-          setSelectedCustomizations(initialCustomizations);
+          // Offre à choix : rien n'est sélectionné au départ, le client choisit ses articles.
+          setSelectedCustomizations(getInitialOfferCustomizations(response.data));
         } else {
           const basketCustomizations =
             offerFromBasket.customization ||
@@ -137,6 +136,11 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
       setLoading(false);
     }
   }, [itemId, offerFromBasket]);
+
+  const choice = getOfferChoiceState(offer, selectedCustomizations);
+  const { itemsToChoose, isChoiceOffer, remainingChoices, choiceComplete, displayedLines } = choice;
+  const toggleChoice = (line) =>
+    setSelectedCustomizations((prev) => toggleOfferChoice(offer, line, prev));
 
   const calculateTotalPrice = () => {
     let totalPrice = Number(offer?.price) || 0;
@@ -249,7 +253,7 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
     const pricedCustomizations = {};
     if (!offer?.items?.length) return pricedCustomizations;
 
-    offer.items.forEach((item) => {
+    displayedLines.forEach((item) => {
       const itemCustomizations = selectedCustomizations[item.item._id] || [];
       const customizationGroups = normalizeCustomizationGroups(
         item.item.customization_group
@@ -283,6 +287,10 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
   };
 
   const handleAddToBasket = () => {
+    if (!choiceComplete) {
+      toast.error(`Choisissez encore ${remainingChoices} article(s).`);
+      return;
+    }
     const missingSelection = offer?.items?.reduce((result, item) => {
       if (result) return result;
       const customizationGroups = normalizeCustomizationGroups(
@@ -350,7 +358,8 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
         image: offer.image,
         price: calculateTotalPrice(),
         customization: pricedCustomizations,
-        items: offer.items,
+        items: displayedLines,
+        itemsToChoose: itemsToChoose || null,
         comment: comment,
       });
       toast.success("Offre ajoutée au panier !");
@@ -360,7 +369,7 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
         uid: offerFromBasket.uid,
         price: calculateTotalPrice(),
         customizations: pricedCustomizations,
-
+        items: displayedLines,
         comment: comment,
       });
       toast.success("Offre mise à jour dans le panier !");
@@ -411,6 +420,9 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
                   ${calculateTotalPrice().toFixed(2)}
                 </h4>
               </div>
+              {isChoiceOffer ? (
+                <OfferChoicePicker offer={offer} choice={choice} onToggle={toggleChoice} />
+              ) : (
               <div className="mt-4">
                 {offer.items.map((item) => (
                   <div key={item._id} className="flex  mb-2 gap-2">
@@ -432,8 +444,9 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
                   </div>
                 ))}
               </div>
+              )}
               <div className="mt-4">
-                {offer.items.map((item) => {
+                {displayedLines.map((item) => {
                   return (
                     <div key={item._id} className="my-4">
                       {Array.from({ length: item.quantity }).map((_, index) => {
@@ -591,12 +604,17 @@ const OfferModal = ({ itemId, setShowOfferModal, itemUID, showOfferModal }) => {
                     </p>
                   </div>
                   <button
-                    className="bg-pr text-black flex justify-center items-center cursor-pointer mt-4 py-3 w-full rounded-md"
+                    className={`bg-pr text-black flex justify-center items-center mt-4 py-3 w-full rounded-md ${
+                      choiceComplete ? "cursor-pointer" : "opacity-45 cursor-not-allowed"
+                    }`}
                     onClick={handleAddToBasket}
+                    disabled={!choiceComplete}
                   >
                     <FaCartPlus className="mr-4 md:text-xl text-lg" />
                     <span className="font-bebas-neue md:text-xl text-lg">
-                      {!offerFromBasket
+                      {!choiceComplete
+                        ? `Choisissez encore ${remainingChoices} article(s)`
+                        : !offerFromBasket
                         ? "Ajouter au panier"
                         : "Mettre à jour le panier"}
                     </span>

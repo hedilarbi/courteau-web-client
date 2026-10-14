@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getItemsToChoose } from "@/utils/offerChoices";
 import SelectMenuItemButton from "./SelectMenuItemButton";
 
 const price = (value) => `${Number(value || 0).toFixed(2)}$`;
@@ -15,7 +16,7 @@ export default function MenuItemsSection({ items, selectedCategory }) {
       const displayPrice = isReward ? `${entry.points} pts` : selectedCategory === "offres" ? price(item.price) : `Dès ${price(item.prices?.[0]?.price)}`;
       const href = selectedCategory === "offres" ? `/menu/offres/${item.slug}` : item.slug ? `/menu/articles/${item.slug}` : null;
       return <article key={entry._id} className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#ece5d9] bg-white transition hover:-translate-y-1 hover:shadow-xl">
-        <div className="relative aspect-[1.35] overflow-hidden bg-[#f3ede2]"><Image src={item.image} alt={item.name} fill sizes="(max-width:768px) 50vw, 30vw" className="object-cover transition duration-500 group-hover:scale-105" /></div>
+        <div className="relative aspect-[1.35] overflow-hidden bg-[#f3ede2]"><Image src={item.image} alt={item.name} fill sizes="(max-width:768px) 50vw, 30vw" className="object-cover transition duration-500 group-hover:scale-105" />{selectedCategory === "offres" && getItemsToChoose(item) > 0 && <span className="absolute left-2 top-2 rounded bg-black/80 px-2 py-1 text-[10px] font-bold tracking-widest text-white">{getItemsToChoose(item)} AU CHOIX</span>}</div>
         <div className="flex flex-1 flex-col p-3 md:p-4">
           {href ? <Link href={href}><h2 className="font-bebas-neue text-xl leading-none md:text-2xl">{item.name}</h2></Link> : <h2 className="font-bebas-neue text-xl leading-none md:text-2xl">{item.name}</h2>}
           {item.description && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-[#8a8074] md:text-sm">{item.description}</p>}

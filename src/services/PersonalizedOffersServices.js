@@ -13,6 +13,18 @@ const getActiveOffer = async (userId) => {
   }
 };
 
+const getLastExpiredOffer = async (userId) => {
+  try {
+    const response = await axios.get(`${API_URL}/personalized-offers/last-expired/${userId}`);
+    if (response?.status === 200) {
+      return { status: true, data: response?.data };
+    }
+    return { status: false, message: "Error fetching last expired offer" };
+  } catch (error) {
+    return { status: false, message: error.message };
+  }
+};
+
 const logOfferEvent = async (offerId, userId, eventType) => {
   try {
     const response = await axios.post(`${API_URL}/personalized-offers/event`, {
@@ -31,5 +43,6 @@ const logOfferEvent = async (offerId, userId, eventType) => {
 
 export {
   getActiveOffer,
+  getLastExpiredOffer,
   logOfferEvent,
 };

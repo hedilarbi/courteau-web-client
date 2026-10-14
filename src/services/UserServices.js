@@ -1,6 +1,12 @@
 import axios from "axios";
+import { getToken } from "@/app/actions";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 axios.defaults.timeout = 15000; // Timeout of 10 seconds
+const getAuthHeaders = async () => {
+  const token = await getToken();
+  return token?.value ? { Authorization: `Bearer ${token.value}` } : {};
+};
+
 const createUserService = async (phone_number) => {
   try {
     let createUserResponse = await axios.post(`${API_URL}/users/create`, {
@@ -186,14 +192,18 @@ const getUserByToken = async (token) => {
 
 const setUserInfo = async (id, name, email, address, coords, date, referralCode) => {
   try {
-    let updateUserInfoResponse = await axios.put(`${API_URL}/users/set/${id}`, {
-      name,
-      email,
-      address,
-      date_of_birth: date,
-      coords,
-      referralCode,
-    });
+    let updateUserInfoResponse = await axios.put(
+      `${API_URL}/users/set/${id}`,
+      {
+        name,
+        email,
+        address,
+        date_of_birth: date,
+        coords,
+        referralCode,
+      },
+      { headers: await getAuthHeaders() }
+    );
     if (updateUserInfoResponse.status === 200) {
       return {
         status: true,
@@ -221,7 +231,8 @@ const updateUserInfo = async (id, name, email) => {
       {
         name,
         email,
-      }
+      },
+      { headers: await getAuthHeaders() }
     );
     if (updateUserInfoResponse.status === 200) {
       return {
@@ -241,6 +252,40 @@ const updateUserInfo = async (id, name, email) => {
       error: error?.response?.data?.error || null,
       message: error?.response?.data?.message || error.message,
     };
+  }
+};
+
+const toEmailVerificationError = (error) => ({
+  status: false,
+  error: error?.response?.data?.error || null,
+  message: error?.response?.data?.message || error.message,
+  retryAfterSeconds: error?.response?.data?.retryAfterSeconds,
+  attemptsLeft: error?.response?.data?.attemptsLeft,
+});
+
+const sendEmailVerificationCode = async (token, email) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/users/email-verification/send`,
+      { email },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return { status: true, data: response.data };
+  } catch (error) {
+    return toEmailVerificationError(error);
+  }
+};
+
+const verifyEmailCode = async (token, code) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/users/email-verification/verify`,
+      { code },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return { status: true, data: response.data };
+  } catch (error) {
+    return toEmailVerificationError(error);
   }
 };
 
@@ -276,6 +321,7 @@ const deleteUser = async (id) => {
     let deleteUserResponse = await axios.delete(
       `${API_URL}/users/delete/${id}`,
       {
+        headers: await getAuthHeaders(),
         timeout: 10000,
       }
     );
@@ -801,4 +847,6 @@ export {
   createZeroTotalPromoOrder,
   confirmPaiment,
   cancelPaymentIntent,
+  sendEmailVerificationCode,
+  verifyEmailCode,
 };

@@ -162,7 +162,9 @@ export default function CheckoutCard({
   setPromoCodeIsValid,
   setPromoCodeError,
   personalizedOfferId,
+  instructions = "",
   onOrderSuccess,
+  beforePay,
 }) {
   const { clearBasket } = useBasket();
   const router = useRouter();
@@ -539,6 +541,7 @@ export default function CheckoutCard({
         },
         referralDiscountApplied: resolvedReferralDiscountApplied,
         personalizedOfferId: personalizedOfferId || undefined,
+        instructions: String(instructions || "").trim(),
       },
     };
   };
@@ -1206,6 +1209,11 @@ export default function CheckoutCard({
                 Boolean(availablePaymentMethods?.applePay),
               )
             }
+            onClick={(event) => {
+              // Vérifié AVANT l'ouverture de la feuille Apple Pay : sans resolve(), elle ne s'ouvre pas.
+              if (beforePay && !beforePay(null)) return;
+              event.resolve();
+            }}
             onConfirm={() => onPay({ wallet: true })}
           />
 
@@ -1312,7 +1320,10 @@ export default function CheckoutCard({
 
       <button
         type="button"
-        onClick={() => onPay()}
+        onClick={() => {
+          if (beforePay && !beforePay(() => onPay())) return;
+          onPay();
+        }}
         disabled={
           loading ||
           !isBasketAvailable ||

@@ -3,6 +3,36 @@ import { addToAddresses } from "@/services/UserServices";
 import { getClosestRestaurant } from "@/utils/locationHandlers";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
+
+const ADDRESS_FIELDS = [
+  {
+    name: "street_address",
+    label: "Adresse",
+    placeholder: "123 rue Exemple",
+    autoComplete: "address-line1",
+  },
+  {
+    name: "city",
+    label: "Ville",
+    placeholder: "Trois-Rivières",
+    autoComplete: "address-level2",
+  },
+  {
+    name: "state",
+    label: "Province",
+    placeholder: "Québec",
+    autoComplete: "address-level1",
+  },
+  {
+    name: "postal_code",
+    label: "Code postal",
+    placeholder: "G9A 1A1",
+    autoComplete: "postal-code",
+  },
+];
+
+const EMPTY_FORM = { street_address: "", city: "", state: "", postal_code: "" };
+
 const AddAddressModal = ({
   setShowAddAddressModal,
   setAddress,
@@ -10,7 +40,8 @@ const AddAddressModal = ({
   setSelectedRestaurant,
   restaurantsSettings,
 }) => {
-  const [newAddress, setNewAddress] = useState("");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [missingFields, setMissingFields] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { updateUser } = useUser();
@@ -18,7 +49,7 @@ const AddAddressModal = ({
   const getAddressComponent = (components = [], type, format = "long_name") =>
     components.find((component) => component.types?.includes(type))?.[format] ||
     "";
- 
+
   const geocodeAddress = async (address) => {
     try {
       setIsLoading(true);
@@ -46,12 +77,6 @@ const AddAddressModal = ({
       if (data.status === "OK" && data.results.length > 0) {
         const result = data.results[0];
         const { lat, lng } = result.geometry.location;
-        const components = result.address_components || [];
-        const streetNumber = getAddressComponent(components, "street_number");
-        const route = getAddressComponent(components, "route");
-        const streetAddress =
-          [streetNumber, route].filter(Boolean).join(" ").trim() ||
-          String(address || "").trim();
 
         if (!isFinite(lat) || !isFinite(lng)) {
           throw new Error(
@@ -60,21 +85,12 @@ const AddAddressModal = ({
         }
 
         return {
-          address: String(newAddress || "").trim(),
           coords: { latitude: lat, longitude: lng },
-          street_address: streetAddress,
-          city:
-            getAddressComponent(components, "locality") ||
-            getAddressComponent(components, "postal_town") ||
-            getAddressComponent(components, "administrative_area_level_3") ||
-            getAddressComponent(components, "sublocality"),
-          state: getAddressComponent(
-            components,
-            "administrative_area_level_1",
+          country: getAddressComponent(
+            result.address_components,
+            "country",
             "short_name",
           ),
-          postal_code: getAddressComponent(components, "postal_code"),
-          country: getAddressComponent(components, "country", "short_name"),
         };
       } else if (data.status === "ZERO_RESULTS") {
         throw new Error("Aucun résultat pour cette adresse.");
@@ -89,32 +105,53 @@ const AddAddressModal = ({
     }
   };
 
+  const handleChange = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setMissingFields((prev) => prev.filter((field) => field !== name));
+    setError("");
+  };
+
   const handleAddAddress = async () => {
-    if (!newAddress.trim()) {
-      setError("Veuillez entrer une adresse valide.");
+    const fields = {
+      street_address: form.street_address.trim(),
+      city: form.city.trim(),
+      state: form.state.trim(),
+      postal_code: form.postal_code.trim().toUpperCase(),
+    };
+    const missing = Object.keys(fields).filter((name) => !fields[name]);
+    if (missing.length > 0) {
+      setMissingFields(missing);
+      setError("Veuillez remplir tous les champs de l'adresse.");
       return;
     }
+
+    // Adresse finale : « rue, ville, province, code postal ».
+    const finalAddress = [
+      fields.street_address,
+      fields.city,
+      fields.state,
+      fields.postal_code,
+    ].join(", ");
+
     setIsLoading(true);
     setError("");
 
     try {
-      const geocodedAddress = await geocodeAddress(newAddress);
-      const response = await addToAddresses(
-        userId,
-        geocodedAddress.address,
-        geocodedAddress.coords,
-        {
-          street_address: geocodedAddress.street_address,
-          city: geocodedAddress.city,
-          state: geocodedAddress.state,
-          postal_code: geocodedAddress.postal_code,
-          country: geocodedAddress.country,
-        },
-      );
+      const { coords, country } = await geocodeAddress(finalAddress);
+      const newAddress = {
+        address: finalAddress,
+        coords,
+        ...fields,
+        country,
+      };
+      const response = await addToAddresses(userId, finalAddress, coords, {
+        ...fields,
+        country,
+      });
 
       if (response.status) {
         const restaurantIndex = getClosestRestaurant(
-          geocodedAddress.coords,
+          coords,
           restaurantsSettings,
         );
 
@@ -126,20 +163,9 @@ const AddAddressModal = ({
         const savedAddress = [...(response.data?.addresses || [])]
           .reverse()
           .find(
-            (entry) =>
-              String(entry?.address || "").trim() === geocodedAddress.address,
+            (entry) => String(entry?.address || "").trim() === finalAddress,
           );
-        setAddress(
-          savedAddress || {
-            address: geocodedAddress.address,
-            coords: geocodedAddress.coords,
-            street_address: geocodedAddress.street_address,
-            city: geocodedAddress.city,
-            state: geocodedAddress.state,
-            postal_code: geocodedAddress.postal_code,
-            country: geocodedAddress.country,
-          },
-        );
+        setAddress(savedAddress || newAddress);
         updateUser(response.data);
         setIsLoading(false);
         setShowAddAddressModal(false);
@@ -166,44 +192,64 @@ const AddAddressModal = ({
           Ajouter une adresse
         </h2>
 
-        <input
-          type="text"
-          className="mt-2 w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-pr"
-          placeholder="Entrez votre nouvelle adresse complète"
-          value={newAddress}
-          onChange={(e) => {
-            setNewAddress(e.target.value);
-            setError(""); // Clear error when user types
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleAddAddress();
           }}
-          disabled={isLoading}
-        />
-
-        <p className="mt-2 text-sm text-gray-500">
-          Ex: 123 Rue Example, Ville, Code Postal
-        </p>
-        {error && (
-          <div className="mt-4 p-2 bg-red-100 text-red-500 rounded-md text-sm">
-            {error}
+          noValidate
+        >
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {ADDRESS_FIELDS.map((field) => (
+              <label
+                key={field.name}
+                className={`block font-inter text-sm font-medium text-black ${
+                  field.name === "street_address" ? "sm:col-span-2" : ""
+                }`}
+              >
+                {field.label}
+                <input
+                  type="text"
+                  name={field.name}
+                  className={`mt-1 w-full border rounded-md p-2 font-normal focus:outline-none focus:ring-2 focus:ring-pr ${
+                    missingFields.includes(field.name)
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  }`}
+                  placeholder={field.placeholder}
+                  autoComplete={field.autoComplete}
+                  value={form[field.name]}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  disabled={isLoading}
+                />
+              </label>
+            ))}
           </div>
-        )}
 
-        {isLoading && (
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-500">
-              Validation de l&apos;adresse...
-            </p>
+          {error && (
+            <div className="mt-4 p-2 bg-red-100 text-red-500 rounded-md text-sm">
+              {error}
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-500">
+                Validation de l&apos;adresse...
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end mt-6 gap-2">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-pr text-black rounded-md hover:bg-[#e69500] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? "Chargement..." : "Ajouter"}
+            </button>
           </div>
-        )}
-
-        <div className="flex justify-end mt-6 gap-2">
-          <button
-            className="px-4 py-2 bg-pr text-black rounded-md hover:bg-[#e69500] transition disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleAddAddress}
-            disabled={isLoading}
-          >
-            {isLoading ? "Chargement..." : "Ajouter"}
-          </button>
-        </div>
+        </form>
       </div>
     </div>
   );

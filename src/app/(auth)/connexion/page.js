@@ -38,17 +38,17 @@ export default function ConnexionPage() {
       const formattedValue = "+1" + local;
 
       if (
-        local === "8196929494" ||
-        local === "4388094567" ||
-        local === "1231232211" ||
-        local === "1231231414" ||
-        local === "1231232222" ||
-        local === "0000000002" ||
-        local === "0000000003" ||
-        local === "0000000004" ||
-        local === "0000000005" ||
-        local === "0000000006" ||
-        local === "0000000015"
+        local === "4389306722" ||
+        local === "5149306713" ||
+        local === "3679306720" ||
+        local === "4389306722" ||
+        local === "4389306723" ||
+        local === "5149306713" ||
+        local === "4389306714" ||
+        local === "4389306721" ||
+        local === "5149306713" ||
+        local === "4389306714" ||
+        local === "5819306694"
       ) {
         router.push(`/otp?phoneNumber=${formattedValue}`);
       } else {

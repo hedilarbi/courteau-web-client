@@ -2,14 +2,21 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSmartOffer } from "@/context/SmartOfferContext";
 import { useSelectBasketItems } from "@/context/BasketContext";
 import MenuItemModal from "./MenuItemModal";
+import {
+  buildBuyOneGetOneTriggerLabel,
+  hasBuyOneGetOneTriggerInBasket,
+  isBuyOneGetOneOffer,
+} from "@/utils/smartOfferHandlers";
 
 export default function SmartOfferGiftSelection() {
   const router = useRouter();
-  const { smartOffer } = useSmartOffer();
+  const { smartOffer: availableSmartOffer, smartOfferActivated } = useSmartOffer();
+  // Offre désactivée manuellement : pas de cadeau.
+  const smartOffer = smartOfferActivated ? availableSmartOffer : null;
   const basketItems = useSelectBasketItems();
   const [selectedOption, setSelectedOption] = useState(null);
   const selectedSmartOfferGift = basketItems.find(
@@ -34,16 +41,42 @@ export default function SmartOfferGiftSelection() {
     [smartOffer?.freeItem, smartOffer?.freeItems, smartOffer?.giftItemSize],
   );
 
+  const isSingleGift = options.length === 1;
+  // Cadeau mystère : ajouté depuis le checkout, on y retourne dès qu'il est dans le panier.
+  useEffect(() => {
+    if (selectedSmartOfferGift && smartOffer?.offerType === "mystery_gift") {
+      router.replace("/checkout");
+    }
+  }, [selectedSmartOfferGift, smartOffer?.offerType, router]);
+  // Un seul cadeau possible : on ouvre directement sa personnalisation (pas de choix à faire).
+  useEffect(() => {
+    if (isSingleGift && !selectedSmartOfferGift) setSelectedOption(options[0]);
+  }, [isSingleGift, selectedSmartOfferGift, options]);
+
   const categoryName = String(
     smartOffer?.targetCategory?.name ||
       smartOffer?.freeItems?.[0]?.item?.category?.name ||
       "cadeau",
   ).toLowerCase();
 
-  if (!smartOffer || !["free_item", "buy_one_get_one"].includes(smartOffer.offerType)) {
+  if (!smartOffer || !["free_item", "buy_one_get_one", "mystery_gift"].includes(smartOffer.offerType)) {
     return (
       <div className="md:mt-28 mt-20 min-h-[60vh] flex flex-col items-center justify-center px-4">
         <p className="font-inter font-semibold">Aucun cadeau disponible.</p>
+        <button className="mt-4 bg-pr px-5 py-2 rounded-md" onClick={() => router.push("/menu")}>Retour au menu</button>
+      </div>
+    );
+  }
+
+  // Garde-fou (comme l'app) : sans l'article déclencheur, le serveur rejetterait la commande
+  // au paiement. On bloque ici plutôt que de laisser personnaliser un cadeau non validable.
+  if (isBuyOneGetOneOffer(smartOffer) && !hasBuyOneGetOneTriggerInBasket(basketItems, smartOffer)) {
+    return (
+      <div className="md:mt-28 mt-20 min-h-[60vh] flex flex-col items-center justify-center px-4 text-center">
+        <p className="font-inter font-semibold text-lg">
+          Ajoutez {buildBuyOneGetOneTriggerLabel(smartOffer)} à votre panier
+        </p>
+        <p className="font-inter text-gray-600 mt-2">Votre cadeau se débloquera automatiquement.</p>
         <button className="mt-4 bg-pr px-5 py-2 rounded-md" onClick={() => router.push("/menu")}>Retour au menu</button>
       </div>
     );
@@ -64,7 +97,9 @@ export default function SmartOfferGiftSelection() {
       )}
 
       <button className="text-sm font-semibold underline" onClick={() => router.back()}>Retour</button>
-      <h1 className="font-bebas-neue text-3xl md:text-5xl mt-5">Choisissez votre {categoryName}</h1>
+      <h1 className="font-bebas-neue text-3xl md:text-5xl mt-5">
+        {isSingleGift ? "Ajouter mon cadeau" : `Choisissez votre ${categoryName}`}
+      </h1>
       {selectedSmartOfferGift ? (
         <div className="bg-green-50 border border-green-200 rounded-xl p-5 mt-6">
           <p className="font-inter font-bold text-green-800">
@@ -107,7 +142,7 @@ export default function SmartOfferGiftSelection() {
               </div>
               {option.size && <p className="font-inter text-sm text-gray-600 mt-1">Taille : {option.size}</p>}
               {option.description && <p className="font-inter text-sm text-gray-500 mt-2 line-clamp-2">{option.description}</p>}
-              <span className="inline-block bg-[#F7A600] text-black font-bold text-sm px-4 py-2 rounded-md mt-4">Choisir</span>
+              <span className="inline-block bg-[#F7A600] text-black font-bold text-sm px-4 py-2 rounded-md mt-4">{isSingleGift ? "Ajouter mon cadeau" : "Choisir"}</span>
             </div>
           </button>
         ))}

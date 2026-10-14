@@ -8,46 +8,76 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 import { useUser } from "./UserContext";
-import { getActiveOffer, logOfferEvent } from "@/services/PersonalizedOffersServices";
+import {
+  getActiveOffer,
+  getLastExpiredOffer,
+  logOfferEvent,
+} from "@/services/PersonalizedOffersServices";
 
 const SmartOfferContext = createContext(null);
+const DISABLED_OFFER_KEY = "web_disabledOfferId";
+
+const readDisabledOfferId = () => {
+  try {
+    return localStorage.getItem(DISABLED_OFFER_KEY) || null;
+  } catch (_) {
+    return null;
+  }
+};
 
 export function SmartOfferProvider({ children }) {
   const { user } = useUser();
   const [smartOffer, setSmartOfferState] = useState(null);
-  const [smartOfferActivated, setSmartOfferActivated] = useState(false);
+  // Offre expirée : reste affichée ("Offre expirée") tant qu'aucune nouvelle offre n'est active.
+  const [expiredOffer, setExpiredOffer] = useState(null);
+  // Désactivation manuelle (checkout) liée à UNE offre : survit aux changements de page et
+  // aux rechargements, mais ne s'applique jamais à une nouvelle offre.
+  const [disabledOfferId, setDisabledOfferId] = useState(null);
   const [showSmartOfferModal, setShowSmartOfferModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const shownOfferIdRef = useRef(null);
-  const activatedOfferIdKey = "web_activatedOfferId";
 
-  const fetchSmartOffer = useCallback(async (userId) => {
+  useEffect(() => {
+    setDisabledOfferId(readDisabledOfferId());
+  }, []);
+
+  const openModalOnce = (offerId) => {
+    if (shownOfferIdRef.current === String(offerId)) return;
+    shownOfferIdRef.current = String(offerId);
+    setShowSmartOfferModal(true);
+  };
+
+  // silent : rafraîchissement en arrière-plan (retour sur l'onglet / l'accueil), sans état de chargement.
+  const fetchSmartOffer = useCallback(async (userId, { silent = false } = {}) => {
     if (!userId) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const res = await getActiveOffer(userId);
-      if (res.status && res.data?._id) {
-        const offer = res.data;
+      const offer = res.status && res.data?._id ? res.data : null;
+      const stillValid =
+        offer && (!offer.validUntil || new Date(offer.validUntil).getTime() > Date.now());
 
+      if (stillValid) {
         setSmartOfferState(offer);
-        // Une Smart Offer active est appliquée automatiquement au panier.
-        setSmartOfferActivated(true);
-
-        // Show modal only once per offer
+        setExpiredOffer(null);
         if (shownOfferIdRef.current !== String(offer._id)) {
-          shownOfferIdRef.current = String(offer._id);
-          setShowSmartOfferModal(true);
           logOfferEvent(offer._id, userId, "viewed").catch(() => {});
         }
-      } else {
-        setSmartOfferState(null);
-        setSmartOfferActivated(false);
+        openModalOnce(offer._id);
+        return;
       }
-    } catch (_) {
+
       setSmartOfferState(null);
+      const lastExpired = offer || (await getLastExpiredOffer(userId))?.data;
+      setExpiredOffer(lastExpired?._id ? lastExpired : null);
+      if (lastExpired?._id) openModalOnce(lastExpired._id);
+    } catch (_) {
+      // Rafraîchissement silencieux raté (réseau) : on garde l'offre déjà affichée.
+      if (!silent) setSmartOfferState(null);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -57,32 +87,85 @@ export function SmartOfferProvider({ children }) {
       fetchSmartOffer(userId);
     } else {
       setSmartOfferState(null);
-      setSmartOfferActivated(false);
+      setExpiredOffer(null);
     }
   }, [user?._id, user?.id, fetchSmartOffer]);
 
-  const activateSmartOffer = useCallback(() => {
-    setSmartOfferActivated(true);
-    if (smartOffer?._id) {
-      try {
-        localStorage.setItem(activatedOfferIdKey, String(smartOffer._id));
-      } catch (_) {}
+  // Comme l'app (retour sur l'accueil / app rouverte) : l'offre est rechargée quand l'onglet
+  // redevient visible et à chaque retour sur la page d'accueil (nouvelle offre, offre utilisée…).
+  const pathname = usePathname();
+  const lastSilentRefreshRef = useRef(0);
+  const silentRefresh = useCallback(() => {
+    const userId = user?._id || user?.id;
+    if (!userId) return;
+    if (Date.now() - lastSilentRefreshRef.current < 10000) return;
+    lastSilentRefreshRef.current = Date.now();
+    fetchSmartOffer(userId, { silent: true });
+  }, [user?._id, user?.id, fetchSmartOffer]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") silentRefresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [silentRefresh]);
+
+  const previousPathnameRef = useRef(pathname);
+  useEffect(() => {
+    const previous = previousPathnameRef.current;
+    previousPathnameRef.current = pathname;
+    // Premier rendu : déjà couvert par le chargement initial.
+    if (pathname === "/" && previous !== "/") silentRefresh();
+  }, [pathname, silentRefresh]);
+
+  // L'offre expire pendant la navigation : elle passe en "expirée" (affichée, plus utilisable).
+  useEffect(() => {
+    if (!smartOffer?.validUntil) return undefined;
+    const remaining = new Date(smartOffer.validUntil).getTime() - Date.now();
+    const expire = () => {
+      setExpiredOffer(smartOffer);
+      setSmartOfferState(null);
+    };
+    if (remaining <= 0) {
+      expire();
+      return undefined;
     }
-  }, [smartOffer?._id]);
+    // setTimeout est limité à ~24,8 jours : au-delà, on revérifiera au prochain rendu.
+    const timer = setTimeout(expire, Math.min(remaining, 2147483000));
+    return () => clearTimeout(timer);
+  }, [smartOffer]);
+
+  const smartOfferManuallyDisabled = Boolean(
+    smartOffer?._id && disabledOfferId === String(smartOffer._id)
+  );
 
   const deactivateSmartOffer = useCallback(() => {
-    setSmartOfferActivated(false);
+    if (!smartOffer?._id) return;
+    setDisabledOfferId(String(smartOffer._id));
     try {
-      localStorage.removeItem(activatedOfferIdKey);
+      localStorage.setItem(DISABLED_OFFER_KEY, String(smartOffer._id));
+    } catch (_) {}
+  }, [smartOffer?._id]);
+
+  const activateSmartOffer = useCallback(() => {
+    setDisabledOfferId(null);
+    try {
+      localStorage.removeItem(DISABLED_OFFER_KEY);
     } catch (_) {}
   }, []);
 
   const clearSmartOffer = useCallback(() => {
     setSmartOfferState(null);
-    setSmartOfferActivated(false);
+    setExpiredOffer(null);
     shownOfferIdRef.current = null;
+    setDisabledOfferId(null);
     try {
-      localStorage.removeItem(activatedOfferIdKey);
+      localStorage.removeItem(DISABLED_OFFER_KEY);
     } catch (_) {}
   }, []);
 
@@ -90,7 +173,13 @@ export function SmartOfferProvider({ children }) {
     <SmartOfferContext.Provider
       value={{
         smartOffer,
-        smartOfferActivated,
+        expiredOffer,
+        // Offre utilisable (existe ET pas désactivée manuellement) : ce que lisent panier,
+        // checkout, menu… Le checkout lit aussi `smartOfferAvailable` (brut) pour proposer
+        // de réactiver une offre désactivée.
+        smartOfferActivated: Boolean(smartOffer) && !smartOfferManuallyDisabled,
+        smartOfferAvailable: Boolean(smartOffer),
+        smartOfferManuallyDisabled,
         showSmartOfferModal,
         setShowSmartOfferModal,
         loading,

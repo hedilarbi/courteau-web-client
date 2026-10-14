@@ -12,6 +12,11 @@ const normalize = (value) =>
     .toLocaleLowerCase("fr")
     .trim();
 
+const getProductPath = (article) =>
+  article.slug
+    ? `/menu/articles/${encodeURIComponent(article.slug)}`
+    : `/menu/articles/${article._id}`;
+
 export default function MenuSearch({ categories = [], articles = [], offers = [], compact = false }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -73,7 +78,7 @@ export default function MenuSearch({ categories = [], articles = [], offers = []
     </label>
     {open && term && <div className="absolute left-0 right-0 top-[calc(100%+8px)] max-h-[420px] overflow-y-auto rounded-2xl border border-[#e5ddcf] bg-white p-2 shadow-2xl">
       {results.categories.length > 0 && <SuggestionGroup title="CATÉGORIES">{results.categories.map((category) => <Suggestion key={category._id} href={`/menu/${category.slug}`} image={category.image} name={category.name} meta="Catégorie" onClick={() => setOpen(false)} />)}</SuggestionGroup>}
-      {results.articles.length > 0 && <SuggestionGroup title="ARTICLES">{results.articles.map((article) => <Suggestion key={article._id} href={`/menu/articles/${article._id}`} image={article.image} name={article.name} meta={article.category?.name || "Article"} onClick={() => setOpen(false)} />)}</SuggestionGroup>}
+      {results.articles.length > 0 && <SuggestionGroup title="ARTICLES">{results.articles.map((article) => <Suggestion key={article._id} href={getProductPath(article)} image={article.image} name={article.name} meta={article.category?.name || "Article"} onClick={() => setOpen(false)} />)}</SuggestionGroup>}
       {results.offers.length > 0 && <SuggestionGroup title="OFFRES">{results.offers.map((offer) => <Suggestion key={offer._id} href={`/menu/offres/${offer.slug}`} image={offer.image} name={offer.name} meta="Offre" onClick={() => setOpen(false)} />)}</SuggestionGroup>}
       {!hasResults && <p className="px-4 py-7 text-center text-sm text-[#8a8074]">Aucun résultat pour « {query} ».</p>}
     </div>}

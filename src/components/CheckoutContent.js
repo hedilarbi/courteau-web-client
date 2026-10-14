@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import { useSmartOffer } from "@/context/SmartOfferContext";
@@ -13,6 +13,28 @@ import {
 
 import { getClosestRestaurant, hasValidCoords } from "@/utils/locationHandlers";
 import { getScheduleValidationError } from "@/utils/dateHandlers";
+import {
+  getBasketItemMenuItemId,
+  getBasketItemSize,
+  getBasketItemsExcludedFromOffer,
+  getDiscountExclusionsText,
+  isGlobalDiscountOffer,
+  isSmartOfferThresholdReachedWithoutEligibleItems,
+  NOTHING_ELIGIBLE_MESSAGE,
+  smartOfferReplacesOtherDiscounts,
+  isSmartOfferAppliedToOrder,
+  getDeferredActivationLabel,
+  getSingleSmartOfferGiftOption,
+  getSmartOfferConditionStatus,
+  getSmartOfferGiftOptions,
+  getSmartOfferGiftStatus,
+  getBuyOneGetOneTriggerId,
+  buildBuyOneGetOneTriggerLabel,
+  isBuyOneGetOneOffer,
+  isSmartOfferGiftMissing,
+  MISSING_GIFT_MESSAGE,
+  MISSING_GIFT_TITLE,
+} from "@/utils/smartOfferHandlers";
 import { getSubscriptionConfig } from "@/services/SubscriptionServices";
 import {
   checkRestaurantOrderAvailability,
@@ -123,66 +145,11 @@ const getBirthUtcParts = (value) => {
   };
 };
 
+// Calcul partagé avec l'app mobile (utils/smartOfferHandlers) : catégories exclues, tous les
+// exemplaires de l'article ciblé, articles verrouillés promo… identique au serveur.
 const calculateSmartOfferDiscount = ({ smartOffer, smartOfferActivated, subTotal, basketItems }) => {
   if (!smartOfferActivated || !smartOffer) return 0;
-  const nextSubtotal = toSafeNumber(subTotal, 0);
-  const threshold = toSafeNumber(smartOffer.bonusThreshold, 0);
-  if (threshold > 0 && nextSubtotal < threshold) return 0;
-
-  if (smartOffer.offerType === "discount_order") {
-    const discountableSubtotal = (basketItems || []).reduce(
-      (sum, item) =>
-        item?.promoLocked ? sum : sum + toSafeNumber(item?.price, 0),
-      0
-    );
-    return roundMoney(
-      discountableSubtotal *
-        (toSafeNumber(smartOffer.discountValue, 0) / 100),
-      0
-    );
-  } else if (smartOffer.offerType === "split_discount") {
-    const stepPercent = toSafeNumber(
-      smartOffer.discountSteps?.[smartOffer.currentStep || 0],
-      0
-    );
-    const discountableSubtotal = (basketItems || []).reduce(
-      (sum, item) => item?.promoLocked ? sum : sum + toSafeNumber(item?.price, 0),
-      0
-    );
-    return roundMoney(discountableSubtotal * (stepPercent / 100), 0);
-  } else if (smartOffer.offerType === "bonus_basket") {
-    return smartOffer.discountValue || 0;
-  } else if (smartOffer.offerType === "discount_category") {
-    const targetCatId = String(smartOffer.targetCategory?._id || smartOffer.targetCategory || "");
-    if (!targetCatId) return 0;
-    const catSub = (basketItems || []).reduce((acc, item) => {
-      const itemCat = String(item.category || "");
-      return !item?.promoLocked && itemCat && itemCat === targetCatId
-        ? acc + (parseFloat(item.price) || 0)
-        : acc;
-    }, 0);
-    return Math.round(catSub * (smartOffer.discountValue / 100) * 100) / 100;
-  } else if (["free_item", "buy_one_get_one"].includes(smartOffer.offerType)) {
-    // The basket item price already contains only paying extras.
-    return 0;
-  } else if (smartOffer.offerType === "discount_product") {
-    const targetItemId = String(
-      smartOffer.targetMenuItem?._id || smartOffer.targetMenuItem || ""
-    );
-    const matchingItemsSubtotal = (basketItems || []).reduce(
-      (sum, item) =>
-        !item?.promoLocked && String(item?.id || "") === targetItemId
-          ? sum + toSafeNumber(item?.price, 0)
-          : sum,
-      0
-    );
-    return roundMoney(
-      matchingItemsSubtotal *
-        (toSafeNumber(smartOffer.discountValue, 0) / 100),
-      0
-    );
-  }
-  return 0;
+  return getSmartOfferConditionStatus({ smartOffer, basketItems, subTotal }).discountAmount;
 };
 
 const calculateDiscountedSubtotal = ({
@@ -204,9 +171,11 @@ const calculateDiscountedSubtotal = ({
   );
 
   // A validated promo code replaces the activated Smart Offer for this order.
-  if (smartOfferActivated && smartOffer && !shouldApplyPromoCode) {
-    const persoDiscount = calculateSmartOfferDiscount({ smartOffer, smartOfferActivated, subTotal: nextSubtotal, basketItems });
-    return roundMoney(Math.max(0, nextSubtotal - persoDiscount), 0);
+  // `smartOfferActivated` = l'offre s'applique vraiment à la commande (smartOfferAppliedToOrder,
+  // même règle que l'envoi de l'offre) : elle remplace alors la remise 1re commande / abonnement.
+  if (smartOfferActivated && smartOffer && !shouldApplyPromoCode && smartOfferReplacesOtherDiscounts(smartOffer)) {
+    const { discountAmount } = getSmartOfferConditionStatus({ smartOffer, basketItems, subTotal: nextSubtotal });
+    return roundMoney(Math.max(0, nextSubtotal - discountAmount), 0);
   }
 
   const shouldApplyFirstOrderDiscount =
@@ -280,7 +249,7 @@ const isUserSubscriptionActive = (user) => {
 
 const CheckoutContent = ({ restaurantsSettings }) => {
   const { user, loading } = useUser();
-  const { removeFromBasket } = useBasket();
+  const { removeFromBasket, convertSmartOfferGiftToPaid, restoreSmartOfferGift } = useBasket();
   const basket = useSelectBasket();
   const basketItems = useSelectBasketItems();
   const basketOffers = useSelectBasketOffers();
@@ -289,8 +258,15 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const {
     smartOffer,
     smartOfferActivated,
+    smartOfferAvailable,
+    smartOfferManuallyDisabled,
+    activateSmartOffer,
+    deactivateSmartOffer,
     clearSmartOffer,
   } = useSmartOffer();
+  const [instructions, setInstructions] = useState("");
+  // Choix proposé quand le client désactive une offre alors qu'un cadeau est au panier.
+  const [giftDisableDialog, setGiftDisableDialog] = useState(null);
 
   const [tips, setTips] = useState("");
   const [selectedTip, setSelectedTip] = useState(0);
@@ -327,6 +303,9 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const [showBirthdayItemModal, setShowBirthdayItemModal] = useState(false);
   const [showSmartOfferItemModal, setShowSmartOfferItemModal] = useState(false);
   const [smartOfferItemChoice, setSmartOfferItemChoice] = useState(null);
+  // Article normal à ajouter depuis l'offre (article ciblé, article déclencheur du 1 acheté = 1 offert).
+  const [showRegularItemModal, setShowRegularItemModal] = useState(false);
+  const [regularItemChoice, setRegularItemChoice] = useState(null);
   const [showUpdateRestaurantModal, setShowUpdateRestaurantModal] =
     useState(false);
   const [isSuccessRedirecting, setIsSuccessRedirecting] = useState(() => {
@@ -351,33 +330,155 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   const smartOfferSelectedForOrder = Boolean(
     smartOfferActivated && smartOffer && !promoCodeApplied
   );
-  const smartOfferThresholdReached =
-    toSafeNumber(subTotal, 0) >= toSafeNumber(smartOffer?.bonusThreshold, 0);
-  const smartOfferComputedDiscount = calculateSmartOfferDiscount({
-    smartOffer,
-    smartOfferActivated: smartOfferSelectedForOrder,
-    subTotal,
-    basketItems,
-  });
-  const hasSelectedSmartOfferFreeItem = basketItems.some(
-    (item) => item.isSmartOfferFreeItem
+  const smartOfferEffectiveThreshold = toSafeNumber(
+    smartOffer?.offerType === "deferred_cashback"
+      ? (smartOffer?.deferredThreshold || smartOffer?.bonusThreshold)
+      : smartOffer?.offerType === "mystery_gift"
+      ? (smartOffer?.mysteryThreshold || smartOffer?.bonusThreshold)
+      : smartOffer?.bonusThreshold,
+    0
   );
-  const smartOfferAppliedToOrder = Boolean(
-    smartOfferSelectedForOrder &&
-      smartOfferThresholdReached &&
-      (["free_item", "buy_one_get_one"].includes(smartOffer?.offerType)
-        ? hasSelectedSmartOfferFreeItem
-        : smartOffer?.offerType === "free_delivery"
-        ? deliveryMode === "delivery"
-          && toSafeNumber(selectedRestaurant?.settings?.delivery_fee, 0) > 0
-        : smartOffer?.offerType === "loyalty_points"
+  // Cadeau (free_item / buy_one_get_one) : même règle que l'app — seuil atteint ET, pour un
+  // « 1 acheté = 1 offert », article déclencheur présent au panier.
+  // Cashback (étape 1) : seuil sur le sous-total APRÈS la remise 1re commande / abonnement.
+  const cashbackThresholdBase = roundMoney(
+    toSafeNumber(subTotal, 0) *
+      (firstOrderDiscountAllowed && !promoCodeApplied
+        ? 0.8
+        : subscriptionActive && !promoCodeApplied
+          ? (100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100
+          : 1),
+    0
+  );
+  const smartOfferThresholdReached = smartOffer?.offerType === "deferred_cashback"
+    ? cashbackThresholdBase >= smartOfferEffectiveThreshold
+    : ["free_item", "buy_one_get_one"].includes(smartOffer?.offerType)
+    ? getSmartOfferGiftStatus({ smartOffer, basketItems, basketSubtotal: toSafeNumber(subTotal, 0) }).unlocked
+    : toSafeNumber(subTotal, 0) >= smartOfferEffectiveThreshold;
+  // Frais de livraison sans l'offre (abonné : déjà gratuite) : une offre de livraison gratuite
+  // ne s'applique que s'ils sont payants.
+  const deliveryFeeWithoutOffer =
+    deliveryMode === "delivery" && !subscriptionActive
+      ? toSafeNumber(selectedRestaurant?.settings?.delivery_fee, 0)
+      : 0;
+  // `selected` = offre retenue pour la commande. Règle commune avec l'app
+  // (isSmartOfferAppliedToOrder) : elle décide à la fois de l'envoi de l'offre et de la remise
+  // 1re commande / abonnement qu'elle remplace.
+  const isSmartOfferApplicable = (selected) => Boolean(
+    selected &&
+      isSmartOfferAppliedToOrder({
+        smartOffer,
+        basketItems,
+        subTotal: toSafeNumber(subTotal, 0),
+        deliveryMode,
+        deliveryFeeWithoutOffer,
+        cashbackThresholdBase,
+      }) &&
+      (smartOffer?.offerType === "loyalty_points"
         ? toSafeNumber(smartOffer?.bonusPoints, 0) > 0
-        : smartOfferComputedDiscount > 0)
+        : true)
   );
+  const smartOfferAppliedToOrder = isSmartOfferApplicable(smartOfferSelectedForOrder);
+  // Brut (ignore la désactivation manuelle) : sert à savoir quelle réduction l'offre annule,
+  // pour proposer de la désactiver… ou de la réactiver.
+  const smartOfferAvailableForOrder = Boolean(
+    smartOfferAvailable && smartOffer && !promoCodeApplied
+  );
+  const smartOfferConditionMetRaw = isSmartOfferApplicable(smartOfferAvailableForOrder);
+  // L'étape 1 du cashback ne remplace pas la remise 1re commande / abonnement.
+  const smartOfferReplacesDiscounts =
+    smartOfferAppliedToOrder && smartOfferReplacesOtherDiscounts(smartOffer);
+  const cancelledDiscountInfo =
+    smartOfferReplacesOtherDiscounts(smartOffer) &&
+    (smartOfferConditionMetRaw || (smartOfferAvailable && smartOfferManuallyDisabled))
+      ? firstOrderDiscountAllowed && !promoCodeApplied
+        ? { label: "votre réduction de 20% sur la première commande" }
+        : subscriptionActive && !promoCodeApplied
+        ? { label: `votre rabais abonnement de ${SUBSCRIPTION_DISCOUNT_PERCENT}%` }
+        : null
+      : null;
+  const singleSmartOfferGift = getSingleSmartOfferGiftOption(smartOffer);
+  // Ce qui, dans CE panier, n'est pas remisé : articles des catégories exclues et, pour un rabais
+  // global, les offres (combos). + la remarque générale de l'offre (même texte que l'app).
+  const showDiscountExclusions =
+    smartOfferActivated && smartOffer && !promoCodeApplied && smartOffer.offerType !== "deferred_cashback";
+  const discountExclusionsText = showDiscountExclusions
+    ? getDiscountExclusionsText(smartOffer)
+    : "";
+  const excludedBasketItemNames = showDiscountExclusions
+    ? [...new Set([
+        ...getBasketItemsExcludedFromOffer(basketItems, smartOffer).map((item) => item.name),
+        ...(isGlobalDiscountOffer(smartOffer) ? (basketOffers || []).map((offer) => offer.name) : []),
+      ].filter(Boolean))]
+    : [];
+
+  // Garde-fou avant paiement : cadeau débloqué mais pas ajouté au panier.
+  const [showMissingGiftDialog, setShowMissingGiftDialog] = useState(false);
+  const giftWarningAcknowledgedRef = useRef(false);
+  const pendingPayActionRef = useRef(null);
+  const beforePay = (action) => {
+    const giftMissing =
+      smartOfferActivated &&
+      !promoCodeApplied &&
+      isSmartOfferGiftMissing({ smartOffer, basketItems, basketSubtotal: toSafeNumber(subTotal, 0) });
+    if (!giftMissing || giftWarningAcknowledgedRef.current) return true;
+    pendingPayActionRef.current = action || null;
+    setShowMissingGiftDialog(true);
+    return false;
+  };
+  const closeGiftWarning = () => {
+    pendingPayActionRef.current = null;
+    setShowMissingGiftDialog(false);
+  };
+  const addGiftFromWarning = () => {
+    closeGiftWarning();
+    router.push("/menu/cadeaux");
+  };
+  const continueWithoutGift = () => {
+    giftWarningAcknowledgedRef.current = true;
+    const action = pendingPayActionRef.current;
+    closeGiftWarning();
+    // Apple Pay ne peut pas être relancé par programme : le client reclique (sans nouvel avertissement).
+    if (action) action();
+  };
+
+  const handleToggleSmartOffer = () => {
+    if (smartOfferManuallyDisabled) {
+      activateSmartOffer();
+      // Un ancien cadeau gardé au prix normal redevient gratuit s'il correspond toujours à un
+      // cadeau de l'offre et n'a pas changé de taille (les suppléments restent facturés).
+      const giftOptions = getSmartOfferGiftOptions(smartOffer);
+      const formerGift = basketItems.find(
+        (item) =>
+          item?.wasSmartOfferGift &&
+          getBasketItemSize(item) === item.smartOfferGiftSize &&
+          giftOptions.some(
+            (option) =>
+              option.id === getBasketItemMenuItemId(item) &&
+              (!option.size || option.size.toLowerCase() === getBasketItemSize(item))
+          )
+      );
+      if (formerGift) restoreSmartOfferGift(formerGift.uid);
+      return;
+    }
+    const gifts = basketItems.filter((item) => item?.isSmartOfferFreeItem);
+    if (!gifts.length) {
+      deactivateSmartOffer();
+      return;
+    }
+    setGiftDisableDialog({
+      gifts,
+      names: gifts.map((item) => item.name).filter(Boolean).join(", ") || "L'article offert",
+      paidTotal: gifts.reduce(
+        (sum, item) => sum + toSafeNumber(item.basePrice, 0) + toSafeNumber(item.price, 0),
+        0
+      ),
+    });
+  };
   const shouldApplyFirstOrderDiscount =
     firstOrderDiscountAllowed &&
     !promoCodeApplied &&
-    !smartOfferAppliedToOrder;
+    !smartOfferReplacesDiscounts;
   const currentCycleKey = getExpectedSubscriptionCycleKey(user, new Date());
   const userCycleKey = String(user?.subscriptionFreeItemCycleKey || "").trim();
   const subscriptionFreeItemUsedCount =
@@ -444,7 +545,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     subscriptionActive &&
     !shouldApplyFirstOrderDiscount &&
     !promoCodeApplied &&
-    !smartOfferAppliedToOrder;
+    !smartOfferReplacesDiscounts;
 
   const smartOfferFreeItemOptions = useMemo(() => {
     const configuredItems = Array.isArray(smartOffer?.freeItems)
@@ -473,7 +574,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     basketItems.find((item) => item.isBirthdayFreeItem) || null;
   const shouldShowBirthdayFreeItemSection =
     Boolean(configuredBirthdayFreeItemId) &&
-    !smartOfferAppliedToOrder &&
+    !smartOfferReplacesDiscounts &&
     (canUseBirthdayFreeItem || Boolean(selectedBirthdayFreeItem));
   const selectedFreeItemCustomizationAmount = roundMoney(
     (selectedFreeItem?.customization || []).reduce(
@@ -1147,6 +1248,16 @@ const CheckoutContent = ({ restaurantsSettings }) => {
         isSmartOfferFreeItem
         lockedSize={smartOfferItemChoice?.size || ""}
       />
+      {regularItemChoice && (
+        <MenuItemModal
+          key={`regular-${regularItemChoice.id}-${regularItemChoice.size || "default"}`}
+          itemId={regularItemChoice.id}
+          itemUID={null}
+          showMenuItemModal={showRegularItemModal}
+          setShowMenuItemModal={setShowRegularItemModal}
+          lockedSize={regularItemChoice.size || ""}
+        />
+      )}
 
       <div className="md:w-[70%] w-full mx-auto">
         {user.isBanned && (
@@ -1252,7 +1363,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             </div>
           )}
 
-          {subscriptionActive && !smartOfferAppliedToOrder && (
+          {subscriptionActive && !smartOfferReplacesDiscounts && (
             <div className="rounded-md bg-white p-6 shadow-md mt-4 w-full">
               <h2 className="font-inter font-semibold text-black md:text-xl text-base">
                 Article gratuit mensuel
@@ -1367,7 +1478,116 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             </div>
           )}
 
-          {/* Smart Offer Banner in Checkout */}
+          {showMissingGiftDialog && (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60"
+              onClick={closeGiftWarning}
+            >
+              <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+                <p className="font-bold text-lg">{MISSING_GIFT_TITLE}</p>
+                <p className="text-sm text-gray-600 mt-2">{MISSING_GIFT_MESSAGE}</p>
+                <div className="mt-5 space-y-2">
+                  <button
+                    type="button"
+                    className="w-full py-2.5 rounded-lg bg-[#F7A600] text-[#111827] font-bold text-sm cursor-pointer"
+                    onClick={addGiftFromWarning}
+                  >
+                    Ajouter mon cadeau
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full py-2.5 rounded-lg border border-red-300 text-red-600 font-bold text-sm cursor-pointer"
+                    onClick={continueWithoutGift}
+                  >
+                    Continuer sans
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {giftDisableDialog && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+              onClick={() => setGiftDisableDialog(null)}
+            >
+              <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+                <p className="font-bold text-lg">{giftDisableDialog.names} ne sera plus offert</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Sans votre offre personnalisée, cet article n&apos;est plus gratuit. Que voulez-vous en faire ?
+                </p>
+                <div className="mt-5 space-y-2">
+                  <button
+                    type="button"
+                    className="w-full py-2.5 rounded-lg bg-[#F7A600] text-[#111827] font-bold text-sm cursor-pointer"
+                    onClick={() => {
+                      giftDisableDialog.gifts.forEach((item) => convertSmartOfferGiftToPaid(item.uid));
+                      deactivateSmartOffer();
+                      setGiftDisableDialog(null);
+                    }}
+                  >
+                    Le garder ({giftDisableDialog.paidTotal.toFixed(2)} $)
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full py-2.5 rounded-lg border border-red-300 text-red-600 font-bold text-sm cursor-pointer"
+                    onClick={() => {
+                      giftDisableDialog.gifts.forEach((item) => removeFromBasket(item.uid));
+                      deactivateSmartOffer();
+                      setGiftDisableDialog(null);
+                    }}
+                  >
+                    Retirer l&apos;article
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full py-2.5 rounded-lg text-gray-600 text-sm cursor-pointer"
+                    onClick={() => setGiftDisableDialog(null)}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-2xl mt-4 p-4 bg-white border border-[#ECE5D9]">
+            <label htmlFor="order-instructions" className="font-bold text-sm">
+              Instructions (optionnel)
+            </label>
+            <textarea
+              id="order-instructions"
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder="Instructions pour le restaurant ou le livreur"
+              rows={2}
+              maxLength={500}
+              className="w-full mt-2 p-2 rounded-lg border border-gray-300 text-sm outline-none focus:border-[#F7A600]"
+            />
+          </div>
+
+          <PromoCodeBlock
+            userId={user._id}
+            basketItems={basketItems}
+            basketOffers={basketOffers}
+            promoCodeData={promoCodeData}
+            setPromoCodeData={setPromoCodeData}
+            promoCodeIsValid={promoCodeIsValid}
+            setPromoCodeIsValid={setPromoCodeIsValid}
+            promoCodeAllowed={promoCodeAllowed}
+            subTotal={subTotal}
+            promoCodeError={promoCodeError}
+            setPromoCodeError={setPromoCodeError}
+          />
+
+          <TipsBlock
+            selectedTip={selectedTip}
+            setSelectedTip={setSelectedTip}
+            setTips={setTips}
+            tips={tips}
+          />
+
+          {/* Bannières smart offers : regroupées juste au-dessus du récapitulatif de la commande. */}
           {smartOffer && (
             <div
               className="rounded-2xl overflow-hidden mt-4"
@@ -1393,101 +1613,326 @@ const CheckoutContent = ({ restaurantsSettings }) => {
                       className="text-xs font-bold tracking-widest uppercase"
                       style={{ color: smartOfferActivated ? "#10B981" : "#F7A600" }}
                     >
-                      {smartOfferActivated ? "✅ Offre activée" : "✦ Offre personnalisée disponible"}
+                      {smartOfferManuallyDisabled
+                        ? "Offre personnalisée désactivée"
+                        : smartOfferActivated
+                        ? "Offre activée"
+                        : "Offre personnalisée disponible"}
                     </p>
                     <p className="text-white text-sm font-semibold mt-0.5 truncate">
-                      {smartOffer.notificationTitle}
+                      {smartOffer.offerType === "discount_category"
+                        ? `${smartOffer.discountValue}% de rabais sur la catégorie ${smartOffer.targetCategory?.name || ""}`
+                        : smartOffer.offerType === "discount_product"
+                        ? `${smartOffer.discountValue}% de rabais sur ${smartOffer.targetMenuItem?.name || "l'article ciblé"}`
+                        : smartOffer.offerType === "bonus_basket"
+                        ? `Rabais de ${smartOffer.discountValue}$ dès ${toSafeNumber(smartOffer.bonusThreshold, 0).toFixed(2)}$ d'achat`
+                        : smartOffer.notificationTitle}
                     </p>
-                    {toSafeNumber(smartOffer?.bonusThreshold, 0) > 0 && (
+                    {/* Détail par type d'offre : mêmes textes et actions que le checkout de l'app. */}
+                    {smartOfferActivated && promoCodeApplied ? (
                       <div className="mt-3">
-                        <div className="flex items-center justify-between gap-3 text-xs font-semibold">
-                          <span
-                            style={{
-                              color: smartOfferThresholdReached
-                                ? "#34D399"
-                                : "#D1D5DB",
-                            }}
-                          >
-                            {smartOfferThresholdReached
-                              ? "Offre débloquée"
-                              : `Encore ${Math.max(
-                                  0,
-                                  toSafeNumber(smartOffer.bonusThreshold, 0) -
-                                    toSafeNumber(subTotal, 0),
-                                ).toFixed(2)}$`}
-                          </span>
-                          <span className="text-gray-300 whitespace-nowrap">
-                            {toSafeNumber(subTotal, 0).toFixed(2)}$ /{" "}
-                            {toSafeNumber(smartOffer.bonusThreshold, 0).toFixed(2)}$
-                          </span>
-                        </div>
-                        <div className="h-2 bg-white/20 rounded-full overflow-hidden mt-2">
-                          <div
-                            className="h-full rounded-full transition-all duration-300"
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                (toSafeNumber(subTotal, 0) /
-                                  toSafeNumber(smartOffer.bonusThreshold, 1)) *
-                                  100,
-                              )}%`,
-                              backgroundColor: smartOfferThresholdReached
-                                ? "#34D399"
-                                : "#F7A600",
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    {smartOfferActivated && smartOfferDiscountAmount > 0 && (
-                      <p className="text-sm mt-1" style={{ color: "#34D399" }}>
-                        Économie : -{smartOfferDiscountAmount.toFixed(2)}$
-                      </p>
-                    )}
-                    {smartOfferSelectedForOrder &&
-                      smartOffer?.offerType === "loyalty_points" && (
-                        <p className="text-sm mt-2 font-bold" style={{ color: "#34D399" }}>
-                          {smartOfferThresholdReached
-                            ? `+${Math.floor(toSafeNumber(smartOffer.bonusPoints, 0))} points seront crédités après confirmation de la commande`
-                            : `Atteignez le seuil pour gagner ${Math.floor(toSafeNumber(smartOffer.bonusPoints, 0))} points bonus`}
+                        <p className="text-sm font-bold text-[#F7A600]">Code promo appliqué</p>
+                        <p className="text-xs text-gray-300 mt-1">
+                          L&apos;offre personnalisée est suspendue le temps d&apos;utiliser ce code promo. Supprimez le code promo pour réactiver votre offre.
                         </p>
-                      )}
-                    {smartOfferSelectedForOrder && ["free_item", "buy_one_get_one"].includes(smartOffer?.offerType) && (
+                      </div>
+                    ) : smartOfferSelectedForOrder && isSmartOfferThresholdReachedWithoutEligibleItems({ smartOffer, basketItems, subTotal: toSafeNumber(subTotal, 0) }) ? (
+                      // Seuil / palier atteint mais rien de remisable : l'offre ne rapporte rien,
+                      // la remise 1re commande / abonnement s'applique à sa place.
                       <div className="mt-3">
-                        {selectedSmartOfferFreeItem ? (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm text-[#34D399] font-semibold">
-                              {selectedSmartOfferFreeItem.name}
-                              {selectedSmartOfferFreeItem.size?.size
-                                ? ` (${selectedSmartOfferFreeItem.size.size})`
-                                : ""} gratuit
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => removeFromBasket(selectedSmartOfferFreeItem.uid)}
-                              className="text-xs text-red-300 underline cursor-pointer"
-                            >
-                              Retirer
-                            </button>
-                          </div>
-                        ) : smartOfferFreeItemOptions.length > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => router.push("/menu/cadeaux")}
-                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-black bg-[#F7A600] cursor-pointer"
-                          >
-                            Choisissez votre {String(
-                              smartOffer.targetCategory?.name ||
-                                smartOffer.freeItems?.[0]?.item?.category?.name ||
-                                "cadeau",
-                            ).toLowerCase()}
-                          </button>
-                        ) : (
-                          <p className="text-xs text-amber-200">
-                            Aucun article gratuit n’est configuré pour cette offre.
+                        <p className="text-sm font-bold text-[#F7A600]">Seuil atteint, mais rien à remiser</p>
+                        <p className="text-xs text-gray-300 mt-1">{NOTHING_ELIGIBLE_MESSAGE}</p>
+                        {(firstOrderDiscountAllowed || subscriptionActive) && (
+                          <p className="text-xs font-semibold mt-1" style={{ color: "#34D399" }}>
+                            En attendant, {firstOrderDiscountAllowed
+                              ? "votre réduction de 20% sur la première commande"
+                              : `votre rabais abonnement de ${SUBSCRIPTION_DISCOUNT_PERCENT}%`} s&apos;applique à cette commande.
                           </p>
                         )}
                       </div>
+                    ) : smartOfferSelectedForOrder && (() => {
+                      const offerType = smartOffer.offerType;
+                      const basketSubtotal = toSafeNumber(subTotal, 0);
+                      const ok = "#34D399";
+                      const pending = "#F7A600";
+                      const ProgressBar = ({ value, max, color }) => (
+                        <div className="h-1.5 bg-white/20 rounded-full overflow-hidden mt-2.5">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, Math.round((value / Math.max(0.01, max)) * 100))}%`, backgroundColor: color }}
+                          />
+                        </div>
+                      );
+                      const ActionButton = ({ label, onClick, color = "#F7A600" }) => (
+                        <button
+                          type="button"
+                          onClick={onClick}
+                          className="mt-3 px-4 py-2 rounded-lg text-xs font-bold text-black cursor-pointer"
+                          style={{ backgroundColor: color }}
+                        >
+                          {label}
+                        </button>
+                      );
+                      const openRegularItem = (id, size = "") => {
+                        setRegularItemChoice({ id, size });
+                        setShowRegularItemModal(true);
+                      };
+                      const threshold = toSafeNumber(smartOffer.bonusThreshold, 0);
+                      const reached = threshold <= 0 || basketSubtotal >= threshold;
+                      const missing = Math.max(0, threshold - basketSubtotal).toFixed(2);
+
+                      if (offerType === "discount_order") {
+                        return (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: reached ? ok : pending }}>
+                              {reached ? `${smartOffer.discountValue}% de rabais appliqué` : `Encore ${missing}$ pour débloquer le rabais`}
+                            </p>
+                            {threshold > 0 && <ProgressBar value={basketSubtotal} max={threshold} color={reached ? ok : pending} />}
+                          </div>
+                        );
+                      }
+                      if (offerType === "bonus_basket") {
+                        return (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: reached ? ok : pending }}>
+                              {reached
+                                ? `Seuil atteint — ${smartOffer.discountValue}$ de rabais actif`
+                                : `Encore ${missing}$ pour obtenir ${smartOffer.discountValue}$ de rabais`}
+                            </p>
+                            {threshold > 0 && <ProgressBar value={basketSubtotal} max={threshold} color={reached ? ok : pending} />}
+                          </div>
+                        );
+                      }
+                      if (offerType === "discount_category") {
+                        const targetCatId = String(smartOffer.targetCategory?._id || smartOffer.targetCategory || "");
+                        const hasCategoryItem = basketItems.some((item) => {
+                          const itemCat = String(item.category?._id || item.category || "");
+                          return itemCat && itemCat === targetCatId;
+                        });
+                        return (
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-300">
+                              {hasCategoryItem
+                                ? "Le rabais s'applique uniquement aux articles de cette catégorie, pas au reste de la commande."
+                                : "Le rabais s'applique uniquement aux articles de cette catégorie. Ajoutez-en un pour en profiter."}
+                            </p>
+                            {!hasCategoryItem && (
+                              <ActionButton
+                                label="Ouvrir le menu"
+                                onClick={() => router.push(smartOffer.targetCategory?.slug ? `/menu/${smartOffer.targetCategory.slug}` : "/menu")}
+                              />
+                            )}
+                          </div>
+                        );
+                      }
+                      if (offerType === "discount_product") {
+                        const targetMenuItemId = String(smartOffer.targetMenuItem?._id || smartOffer.targetMenuItem || "");
+                        const targetMenuItemName = smartOffer.targetMenuItem?.name || "";
+                        const hasProductItem = basketItems.some((item) => getBasketItemMenuItemId(item) === targetMenuItemId);
+                        return (
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-300">
+                              {hasProductItem
+                                ? `Le rabais s'applique à « ${targetMenuItemName || "cet article"} » dans votre panier`
+                                : targetMenuItemName
+                                ? `Ajoutez « ${targetMenuItemName} » à votre panier pour bénéficier du rabais`
+                                : "Ajoutez l'article en promotion à votre panier pour bénéficier du rabais"}
+                            </p>
+                            {!hasProductItem && (
+                              <ActionButton
+                                label="Ajouter l'article"
+                                onClick={() => (targetMenuItemId ? openRegularItem(targetMenuItemId) : router.push("/menu"))}
+                              />
+                            )}
+                          </div>
+                        );
+                      }
+                      if (offerType === "deferred_cashback") {
+                        const defThreshold = toSafeNumber(smartOffer.deferredThreshold, 0) || threshold;
+                        const defReached = cashbackThresholdBase >= defThreshold;
+                        return (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: defReached ? ok : pending }}>
+                              {defReached
+                                ? `Seuil atteint ! ${smartOffer.deferredDiscountValue}% de rabais sur votre prochaine commande dès ${getDeferredActivationLabel(smartOffer)}`
+                                : `Encore ${Math.max(0, defThreshold - cashbackThresholdBase).toFixed(2)}$ pour débloquer votre réduction de ${smartOffer.deferredDiscountValue}% (${getDeferredActivationLabel(smartOffer)})`}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              La réduction sera activée {getDeferredActivationLabel(smartOffer)} et valable {smartOffer.deferredValidityDays || 7} jours.
+                            </p>
+                            <ProgressBar value={cashbackThresholdBase} max={defThreshold || 1} color={defReached ? ok : pending} />
+                          </div>
+                        );
+                      }
+                      if (offerType === "tiered_discount") {
+                        const sortedTiers = [...(smartOffer.tieredDiscounts || [])]
+                          .map((tier) => ({ threshold: toSafeNumber(tier?.threshold, 0), discountValue: toSafeNumber(tier?.discountValue, 0) }))
+                          .sort((a, b) => a.threshold - b.threshold);
+                        let currentTier = null;
+                        let nextTier = null;
+                        for (const tier of sortedTiers) {
+                          if (basketSubtotal >= tier.threshold) currentTier = tier;
+                          else if (!nextTier) nextTier = tier;
+                        }
+                        const maxTier = sortedTiers[sortedTiers.length - 1];
+                        return (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: currentTier ? ok : pending }}>
+                              {currentTier ? `${currentTier.discountValue}% de rabais débloqué !` : "Débloquez des rabais progressifs"}
+                            </p>
+                            {nextTier && (
+                              <p className="text-xs text-gray-300 mt-1">
+                                Encore {(nextTier.threshold - basketSubtotal).toFixed(2)}$ pour atteindre le palier {nextTier.discountValue}% !
+                              </p>
+                            )}
+                            {!nextTier && currentTier && (
+                              <p className="text-xs text-gray-300 mt-1">Vous avez atteint le palier maximum !</p>
+                            )}
+                            <ProgressBar value={basketSubtotal} max={maxTier?.threshold || 1} color={currentTier ? ok : pending} />
+                          </div>
+                        );
+                      }
+                      if (offerType === "mystery_gift") {
+                        const mysThreshold = toSafeNumber(smartOffer.mysteryThreshold, 0);
+                        const mysReached = basketSubtotal >= mysThreshold;
+                        return (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: mysReached ? "#8B5CF6" : pending }}>
+                              {mysReached
+                                ? selectedSmartOfferFreeItem
+                                  ? "Cadeau Mystère ajouté à votre commande"
+                                  : "Cadeau Mystère Débloqué ! (Sera ajouté à votre commande)"
+                                : `Encore ${(mysThreshold - basketSubtotal).toFixed(2)}$ pour débloquer votre Cadeau Mystère !`}
+                            </p>
+                            <ProgressBar value={basketSubtotal} max={mysThreshold || 1} color={mysReached ? "#8B5CF6" : pending} />
+                            {mysReached && !selectedSmartOfferFreeItem && smartOfferFreeItemOptions.length > 0 && (
+                              <ActionButton
+                                color="#8B5CF6"
+                                label={singleSmartOfferGift ? "Ajouter mon cadeau" : "Personnaliser mon cadeau"}
+                                onClick={() => router.push("/menu/cadeaux")}
+                              />
+                            )}
+                          </div>
+                        );
+                      }
+                      // Livraison offerte mais commande à emporter : l'offre ne rapporte rien.
+                      if (offerType === "free_delivery" && deliveryMode !== "delivery") {
+                        return (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: pending }}>Votre offre : la livraison gratuite</p>
+                            <p className="text-xs text-gray-300 mt-1">
+                              Elle ne s&apos;applique qu&apos;en livraison. Choisissez la livraison pour en profiter.
+                            </p>
+                            <ActionButton label="Passer en livraison" onClick={() => setDeliveryMode("delivery")} />
+                          </div>
+                        );
+                      }
+                      if (offerType === "free_delivery") {
+                        return (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: reached ? ok : pending }}>
+                              {reached ? "Livraison gratuite activée" : `Encore ${missing}$ pour débloquer la livraison gratuite`}
+                            </p>
+                            {threshold > 0 && <ProgressBar value={basketSubtotal} max={threshold} color={reached ? ok : pending} />}
+                          </div>
+                        );
+                      }
+                      if (offerType === "loyalty_points") {
+                        const bonusPoints = Math.max(0, Math.floor(toSafeNumber(smartOffer.bonusPoints, 0)));
+                        return (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: reached ? ok : pending }}>
+                              {reached
+                                ? `Seuil atteint — ${bonusPoints} points de fidélité bonus sont offerts`
+                                : `Encore ${missing}$ pour gagner ${bonusPoints} points de fidélité bonus`}
+                            </p>
+                            {!reached && <p className="text-xs text-gray-400 mt-1">Objectif : {threshold.toFixed(2)}$</p>}
+                            {threshold > 0 && <ProgressBar value={basketSubtotal} max={threshold} color={reached ? ok : pending} />}
+                          </div>
+                        );
+                      }
+                      if (offerType === "split_discount") {
+                        return threshold > 0 ? (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: reached ? ok : pending }}>
+                              {reached ? "Le rabais divisé s'appliquera au paiement" : `Encore ${missing}$ pour débloquer le rabais divisé`}
+                            </p>
+                            <ProgressBar value={basketSubtotal} max={threshold} color={reached ? ok : pending} />
+                          </div>
+                        ) : null;
+                      }
+                      if (["free_item", "buy_one_get_one"].includes(offerType)) {
+                        const isBogo = isBuyOneGetOneOffer(smartOffer);
+                        const giftStatus = getSmartOfferGiftStatus({ smartOffer, basketItems, basketSubtotal });
+                        const freeItemReached = giftStatus.unlocked;
+                        const hasFreeItemInCart = Boolean(selectedSmartOfferFreeItem);
+                        let itemLabel = singleSmartOfferGift?.item?.name || (smartOffer.freeItems?.length > 0
+                          ? (smartOffer.targetCategory?.name ? `Au choix (${smartOffer.targetCategory.name})` : "Article offert au choix")
+                          : (smartOffer.freeItem?.name || (smartOffer.targetCategory?.name ? `Au choix (${smartOffer.targetCategory.name})` : "Au choix dans le menu")));
+                        if (String(smartOffer.giftItemSize || "").trim()) itemLabel += ` (${smartOffer.giftItemSize.trim()})`;
+                        const triggerId = getBuyOneGetOneTriggerId(smartOffer);
+                        return (
+                          <div className="mt-3">
+                            <p className="text-sm font-bold" style={{ color: freeItemReached ? ok : pending }}>
+                              {freeItemReached
+                                ? hasFreeItemInCart
+                                  ? `Article gratuit appliqué : ${itemLabel}`
+                                  : `${isBogo ? "Cadeau débloqué" : "Seuil atteint"} — Article offert : ${itemLabel}`
+                                : isBogo && !giftStatus.hasTrigger
+                                ? `Ajoutez ${buildBuyOneGetOneTriggerLabel(smartOffer)} pour débloquer : ${itemLabel}`
+                                : `Encore ${giftStatus.missingAmount.toFixed(2)}$ pour débloquer : ${itemLabel}`}
+                            </p>
+                            {hasFreeItemInCart ? (
+                              <div className="flex items-center gap-2 flex-wrap mt-1">
+                                <span className="text-xs text-gray-300">
+                                  L&apos;article offert est dans votre panier et déduit de votre commande.
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeFromBasket(selectedSmartOfferFreeItem.uid)}
+                                  className="text-xs text-red-300 underline cursor-pointer"
+                                >
+                                  Retirer
+                                </button>
+                              </div>
+                            ) : giftStatus.threshold > 0 && !freeItemReached ? (
+                              <p className="text-xs text-gray-400 mt-1">Objectif panier : {giftStatus.threshold.toFixed(2)}$</p>
+                            ) : null}
+                            {giftStatus.threshold > 0 && (
+                              <ProgressBar value={basketSubtotal} max={giftStatus.threshold} color={freeItemReached ? ok : pending} />
+                            )}
+                            {freeItemReached && !hasFreeItemInCart && isBogo && !singleSmartOfferGift && (
+                              <p className="text-xs text-gray-300 mt-2">Personnalisez votre article offert pour l&apos;ajouter au panier.</p>
+                            )}
+                            {isBogo && !giftStatus.hasTrigger && triggerId && (
+                              <ActionButton
+                                label={`Ajouter ${buildBuyOneGetOneTriggerLabel(smartOffer)}`}
+                                onClick={() => openRegularItem(triggerId, smartOffer.triggerItemSize || "")}
+                              />
+                            )}
+                            {freeItemReached && !hasFreeItemInCart && smartOfferFreeItemOptions.length > 0 && (
+                              <ActionButton
+                                label={singleSmartOfferGift
+                                  ? "Ajouter mon cadeau"
+                                  : isBogo
+                                  ? "Personnaliser"
+                                  : `Choisir mon ${String(
+                                      smartOffer.targetCategory?.name ||
+                                        smartOffer.freeItems?.[0]?.item?.category?.name ||
+                                        "cadeau",
+                                    ).toLowerCase()}`}
+                                onClick={() => router.push("/menu/cadeaux")}
+                              />
+                            )}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {smartOfferActivated && smartOfferDiscountAmount > 0 && (
+                      <p className="text-sm mt-2" style={{ color: "#34D399" }}>
+                        Économie : -{smartOfferDiscountAmount.toFixed(2)}$
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1495,26 +1940,47 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             </div>
           )}
 
-          <PromoCodeBlock
-            userId={user._id}
-            basketItems={basketItems}
-            basketOffers={basketOffers}
-            promoCodeData={promoCodeData}
-            setPromoCodeData={setPromoCodeData}
-            promoCodeIsValid={promoCodeIsValid}
-            setPromoCodeIsValid={setPromoCodeIsValid}
-            promoCodeAllowed={promoCodeAllowed}
-            subTotal={subTotal}
-            promoCodeError={promoCodeError}
-            setPromoCodeError={setPromoCodeError}
-          />
+          {(discountExclusionsText || excludedBasketItemNames.length > 0) && (
+            <div className="rounded-2xl mt-4 p-4 bg-[#111827] border border-red-500">
+              {discountExclusionsText && (
+                <p className="text-sm text-red-300">{discountExclusionsText}</p>
+              )}
+              {excludedBasketItemNames.length > 0 && (
+                <p className={`text-sm font-semibold text-red-300 ${discountExclusionsText ? "mt-1" : ""}`}>
+                  Dans votre panier : {excludedBasketItemNames.join(", ")}.
+                </p>
+              )}
+            </div>
+          )}
 
-          <TipsBlock
-            selectedTip={selectedTip}
-            setSelectedTip={setSelectedTip}
-            setTips={setTips}
-            tips={tips}
-          />
+          {cancelledDiscountInfo && (
+            <div
+              className="rounded-2xl mt-4 p-4 bg-[#111827] border"
+              style={{ borderColor: smartOfferManuallyDisabled ? "#6B7280" : "#F7A600" }}
+            >
+              <p className="font-bold text-sm" style={{ color: smartOfferManuallyDisabled ? "#D1D5DB" : "#F7A600" }}>
+                {smartOfferManuallyDisabled
+                  ? "Offre personnalisée désactivée"
+                  : "Votre offre remplace une autre réduction"}
+              </p>
+              <p className="text-xs text-gray-300 mt-1">
+                {smartOfferManuallyDisabled
+                  ? `${cancelledDiscountInfo.label} est appliqué à la place.`
+                  : `Votre offre personnalisée annule ${cancelledDiscountInfo.label}. Vous ne pouvez pas cumuler les deux.`}
+              </p>
+              <button
+                type="button"
+                onClick={handleToggleSmartOffer}
+                className={`w-full mt-3 py-2.5 rounded-lg text-sm font-bold cursor-pointer ${
+                  smartOfferManuallyDisabled
+                    ? "bg-[#F7A600] text-[#111827]"
+                    : "bg-[#1F2937] text-[#F7A600] border border-gray-500"
+                }`}
+              >
+                {smartOfferManuallyDisabled ? "Réactiver l'offre" : "Désactiver l'offre"}
+              </button>
+            </div>
+          )}
 
           <ResumeBlock
             subTotal={subTotal}
@@ -1566,7 +2032,14 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             setPromoCodeIsValid={setPromoCodeIsValid}
             setPromoCodeError={setPromoCodeError}
             onChangeRestaurant={() => setShowUpdateRestaurantModal(true)}
+            onChangeAddress={() =>
+              document
+                .getElementById("checkout-addresses")
+                ?.scrollIntoView({ behavior: "smooth", block: "center" })
+            }
             personalizedOfferId={smartOfferAppliedToOrder ? smartOffer._id : undefined}
+            instructions={instructions}
+            beforePay={beforePay}
             onOrderSuccess={() => {
               clearSmartOffer();
             }}

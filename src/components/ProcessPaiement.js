@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import CheckoutCard from "./CheckoutCard";
 import { FaCircleInfo } from "react-icons/fa6";
-import { FaStore } from "react-icons/fa6";
+import { FaLocationDot, FaStore } from "react-icons/fa6";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
@@ -34,18 +34,27 @@ const ProcessPaiement = ({
   setPromoCodeIsValid,
   setPromoCodeError,
   onChangeRestaurant,
+  onChangeAddress,
   personalizedOfferId,
+  instructions,
   onOrderSuccess,
+  beforePay,
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [processPaiement, setProcessPaiement] = useState(false);
   const [restaurantConfirmationAccepted, setRestaurantConfirmationAccepted] =
     useState(false);
   const [confirmedRestaurantId, setConfirmedRestaurantId] = useState(null);
+  const [confirmedDeliveryAddress, setConfirmedDeliveryAddress] =
+    useState(null);
 
   const restaurantName = selectedRestaurant?.name || "ce restaurant";
   const restaurantAddress =
     selectedRestaurant?.address || "Adresse non disponible";
+  const isDelivery = deliveryMode === "delivery";
+  const deliveryAddress = String(address?.address || "").trim();
+  const canConfirm =
+    restaurantConfirmationAccepted && (!isDelivery || Boolean(deliveryAddress));
 
   useEffect(() => {
     if (
@@ -58,16 +67,38 @@ const ProcessPaiement = ({
     }
   }, [confirmedRestaurantId, selectedRestaurant?._id]);
 
+  // Une adresse de livraison modifiée après confirmation doit être reconfirmée.
+  useEffect(() => {
+    if (
+      confirmedDeliveryAddress !== null &&
+      isDelivery &&
+      deliveryAddress !== confirmedDeliveryAddress
+    ) {
+      setProcessPaiement(false);
+      setConfirmedRestaurantId(null);
+      setConfirmedDeliveryAddress(null);
+      setRestaurantConfirmationAccepted(false);
+    }
+  }, [confirmedDeliveryAddress, isDelivery, deliveryAddress]);
+
   const openConfirmation = () => {
     setRestaurantConfirmationAccepted(false);
     setShowConfirmModal(true);
   };
 
   const handleConfirm = () => {
-    if (!restaurantConfirmationAccepted || !selectedRestaurant?._id) return;
+    if (!canConfirm || !selectedRestaurant?._id) return;
     setConfirmedRestaurantId(String(selectedRestaurant._id));
+    setConfirmedDeliveryAddress(isDelivery ? deliveryAddress : "");
     setShowConfirmModal(false);
     setProcessPaiement(true);
+  };
+
+  const handleChangeAddress = () => {
+    setShowConfirmModal(false);
+    if (onChangeAddress) {
+      onChangeAddress();
+    }
   };
 
   const handleChangeRestaurant = () => {
@@ -96,7 +127,7 @@ const ProcessPaiement = ({
             onClick={() => setShowConfirmModal(false)}
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 sm:p-8"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Icon */}
@@ -113,8 +144,9 @@ const ProcessPaiement = ({
 
               {/* Message */}
               <p className="font-inter text-[#374151] text-center text-sm leading-relaxed mb-4">
-                Vérifiez attentivement la succursale avant de payer. La commande
-                sera préparée uniquement à l&apos;adresse ci-dessous.
+                {isDelivery
+                  ? "Vérifiez attentivement la succursale et votre adresse de livraison avant de payer."
+                  : "Vérifiez attentivement la succursale avant de payer. La commande sera préparée uniquement à l’adresse ci-dessous."}
               </p>
 
               <div className="rounded-2xl bg-[#111827] p-5 mb-4 text-left">
@@ -130,6 +162,27 @@ const ProcessPaiement = ({
                   {restaurantAddress}
                 </div>
               </div>
+
+              {isDelivery && (
+                <div className="rounded-2xl border border-[#E5E7EB] bg-[#F9FAFB] p-4 mb-4 text-left">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 font-inter text-xs font-bold uppercase tracking-wider text-[#6B7280]">
+                      <FaLocationDot color="#F7A600" />
+                      Adresse de livraison
+                    </div>
+                    <button
+                      type="button"
+                      className="font-inter text-sm font-semibold text-[#8e6200] cursor-pointer hover:underline"
+                      onClick={handleChangeAddress}
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                  <div className="font-inter text-base font-bold leading-6 text-[#111827] mt-2 break-words">
+                    {deliveryAddress || "Aucune adresse de livraison sélectionnée"}
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-xl border border-[#F7A600] bg-amber-100 p-3 mb-4 text-left">
                 <p className="font-inter text-sm font-bold leading-5 text-amber-900">
@@ -148,14 +201,15 @@ const ProcessPaiement = ({
                   }
                 />
                 <span className="font-inter text-sm font-semibold leading-5 text-[#111827]">
-                  Je confirme que cette succursale est le bon lieu pour ma
-                  commande.
+                  {isDelivery
+                    ? "Je confirme la succursale et mon adresse de livraison."
+                    : "Je confirme que cette succursale est le bon lieu pour ma commande."}
                 </span>
               </label>
 
               {/* Confirm button */}
               <button
-                disabled={!restaurantConfirmationAccepted}
+                disabled={!canConfirm}
                 className="w-full bg-pr text-black font-inter font-semibold text-base py-3 rounded-full cursor-pointer hover:bg-[#e69500] transition mb-3 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 onClick={handleConfirm}
               >
@@ -233,7 +287,9 @@ const ProcessPaiement = ({
             isScheduledOrder={isScheduledOrder}
             scheduledDateTime={scheduledDateTime}
             personalizedOfferId={personalizedOfferId}
+          instructions={instructions}
             onOrderSuccess={onOrderSuccess}
+          beforePay={beforePay}
           />
         </Elements>
       ) : (
@@ -266,7 +322,9 @@ const ProcessPaiement = ({
           isScheduledOrder={isScheduledOrder}
           scheduledDateTime={scheduledDateTime}
           personalizedOfferId={personalizedOfferId}
+          instructions={instructions}
           onOrderSuccess={onOrderSuccess}
+          beforePay={beforePay}
         />
       )}
     </div>

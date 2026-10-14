@@ -6,6 +6,11 @@ import React, { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { FaCartPlus, FaCheck } from "react-icons/fa6";
 import { IoChatbubble } from "react-icons/io5";
+import OfferChoicePicker, {
+  getInitialOfferCustomizations,
+  getOfferChoiceState,
+  toggleOfferChoice,
+} from "./OfferChoicePicker";
 
 const parseRuleValue = (value) => {
   const parsed = Number(value);
@@ -125,17 +130,15 @@ const OfferComponent = ({ offer }) => {
     });
   }, [offer?._id]);
 
-  const initialCustomizations = {};
-  offer.items.forEach((item) => {
-    initialCustomizations[item.item._id] = Array.from(
-      { length: item.quantity },
-      () => []
-    );
-  });
-  const [selectedCustomizations, setSelectedCustomizations] = useState(
-    initialCustomizations
+  // Offre à choix : rien n'est sélectionné au départ, le client choisit ses articles.
+  const [selectedCustomizations, setSelectedCustomizations] = useState(() =>
+    getInitialOfferCustomizations(offer)
   );
   const [comment, setComment] = useState("");
+  const choice = getOfferChoiceState(offer, selectedCustomizations);
+  const { itemsToChoose, isChoiceOffer, remainingChoices, choiceComplete, displayedLines } = choice;
+  const toggleChoice = (line) =>
+    setSelectedCustomizations((prev) => toggleOfferChoice(offer, line, prev));
 
   const calculateTotalPrice = () => {
     let totalPrice = Number(offer?.price) || 0;
@@ -248,7 +251,7 @@ const OfferComponent = ({ offer }) => {
     const pricedCustomizations = {};
     if (!offer?.items?.length) return pricedCustomizations;
 
-    offer.items.forEach((item) => {
+    displayedLines.forEach((item) => {
       const itemCustomizations = selectedCustomizations[item.item._id] || [];
       const customizationGroups = normalizeCustomizationGroups(
         item.item.customization_group
@@ -282,6 +285,10 @@ const OfferComponent = ({ offer }) => {
   };
 
   const handleAddToBasket = () => {
+    if (!choiceComplete) {
+      toast.error(`Choisissez encore ${remainingChoices} article(s).`);
+      return;
+    }
     const missingSelection = offer?.items?.reduce((result, item) => {
       if (result) return result;
       const customizationGroups = normalizeCustomizationGroups(
@@ -350,10 +357,13 @@ const OfferComponent = ({ offer }) => {
       image: offer.image,
       price: calculateTotalPrice(),
       customization: pricedCustomizations,
-      items: offer.items,
+      items: displayedLines,
+      itemsToChoose: itemsToChoose || null,
       comment: comment,
     });
     toast.success("Offre ajoutée au panier !");
+    // Prêt pour un nouvel ajout (offre à choix : sélection remise à zéro).
+    setSelectedCustomizations(getInitialOfferCustomizations(offer));
   };
   return (
     <div className="md:w-1/2 w-full rounded-md shadow-lg bg-white p-6   ">
@@ -363,6 +373,9 @@ const OfferComponent = ({ offer }) => {
           ${calculateTotalPrice().toFixed(2)}
         </h4>
       </div>
+      {isChoiceOffer ? (
+        <OfferChoicePicker offer={offer} choice={choice} onToggle={toggleChoice} />
+      ) : (
       <div className="mt-4">
         {offer.items.map((item) => (
           <div key={item._id} className="flex items-center gap-2">
@@ -382,8 +395,9 @@ const OfferComponent = ({ offer }) => {
           </div>
         ))}
       </div>
+      )}
       <div className="mt-4">
-        {offer.items.map((item) => {
+        {displayedLines.map((item) => {
           return (
             <div key={item._id} className="my-4">
               {Array.from({
@@ -537,12 +551,15 @@ const OfferComponent = ({ offer }) => {
             </p>
           </div>
           <button
-            className="bg-pr text-black flex justify-center items-center  mt-4  cursor-pointer  py-3 w-full rounded-md"
+            className={`bg-pr text-black flex justify-center items-center mt-4 py-3 w-full rounded-md ${
+              choiceComplete ? "cursor-pointer" : "opacity-45 cursor-not-allowed"
+            }`}
             onClick={handleAddToBasket}
+            disabled={!choiceComplete}
           >
             <FaCartPlus className="mr-4 md:text-xl text-lg" />
             <span className="font-bebas-neue md:text-xl text-lg">
-              Ajouter au panier
+              {choiceComplete ? "Ajouter au panier" : `Choisissez encore ${remainingChoices} article(s)`}
             </span>
           </button>
         </div>
