@@ -16,10 +16,69 @@ const getMinScheduleDate = (minutes = MIN_SCHEDULE_MINUTES) => {
   return minDate;
 };
 
+// Les horaires (emploie_du_temps) sont à l'heure du restaurant (Toronto), jamais à celle de
+// l'ordinateur du client : un client en Tunisie, ou un navigateur réglé sur un autre fuseau,
+// voyait le restaurant « fermé » alors qu'il était ouvert. Même règle que le serveur
+// (checkRestaurantOrderAvailabilityService), y compris les plages qui finissent après minuit.
+const RESTAURANT_TIMEZONE = "America/Toronto";
+const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const getRestaurantLocalTime = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: RESTAURANT_TIMEZONE,
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const weekdayIndex = WEEKDAYS_EN.indexOf(parts.find((part) => part.type === "weekday")?.value);
+  const hours = Number(parts.find((part) => part.type === "hour")?.value);
+  const minutes = Number(parts.find((part) => part.type === "minute")?.value);
+  return { weekdayIndex, minutesSinceMidnight: hours * 60 + minutes };
+};
+
+const parseScheduleTime = (value) => {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(value || "").trim());
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return hours * 60 + minutes;
+};
+
+const isWithinSchedule = (schedule, date = new Date()) => {
+  if (!schedule || typeof schedule !== "object") return false;
+  const { weekdayIndex, minutesSinceMidnight } = getRestaurantLocalTime(date);
+  if (weekdayIndex < 0 || !Number.isFinite(minutesSinceMidnight)) return false;
+
+  const today = schedule[DAY_KEYS[weekdayIndex]] || {};
+  const todayOpen = parseScheduleTime(today.open);
+  const todayClose = parseScheduleTime(today.close);
+  if (todayOpen !== null && todayClose !== null) {
+    if (todayClose >= todayOpen) {
+      if (minutesSinceMidnight >= todayOpen && minutesSinceMidnight <= todayClose) return true;
+    } else if (minutesSinceMidnight >= todayOpen) {
+      return true;
+    }
+  }
+
+  // Une plage qui finit après minuit appartient au jour précédent.
+  const previousDay = schedule[DAY_KEYS[(weekdayIndex + 6) % 7]] || {};
+  const previousOpen = parseScheduleTime(previousDay.open);
+  const previousClose = parseScheduleTime(previousDay.close);
+  return (
+    previousOpen !== null &&
+    previousClose !== null &&
+    previousClose < previousOpen &&
+    minutesSinceMidnight <= previousClose
+  );
+};
+
+/** Horaires du jour de `date`, jour calculé à l'heure de Toronto. */
 const getDayScheduleForRestaurant = (date, restaurant) => {
   if (!date || !restaurant?.settings?.emploie_du_temps) return null;
-  const dayKey = DAY_KEYS[date.getDay()];
-  return restaurant.settings.emploie_du_temps[dayKey] || null;
+  const { weekdayIndex } = getRestaurantLocalTime(date);
+  return restaurant.settings.emploie_du_temps[DAY_KEYS[weekdayIndex]] || null;
 };
 
 const parseTimeToDate = (baseDate, timeStr) => {
@@ -43,60 +102,30 @@ const getScheduleValidationError = (candidate, restaurant) => {
     return `La date sélectionnée doit être au moins ${MIN_SCHEDULE_MINUTES} minutes dans le futur.`;
   }
 
+  const schedule = restaurant?.settings?.emploie_du_temps;
+  if (isWithinSchedule(schedule, candidate)) return "";
+
   const daySchedule = getDayScheduleForRestaurant(candidate, restaurant);
-  if (!daySchedule || !daySchedule.open || !daySchedule.close) {
+  const open = parseScheduleTime(daySchedule?.open);
+  const close = parseScheduleTime(daySchedule?.close);
+  if (open === null || close === null) {
     return "Horaires non disponibles pour ce jour.";
   }
 
-  const openDate = parseTimeToDate(candidate, daySchedule.open);
-  const closeDate = parseTimeToDate(candidate, daySchedule.close);
-  if (!openDate || !closeDate) {
-    return "Horaires non disponibles pour ce jour.";
-  }
-
-  if (candidate < openDate) {
+  const { minutesSinceMidnight } = getRestaurantLocalTime(candidate);
+  if (minutesSinceMidnight < open) {
     return `L'heure doit être après l'ouverture (${daySchedule.open}).`;
   }
-
-  if (candidate > closeDate) {
-    return `L'heure doit être avant la fermeture (${daySchedule.close}).`;
-  }
-
-  return "";
+  return `L'heure doit être avant la fermeture (${daySchedule.close}).`;
 };
 
 function isOpenNow(emploieDuTemps) {
-  const now = new Date();
-
-  // Get the current day name in French
-  const today = DAY_KEYS[now.getDay()]; // Get the current day
-
-  if (!emploieDuTemps[today]) {
-    return false; // No schedule for today
-  }
-
-  const { open, close } = emploieDuTemps[today];
-
-  if (!open || !close) {
-    return false;
-  }
-
-  // Convert times to Date objects for comparison
-  const [openHours, openMinutes] = open.split(":").map(Number);
-  const [closeHours, closeMinutes] = close.split(":").map(Number);
-
-  const openTime = new Date(now);
-  openTime.setHours(openHours, openMinutes, 0, 0);
-
-  const closeTime = new Date(now);
-  closeTime.setHours(closeHours, closeMinutes, 0, 0);
-
-  // Check if the current time is between open and close
-  return now >= openTime && now <= closeTime;
+  return isWithinSchedule(emploieDuTemps, new Date());
 }
 
 export {
   isOpenNow,
+  isWithinSchedule,
   MIN_SCHEDULE_MINUTES,
   getMinScheduleDate,
   getDayScheduleForRestaurant,
