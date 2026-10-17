@@ -1485,7 +1485,11 @@ const CheckoutContent = ({ restaurantsSettings }) => {
             >
               <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
                 <p className="font-bold text-lg">{MISSING_GIFT_TITLE}</p>
-                <p className="text-sm text-gray-600 mt-2">{MISSING_GIFT_MESSAGE}</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  {smartOffer?.offerType === "mystery_gift"
+                    ? "Votre cadeau mystère est débloqué, mais il n'est pas dans votre panier. Il n'est pas ajouté automatiquement : ajoutez-le avant de payer, sinon vous ne le recevrez pas."
+                    : MISSING_GIFT_MESSAGE}
+                </p>
                 <div className="mt-5 space-y-2">
                   <button
                     type="button"
@@ -1499,7 +1503,7 @@ const CheckoutContent = ({ restaurantsSettings }) => {
                     className="w-full py-2.5 rounded-lg border border-red-300 text-red-600 font-bold text-sm cursor-pointer"
                     onClick={continueWithoutGift}
                   >
-                    Continuer sans
+                    Payer sans mon cadeau
                   </button>
                 </div>
               </div>
@@ -1801,7 +1805,10 @@ const CheckoutContent = ({ restaurantsSettings }) => {
                               {mysReached
                                 ? selectedSmartOfferFreeItem
                                   ? "Cadeau Mystère ajouté à votre commande"
-                                  : "Cadeau Mystère Débloqué ! (Sera ajouté à votre commande)"
+                                  : smartOfferFreeItemOptions.length > 0
+                                    // Le cadeau n'est PAS ajouté tout seul : le client doit cliquer.
+                                    ? "Cadeau Mystère débloqué ! Ajoutez-le à votre panier pour le recevoir."
+                                    : "Cadeau Mystère débloqué ! Le restaurant l'ajoutera à votre commande."
                                 : `Encore ${(mysThreshold - basketSubtotal).toFixed(2)}$ pour débloquer votre Cadeau Mystère !`}
                             </p>
                             <ProgressBar value={basketSubtotal} max={mysThreshold || 1} color={mysReached ? "#8B5CF6" : pending} />
