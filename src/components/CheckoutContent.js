@@ -959,7 +959,9 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     if (
       !smartOfferSelectedForOrder ||
       !smartOfferThresholdReached ||
-      !["free_item", "buy_one_get_one"].includes(smartOffer?.offerType) ||
+      // Le cadeau mystère a aussi un article cadeau : sans lui dans la liste, son cadeau était
+      // retiré du panier dès le retour au checkout (commandes web toujours sans cadeau).
+      !["free_item", "buy_one_get_one", "mystery_gift"].includes(smartOffer?.offerType) ||
       !matchingOption
     ) {
       removeFromBasket(selectedSmartOfferFreeItem.uid);
