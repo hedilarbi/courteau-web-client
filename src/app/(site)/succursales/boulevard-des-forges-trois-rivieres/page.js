@@ -67,6 +67,12 @@ export default function BoulevardDesForgesPage() {
           Casse-Croûte Courteau – Boulevard des Forges
         </h1>
 
+        <p className="mt-4 font-inter text-base leading-relaxed text-gray-700 md:text-lg">
+          Découvrez notre restaurant à Trois-Rivières Ouest. Le Casse-Croûte
+          Courteau vous propose poutines, pizzas, déjeuners et autres classiques
+          du menu, sur place ou à commander en ligne.
+        </p>
+
         <address className="mt-6 font-inter text-base not-italic leading-7 text-gray-700 md:text-lg">
           4845 Boulevard des Forges
           <br />
@@ -80,6 +86,28 @@ export default function BoulevardDesForgesPage() {
             +1-819-371-3935
           </a>
         </p>
+
+        <section aria-labelledby="restaurant-des-forges-title" className="mt-8">
+          <h2
+            id="restaurant-des-forges-title"
+            className="font-inter md:text-2xl text-xl font-bold mb-3 text-black"
+          >
+            Restaurant sur le boulevard des Forges à Trois-Rivières
+          </h2>
+          <p className="font-inter text-base leading-relaxed text-gray-700 mb-3 md:text-lg">
+            Notre succursale du boulevard des Forges vous accueille à
+            Trois-Rivières pour profiter des classiques Courteau :{" "}
+            <Link href="/menu/nos-poutines-classiques" className="font-semibold text-[#df0d5a] hover:underline">poutines</Link>,{" "}
+            <Link href="/menu/nos-pizzas" className="font-semibold text-[#df0d5a] hover:underline">pizzas</Link>,{" "}
+            <Link href="/menu/les-déjeuners" className="font-semibold text-[#df0d5a] hover:underline">déjeuners</Link>,{" "}
+            <Link href="/menu/le-poulet-frit-courteau" className="font-semibold text-[#df0d5a] hover:underline">poulet frit</Link>{" "}
+            et autres choix du menu.
+          </p>
+          <p className="font-inter text-base leading-relaxed text-gray-700 md:text-lg">
+            Vous pouvez commander en ligne pour emporter ou en livraison selon
+            votre adresse.
+          </p>
+        </section>
 
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
           <Link

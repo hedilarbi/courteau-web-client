@@ -7,10 +7,14 @@ const getAuthHeaders = async () => {
   return token?.value ? { Authorization: `Bearer ${token.value}` } : {};
 };
 
-const createUserService = async (phone_number) => {
+// phoneVerificationToken : preuve renvoyée par /auth/otp/check, exigée par le serveur.
+// En cas d'échec, error vaut le code du serveur (PHONE_VERIFICATION_USED…), ou
+// NETWORK_ERROR si la requête n'a pas eu de réponse.
+const createUserService = async (phone_number, phoneVerificationToken) => {
   try {
     let createUserResponse = await axios.post(`${API_URL}/users/create`, {
       phone_number,
+      phoneVerificationToken,
     });
 
     if (createUserResponse?.status === 200) {
@@ -28,7 +32,8 @@ const createUserService = async (phone_number) => {
   } catch (error) {
     return {
       status: false,
-      message: error.message,
+      error: error?.response?.data?.error || "NETWORK_ERROR",
+      message: error?.response?.data?.message || null,
     };
   }
 };
@@ -37,7 +42,8 @@ const updateUserExpoToken = async (id, token) => {
   try {
     let updateUserExpoTokenResponse = await axios.put(
       `${API_URL}/users/update/expoToken/${id}`,
-      { token }
+      { token },
+      { headers: await getAuthHeaders() }
     );
     if (updateUserExpoTokenResponse?.status === 200) {
       return {
@@ -63,7 +69,8 @@ const addToFavorites = async (userId, itemId) => {
   try {
     let addToFavoritesResponse = await axios.put(
       `${API_URL}/users/favorites/update/add/${userId}`,
-      { itemId }
+      { itemId },
+      { headers: await getAuthHeaders() }
     );
     if (addToFavoritesResponse?.status === 200) {
       return {
@@ -88,7 +95,8 @@ const addToAddresses = async (userId, address, coords, detailedAddress = {}) => 
   try {
     let addToAddressesResponse = await axios.put(
       `${API_URL}/users/addresses/update/add/${userId}`,
-      { address, coords, ...detailedAddress }
+      { address, coords, ...detailedAddress },
+      { headers: await getAuthHeaders() }
     );
     if (addToAddressesResponse?.status === 200) {
       return {
@@ -113,7 +121,8 @@ const removeFromFavorites = async (userId, itemId) => {
   try {
     let removeFromFavoritesResponse = await axios.put(
       `${API_URL}/users/favorites/update/remove/${userId}`,
-      { menuItem_id: itemId }
+      { menuItem_id: itemId },
+      { headers: await getAuthHeaders() }
     );
     if (removeFromFavoritesResponse?.status === 200) {
       return {
@@ -137,7 +146,8 @@ const removeFromFavorites = async (userId, itemId) => {
 const removeFromAddresses = async (userId, addressId) => {
   try {
     let removeFromFavoritesResponse = await axios.delete(
-      `${API_URL}/users/${userId}/addresses/${addressId}`
+      `${API_URL}/users/${userId}/addresses/${addressId}`,
+      { headers: await getAuthHeaders() }
     );
     if (removeFromFavoritesResponse?.status === 200) {
       return {
@@ -295,6 +305,7 @@ const getOrdersList = async (id) => {
       `${API_URL}/users/orders/${id}`,
       {
         timeout: 10000,
+        headers: await getAuthHeaders(),
       }
     );
     if (getOrdersListResponse.status === 200) {
@@ -350,6 +361,7 @@ const getFavoritesList = async (id) => {
       `${API_URL}/users/favorites/${id}`,
       {
         timeout: 10000,
+        headers: await getAuthHeaders(),
       }
     );
     if (getFavoritesListResponse.status === 200) {
@@ -379,7 +391,8 @@ const storeCustomerData = async (id, customerId, paymentMethodId) => {
       {
         customerId,
         paymentMethodId,
-      }
+      },
+      { headers: await getAuthHeaders() }
     );
     if (storeCustomerDataResponse.status === 200) {
       return {
@@ -404,6 +417,7 @@ const getOrder = async (id) => {
   try {
     let getOrderResponse = await axios.get(`${API_URL}/orders/${id}`, {
       timeout: 10000,
+      headers: await getAuthHeaders(),
     });
     if (getOrderResponse.status === 200) {
       return {
@@ -433,6 +447,7 @@ const createOrder = async (order) => {
       },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     if (createOrderResponse.status === 201) {
@@ -463,6 +478,7 @@ const createZeroTotalSubscriptionOrder = async (order) => {
       },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     if (createOrderResponse.status === 201) {
@@ -493,6 +509,7 @@ const createZeroTotalReferralOrder = async (order) => {
       },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     if (createOrderResponse.status === 201) {
@@ -522,6 +539,7 @@ const createZeroTotalPromoOrder = async (order) => {
       {
         order: order,
       },
+      { headers: await getAuthHeaders() },
     );
     return {
       status: true,
@@ -547,7 +565,7 @@ const deletePaymentMethod = async (paymentMethodId) => {
   try {
     const response = await axios.delete(
       `${API_URL}/payments/payment-method/${paymentMethodId}`,
-      { timeout: 15000 }
+      { timeout: 15000, headers: await getAuthHeaders() }
     );
     if (response.status === 200) return { status: true };
     return { status: false, message: "Erreur lors de la suppression." };
@@ -561,7 +579,7 @@ const attachPaymentMethod = async (userId, paymentMethodId) => {
     const response = await axios.post(
       `${API_URL}/payments/attach-payment-method`,
       { userId, paymentMethodId },
-      { timeout: 15000 }
+      { timeout: 15000, headers: await getAuthHeaders() }
     );
     if (response.status === 200) return { status: true, data: response.data };
     return { status: false, message: "Erreur lors de l'ajout de la carte." };
@@ -575,7 +593,7 @@ const updatePaymentMethod = async (paymentMethodId, exp_month, exp_year) => {
     const response = await axios.put(
       `${API_URL}/payments/payment-method/${paymentMethodId}`,
       { exp_month, exp_year },
-      { timeout: 15000 }
+      { timeout: 15000, headers: await getAuthHeaders() }
     );
     if (response.status === 200) return { status: true, data: response.data };
     return { status: false, message: "Erreur lors de la modification." };
@@ -591,6 +609,7 @@ const getPaymentMethods = async (customerId) => {
 
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     if (getPaymentIntentClientSecretResponse.status === 200) {
@@ -625,6 +644,7 @@ const getPaymentIntentClientSecret = async (
       { amount, email, paymentMethod, saved, userId },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     if (getPaymentIntentClientSecretResponse.status === 200) {
@@ -716,7 +736,7 @@ const createPlatformPaymentIntent = async (
     const response = await axios.post(
       `${API_URL}/payments/create-platform-payment-intent`,
       { userId, amount, email, platform },
-      { timeout: 15000 },
+      { timeout: 15000, headers: await getAuthHeaders() },
     );
     return { status: true, data: response.data };
   } catch (error) {
@@ -736,6 +756,7 @@ const catchError = async (userId, error, source) => {
       { error, userId, source },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     if (getPaymentIntentClientSecretResponse.status === 200) {
@@ -765,6 +786,7 @@ const confirmPaiment = async (paymentIntentId) => {
       { paymentIntentId },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     if (confirmPaimentResponse.status === 200) {
@@ -794,6 +816,7 @@ const cancelPaymentIntent = async (paymentIntentId) => {
       { paymentIntentId },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
 

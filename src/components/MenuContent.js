@@ -42,6 +42,19 @@ export default function MenuContent({ categories, items, selectedCategory, searc
           <MenuSearch categories={categories} articles={searchArticles} offers={searchOffers} compact />
         </header>
         <MenuItemsSection items={items} selectedCategory={selectedCategory} />
+        {seoConfig?.showBranchesBlock && (
+          <aside aria-labelledby="menu-branches-title" className="mt-12 border-t border-[#e0d8c9] pt-8">
+            <h2 id="menu-branches-title" className="font-bebas-neue text-3xl leading-none md:text-4xl">
+              Disponible dans nos succursales
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#6e6659]">
+              Retrouvez ces produits dans nos différentes succursales Courteau à Trois-Rivières, Bécancour et Saint-Boniface.
+            </p>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#6e6659]">
+              Consultez <Link href="/succursales" className="font-semibold text-pr hover:underline">nos succursales</Link> ou vérifiez la disponibilité de la <Link href="/livraison" className="font-semibold text-pr hover:underline">livraison</Link> selon votre adresse.
+            </p>
+          </aside>
+        )}
       </section>
     </div>
   </main>;

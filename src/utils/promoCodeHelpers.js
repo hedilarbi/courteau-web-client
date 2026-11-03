@@ -98,8 +98,11 @@ export const calculatePromoDiscountAmountForPromo = (
     const freeItemId = String(promoCode.freeItem?._id || promoCode.freeItem || "").trim();
     if (!freeItemId) return 0;
     
+    // Le cadeau d'une offre personnalisée ne peut pas servir d'article gratuit au code.
     const matchingItem = basketItems.find(
-      (item) => String(item?.id || item?.item || "").trim() === freeItemId
+      (item) =>
+        !item?.isSmartOfferFreeItem &&
+        String(item?.id || item?.item || "").trim() === freeItemId
     );
 
     if (matchingItem) {
@@ -146,8 +149,11 @@ export const validatePromoCodeAgainstBasket = (promoCode, basketItems = []) => {
     if (!freeItemId) {
       return { isValid: false, message: "Ce code promo est invalide." };
     }
+    // Le cadeau d'une offre personnalisée ne peut pas servir d'article gratuit au code.
     const matchingItem = basketItems.find(
-      (item) => String(item?.id || item?.item || "").trim() === freeItemId
+      (item) =>
+        !item?.isSmartOfferFreeItem &&
+        String(item?.id || item?.item || "").trim() === freeItemId
     );
     if (!matchingItem) {
       return {

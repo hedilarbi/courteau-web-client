@@ -67,7 +67,9 @@ export default function AvenueArseneaultPage() {
         </h1>
 
         <p className="mt-4 font-inter text-base leading-relaxed text-gray-700 md:text-lg">
-          Découvrez notre restaurant Casse-Croûte Courteau à Bécancour, dans le secteur Saint-Grégoire, situé au 3840 Avenue Arseneault. Retrouvez nos poutines, pizzas, déjeuners et autres classiques du menu, puis commandez en ligne.
+          Découvrez notre restaurant à Bécancour, dans le secteur Saint-Grégoire.
+          Le Casse-Croûte Courteau vous propose poutines, pizzas, déjeuners et
+          autres classiques du menu, sur place ou à commander en ligne.
         </p>
 
         <address className="mt-6 font-inter text-base not-italic leading-7 text-gray-700 md:text-lg">
@@ -83,6 +85,28 @@ export default function AvenueArseneaultPage() {
             +1-819-371-3935
           </a>
         </p>
+
+        <section aria-labelledby="restaurant-becancour-title" className="mt-8">
+          <h2
+            id="restaurant-becancour-title"
+            className="font-inter md:text-2xl text-xl font-bold mb-3 text-black"
+          >
+            Restaurant à Bécancour – Saint-Grégoire
+          </h2>
+          <p className="font-inter text-base leading-relaxed text-gray-700 mb-3 md:text-lg">
+            Notre succursale de Bécancour, dans le secteur Saint-Grégoire, vous
+            propose les classiques Courteau :{" "}
+            <Link href="/menu/nos-poutines-classiques" className="font-semibold text-[#df0d5a] hover:underline">poutines</Link>,{" "}
+            <Link href="/menu/nos-pizzas" className="font-semibold text-[#df0d5a] hover:underline">pizzas</Link>,{" "}
+            <Link href="/menu/les-déjeuners" className="font-semibold text-[#df0d5a] hover:underline">déjeuners</Link>,{" "}
+            <Link href="/menu/le-poulet-frit-courteau" className="font-semibold text-[#df0d5a] hover:underline">poulet frit</Link>{" "}
+            et autres choix du menu.
+          </p>
+          <p className="font-inter text-base leading-relaxed text-gray-700 md:text-lg">
+            Vous pouvez commander en ligne pour emporter ou en livraison selon
+            votre adresse.
+          </p>
+        </section>
 
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
           <Link

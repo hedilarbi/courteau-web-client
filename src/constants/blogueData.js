@@ -13,12 +13,12 @@ const blogueList = [
       {
         subtitle: "On peut combler toutes les fringales",
         content:
-          "Peu importe votre appétit, nous avons l’item qui saura vous rassasier et combler vos papilles. Vous cherchez quelque chose de moins consistant qu’un sandwich au smoked meat? Essayez notre grilled cheese au bacon fait maison! Nos assiettes de filets de poulet ou nos délicieuses poutines signatures sauront vous combler. Au Casse-croûte Courteau, ce qui fait notre force, c’est la variété des repas que l’on prépare chaque jour. Vous n’aurez donc aucune excuse pour ajouter le Courteau comme activité à faire pendant la semaine de relâche à Trois-Rivières!",
+          "Peu importe votre appétit, nous avons l’item qui saura vous rassasier et combler vos papilles. Vous cherchez quelque chose de moins consistant qu’un sandwich au smoked meat? Essayez notre grilled cheese au bacon fait maison! Nos assiettes de filets de poulet ou nos délicieuses [poutines signatures](/menu/nos-poutines-classiques) sauront vous combler. Au Casse-croûte Courteau, ce qui fait notre force, c’est la variété des repas que l’on prépare chaque jour. Vous n’aurez donc aucune excuse pour ajouter le Courteau comme activité à faire pendant la semaine de relâche à Trois-Rivières!",
       },
       {
         subtitle: "On offre aussi des déjeuners",
         content:
-          "Saviez-vous que le Courteau est maintenant en mesure de vous offrir des déjeuners? Oui oui, vous avez bien lu! Nous préparons maintenant des versions de type « déjeuner » de nos plats les plus populaires. Vous pourrez donc profiter de spécialités telles que notre club déjeuner ou même notre poutine déjeuner, qui fait fureur en raison de ses saucisses et de son jambon nappés d’un œuf et de sauce hollandaise. Si vous avez besoin de reprendre des forces après un examen ou une semaine de travail chargée, n’hésitez pas à vous offrir l’un de ces plats. Après tout, qui a dit que vous deviez manger votre déjeuner uniquement le matin?",
+          "Saviez-vous que le Courteau est maintenant en mesure de vous offrir des [déjeuners](/menu/les-déjeuners)? Oui oui, vous avez bien lu! Nous préparons maintenant des versions de type « déjeuner » de nos plats les plus populaires. Vous pourrez donc profiter de spécialités telles que notre club déjeuner ou même notre poutine déjeuner, qui fait fureur en raison de ses saucisses et de son jambon nappés d’un œuf et de sauce hollandaise. Si vous avez besoin de reprendre des forces après un examen ou une semaine de travail chargée, n’hésitez pas à vous offrir l’un de ces plats. Après tout, qui a dit que vous deviez manger votre déjeuner uniquement le matin?",
       },
       {
         subtitle: "On ne prépare pas que des repas",
@@ -67,7 +67,23 @@ const blogueList = [
     link: "/blogue/meilleure-poutine",
     full_content:
       "Le temps des Fêtes est maintenant arrivé, et il n’y a pas de meilleur moment pour vous gâter! Au Casse-Croûte Courteau, on s’assure toujours de pouvoir vous offrir des plats et des saveurs indémodables, même en cette période de l’année. Vous cherchez la meilleure poutine à Trois-Rivières à déguster ou à partager à deux? Nous avons une grande variété de poutines qui sauront plaire à tous !",
-    paragraphs: [],
+    paragraphs: [
+      {
+        subtitle: "Une grande variété de poutines à Trois-Rivières",
+        content:
+          "Chez Courteau, vous pouvez choisir parmi plusieurs [poutines](/menu/nos-poutines-classiques), des classiques aux recettes plus gourmandes. Que vous cherchiez une poutine traditionnelle ou une création plus originale, notre menu offre plusieurs choix à découvrir.",
+      },
+      {
+        subtitle: "Où manger une poutine Courteau?",
+        content:
+          "Nos différentes [succursales](/succursales) vous permettent de profiter de vos classiques Courteau à Trois-Rivières et dans les environs. Choisissez la succursale la plus pratique selon votre secteur.",
+      },
+      {
+        subtitle: "Une poutine à la maison?",
+        content:
+          "Vous préférez rester chez vous? Consultez notre [service de livraison](/livraison) pour vérifier la disponibilité à votre adresse et commander votre poutine en ligne.",
+      },
+    ],
   },
   {
     id: 4,
@@ -88,17 +104,17 @@ const blogueList = [
       {
         subtitle: "Poutine galvaude",
         content:
-          "Si ce repas-là ne vous réchauffera pas, plus rien ne pourra vous réchauffer! La galvaude, qui fait partie des variétés les plus connues de la poutine, est l’un de nos plats les plus populaires pour une bonne raison. Composée d’une poutine classique agrémentée de morceaux de poulet et de pois, elle a convaincu bon nombre de nos clients grâce à son mélange unique. En croquant dedans, vous aurez réellement l’impression de manger un hot chicken et une poutine en même temps! Bref, il s’agit du plat parfait à déguster dans le confort de votre foyer ou à partager avec votre tendre moitié (si vous en êtes capable!).",
+          "Si ce repas-là ne vous réchauffera pas, plus rien ne pourra vous réchauffer! La [poutine galvaude](/menu/articles/poutine-galvaude), qui fait partie des variétés les plus connues de la poutine, est l’un de nos plats les plus populaires pour une bonne raison. Composée d’une poutine classique agrémentée de morceaux de poulet et de pois, elle a convaincu bon nombre de nos clients grâce à son mélange unique. En croquant dedans, vous aurez réellement l’impression de manger un hot chicken et une poutine en même temps! Bref, il s’agit du plat parfait à déguster dans le confort de votre foyer ou à partager avec votre tendre moitié (si vous en êtes capable!).",
       },
       {
         subtitle: "Une pizza du samedi soir",
         content:
-          "Parfois, ça fait du bien de se gâter un peu; c’est pourquoi nos pizzas sont parfaites pour combler votre fringale du samedi soir! Que vous préfériez nos variétés classiques comme la toute garnie ou nos variétés signature comme la Carnivore, il y en a certainement une qui comblera vos papilles. N’hésitez pas à toutes les essayer; chacune est préparée avec des ingrédients frais du jour et provenant de producteurs locaux. Vous pourrez donc vous régaler sans vous sentir coupable tout en encourageant l’industrie québécoise. Que demander de plus?",
+          "Parfois, ça fait du bien de se gâter un peu; c’est pourquoi [nos pizzas](/menu/nos-pizzas) sont parfaites pour combler votre fringale du samedi soir! Que vous préfériez nos variétés classiques comme la toute garnie ou nos variétés signature comme la Carnivore, il y en a certainement une qui comblera vos papilles. N’hésitez pas à toutes les essayer; chacune est préparée avec des ingrédients frais du jour et provenant de producteurs locaux. Vous pourrez donc vous régaler sans vous sentir coupable tout en encourageant l’industrie québécoise. Que demander de plus?",
       },
       {
         subtitle: "Des plats pour tous les goûts",
         content:
-          "Peu importe votre appétit ou ce que vos papilles désirent, nous avons des plats qui sauront combler tous les amateurs de bonne bouffe. Si vous cherchez un endroit pour satisfaire votre fringale et vous réchauffer cet automne, vous n’avez qu’à retenir un seul endroit : le Casse-Croûte Courteau.",
+          "Peu importe votre appétit ou ce que vos papilles désirent, nous avons des plats qui sauront combler tous les amateurs de bonne bouffe. Si vous cherchez un endroit pour satisfaire votre fringale et vous réchauffer cet automne, vous n’avez qu’à retenir un seul endroit : le Casse-Croûte Courteau, que vous retrouverez dans l’une de nos [succursales](/succursales).",
       },
     ],
   },
@@ -113,7 +129,18 @@ const blogueList = [
     link: "/blogue/meilleurs-endroits-pique-nique",
     full_content:
       "Maintenant que nous sommes ouverts à cinq endroits en Mauricie, il est très facile de se procurer nos délicieux mets pour emporter partout où vous le voulez! C'est l'idéal pour un bon pique-nique !",
-    paragraphs: [],
+    paragraphs: [
+      {
+        subtitle: "Choisissez la succursale la plus pratique",
+        content:
+          "Avec plusieurs [succursales](/succursales) dans la région, vous pouvez choisir l’emplacement Courteau le plus pratique avant de partir pour votre pique-nique à Trois-Rivières ou dans les environs.",
+      },
+      {
+        subtitle: "Un repas facile à emporter",
+        content:
+          "Parcourez notre [menu](/menu), choisissez vos classiques Courteau et commandez votre repas pour emporter avant de profiter de votre sortie.",
+      },
+    ],
   },
   {
     id: 6,
@@ -129,7 +156,7 @@ const blogueList = [
       {
         subtitle: "Une balade qui se termine bien",
         content:
-          "Sébastien est au volant de sa voiture et conduit ses deux amis au restaurant à Trois-Rivières. Le problème, c’est que les passagers ne s’entendent pas sur le choix de la destination. Sébastien, en bon ami, choisit la réponse évidente. Il les emmène chez Courteau, qui offre à la fois des hamburgers et des poutines d’exception. En voilà une bonne raison de se faire plaisir chez Courteau!",
+          "Sébastien est au volant de sa voiture et conduit ses deux amis au restaurant à Trois-Rivières. Le problème, c’est que les passagers ne s’entendent pas sur le choix de la destination. Sébastien, en bon ami, choisit la réponse évidente. Il les emmène chez Courteau, qui offre à la fois des hamburgers et des [poutines](/menu/nos-poutines-classiques) d’exception. En voilà une bonne raison de se faire plaisir chez Courteau!",
       },
       {
         subtitle: "Une décision difficile",
@@ -144,7 +171,7 @@ const blogueList = [
       {
         subtitle: "Un samedi soir réussi",
         content:
-          "Sarah mange une pizza tous les samedis. C’est ce que ses enfants redemandent chaque semaine! Cependant, depuis qu’elle et sa famille ont déménagé à Trois-Rivières, elle observe que ses jeunes s’ennuient du goût de la pizza à la viande qu’ils avaient l’habitude de manger auparavant. Elle décide donc de fouiller sur Internet afin de trouver un plat similaire dans un commerce du coin. En consultant le site web du Casse-croûte Courteau, elle découvre qu’on y vend une pizza carnivore qui peut être livrée! Des enfants comblés et un samedi soir sauvé. Quoi demander de mieux? Un service de livraison fiable pour déguster vos plats préférés peu importe où vous vous trouvez. En voilà une bonne raison de se faire plaisir chez Courteau!",
+          "Sarah mange une pizza tous les samedis. C’est ce que ses enfants redemandent chaque semaine! Cependant, depuis qu’elle et sa famille ont déménagé à Trois-Rivières, elle observe que ses jeunes s’ennuient du goût de la pizza à la viande qu’ils avaient l’habitude de manger auparavant. Elle décide donc de fouiller sur Internet afin de trouver un plat similaire dans un commerce du coin. En consultant le site web du Casse-croûte Courteau, elle découvre qu’on y vend une [pizza carnivore](/menu/nos-pizzas) qui peut être livrée! Des enfants comblés et un samedi soir sauvé. Quoi demander de mieux? Un [service de livraison](/livraison) fiable pour déguster vos plats préférés peu importe où vous vous trouvez. En voilà une bonne raison de se faire plaisir chez Courteau!",
       },
       {
         subtitle: "Une fringale de fin de soirée",

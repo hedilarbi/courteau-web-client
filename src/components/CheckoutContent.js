@@ -22,10 +22,8 @@ import {
   isSmartOfferThresholdReachedWithoutEligibleItems,
   NOTHING_ELIGIBLE_MESSAGE,
   smartOfferReplacesOtherDiscounts,
-  isSmartOfferAppliedToOrder,
   getDeferredActivationLabel,
   getSingleSmartOfferGiftOption,
-  getSmartOfferConditionStatus,
   getSmartOfferGiftOptions,
   getSmartOfferGiftStatus,
   getBuyOneGetOneTriggerId,
@@ -46,6 +44,16 @@ import {
   roundMoney,
   toSafeNumber,
 } from "@/utils/promoCodeHelpers";
+import {
+  calculateCheckoutTotals,
+  calculateDiscountedSubtotal,
+  calculateSmartOfferDiscount,
+  calculateTipAmount,
+  getCashbackThresholdBase,
+  getEffectiveDeliveryFee,
+  isSmartOfferApplicable,
+  isUserSubscriptionActive,
+} from "@/utils/checkoutPricing";
 import WarningBanner from "./WarningBanner";
 import OrderTypeBlock from "./OrderTypeBlock";
 import AddressesBlock from "./AddressesBlock";
@@ -145,64 +153,6 @@ const getBirthUtcParts = (value) => {
   };
 };
 
-// Calcul partagé avec l'app mobile (utils/smartOfferHandlers) : catégories exclues, tous les
-// exemplaires de l'article ciblé, articles verrouillés promo… identique au serveur.
-const calculateSmartOfferDiscount = ({ smartOffer, smartOfferActivated, subTotal, basketItems }) => {
-  if (!smartOfferActivated || !smartOffer) return 0;
-  return getSmartOfferConditionStatus({ smartOffer, basketItems, subTotal }).discountAmount;
-};
-
-const calculateDiscountedSubtotal = ({
-  subTotal = 0,
-  firstOrderDiscountAllowed = false,
-  subscriptionActive = false,
-  promoCodeAllowed = false,
-  promoCodeIsValid = false,
-  promoCodeData = null,
-  basketItems = [],
-  basketOffers = [],
-  smartOffer = null,
-  smartOfferActivated = false,
-}) => {
-  let nextSubtotal = toSafeNumber(subTotal, 0);
-
-  const shouldApplyPromoCode = Boolean(
-    promoCodeAllowed && promoCodeIsValid && promoCodeData
-  );
-
-  // A validated promo code replaces the activated Smart Offer for this order.
-  // `smartOfferActivated` = l'offre s'applique vraiment à la commande (smartOfferAppliedToOrder,
-  // même règle que l'envoi de l'offre) : elle remplace alors la remise 1re commande / abonnement.
-  if (smartOfferActivated && smartOffer && !shouldApplyPromoCode && smartOfferReplacesOtherDiscounts(smartOffer)) {
-    const { discountAmount } = getSmartOfferConditionStatus({ smartOffer, basketItems, subTotal: nextSubtotal });
-    return roundMoney(Math.max(0, nextSubtotal - discountAmount), 0);
-  }
-
-  const shouldApplyFirstOrderDiscount =
-    firstOrderDiscountAllowed && !shouldApplyPromoCode;
-
-  if (shouldApplyFirstOrderDiscount) {
-    nextSubtotal *= 0.8;
-  } else if (shouldApplyPromoCode) {
-    const eligibleSubtotal = calculatePromoEligibleSubtotalForBasket({
-      basketItems,
-      basketOffers,
-      subTotal,
-      promoCode: promoCodeData,
-    });
-    const promoDiscountAmount = calculatePromoDiscountAmountForPromo(
-      promoCodeData,
-      eligibleSubtotal,
-      basketItems
-    );
-    nextSubtotal -= promoDiscountAmount;
-  } else if (subscriptionActive) {
-    nextSubtotal *= (100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100;
-  }
-
-  return roundMoney(Math.max(0, nextSubtotal), 0);
-};
-
 const getMonthCycleKey = (date = new Date()) => {
   const target = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(target.getTime())) {
@@ -229,22 +179,6 @@ const getExpectedSubscriptionCycleKey = (user, fallbackDate = new Date()) => {
   }
 
   return getMonthCycleKey(fallbackDate);
-};
-
-const isUserSubscriptionActive = (user) => {
-  if (!user) return false;
-
-  const status = String(user?.subscriptionStatus || "")
-    .toLowerCase()
-    .trim();
-  const statusActive = status === "active" || status === "trialing";
-  const periodEnd = user?.subscriptionCurrentPeriodEnd
-    ? new Date(user.subscriptionCurrentPeriodEnd)
-    : null;
-  const hasValidPeriodEnd =
-    periodEnd instanceof Date && !Number.isNaN(periodEnd.getTime());
-  const notExpired = !hasValidPeriodEnd || periodEnd.getTime() > Date.now();
-  return Boolean(user?.subscriptionIsActive) || (statusActive && notExpired);
 };
 
 const CheckoutContent = ({ restaurantsSettings }) => {
@@ -341,15 +275,12 @@ const CheckoutContent = ({ restaurantsSettings }) => {
   // Cadeau (free_item / buy_one_get_one) : même règle que l'app — seuil atteint ET, pour un
   // « 1 acheté = 1 offert », article déclencheur présent au panier.
   // Cashback (étape 1) : seuil sur le sous-total APRÈS la remise 1re commande / abonnement.
-  const cashbackThresholdBase = roundMoney(
-    toSafeNumber(subTotal, 0) *
-      (firstOrderDiscountAllowed && !promoCodeApplied
-        ? 0.8
-        : subscriptionActive && !promoCodeApplied
-          ? (100 - SUBSCRIPTION_DISCOUNT_PERCENT) / 100
-          : 1),
-    0
-  );
+  const cashbackThresholdBase = getCashbackThresholdBase({
+    subTotal,
+    firstOrderDiscountAllowed,
+    subscriptionActive,
+    promoCodeApplied,
+  });
   const smartOfferThresholdReached = smartOffer?.offerType === "deferred_cashback"
     ? cashbackThresholdBase >= smartOfferEffectiveThreshold
     : ["free_item", "buy_one_get_one"].includes(smartOffer?.offerType)
@@ -361,30 +292,23 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     deliveryMode === "delivery" && !subscriptionActive
       ? toSafeNumber(selectedRestaurant?.settings?.delivery_fee, 0)
       : 0;
-  // `selected` = offre retenue pour la commande. Règle commune avec l'app
-  // (isSmartOfferAppliedToOrder) : elle décide à la fois de l'envoi de l'offre et de la remise
-  // 1re commande / abonnement qu'elle remplace.
-  const isSmartOfferApplicable = (selected) => Boolean(
-    selected &&
-      isSmartOfferAppliedToOrder({
-        smartOffer,
-        basketItems,
-        subTotal: toSafeNumber(subTotal, 0),
-        deliveryMode,
-        deliveryFeeWithoutOffer,
-        cashbackThresholdBase,
-      }) &&
-      (smartOffer?.offerType === "loyalty_points"
-        ? toSafeNumber(smartOffer?.bonusPoints, 0) > 0
-        : true)
-  );
-  const smartOfferAppliedToOrder = isSmartOfferApplicable(smartOfferSelectedForOrder);
+  const isSmartOfferApplicableForOrder = (selected) =>
+    isSmartOfferApplicable({
+      selected,
+      smartOffer,
+      basketItems,
+      subTotal,
+      deliveryMode,
+      deliveryFeeWithoutOffer,
+      cashbackThresholdBase,
+    });
+  const smartOfferAppliedToOrder = isSmartOfferApplicableForOrder(smartOfferSelectedForOrder);
   // Brut (ignore la désactivation manuelle) : sert à savoir quelle réduction l'offre annule,
   // pour proposer de la désactiver… ou de la réactiver.
   const smartOfferAvailableForOrder = Boolean(
     smartOfferAvailable && smartOffer && !promoCodeApplied
   );
-  const smartOfferConditionMetRaw = isSmartOfferApplicable(smartOfferAvailableForOrder);
+  const smartOfferConditionMetRaw = isSmartOfferApplicableForOrder(smartOfferAvailableForOrder);
   // L'étape 1 du cashback ne remplace pas la remise 1re commande / abonnement.
   const smartOfferReplacesDiscounts =
     smartOfferAppliedToOrder && smartOfferReplacesOtherDiscounts(smartOffer);
@@ -640,15 +564,14 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     selectedRestaurant?.settings?.delivery_fee,
     0
   );
-  const effectiveDeliveryFee =
-    deliveryMode === "delivery"
-      ? (smartOfferAppliedToOrder &&
-          smartOffer?.offerType === "free_delivery" &&
-          toSafeNumber(subTotal, 0) >= toSafeNumber(smartOffer?.bonusThreshold, 0)) ||
-        subscriptionActive
-        ? 0
-        : restaurantDeliveryFee
-      : 0;
+  const effectiveDeliveryFee = getEffectiveDeliveryFee({
+    deliveryMode,
+    subscriptionActive,
+    smartOfferAppliedToOrder,
+    smartOffer,
+    subTotal,
+    restaurantDeliveryFee,
+  });
   const submittedDeliveryFee =
     smartOfferAppliedToOrder && smartOffer?.offerType === "free_delivery"
       ? restaurantDeliveryFee
@@ -1084,50 +1007,25 @@ const CheckoutContent = ({ restaurantsSettings }) => {
     });
     setSubTotalWithDiscount(nextSubtotal);
 
-    let nextTip = 0;
-    if (selectedTip === "other") {
-      nextTip = toSafeNumber(tips, 0);
-      if (nextTip < 0) nextTip = 0;
-    } else if (!selectedTip) {
-      nextTip = 0;
-      setTips(0);
-    } else {
-      nextTip = (nextSubtotal * toSafeNumber(selectedTip, 0)) / 100;
-      setTips(nextTip);
-    }
-    nextTip = roundMoney(nextTip, 0);
+    const nextTip = calculateTipAmount({
+      selectedTip,
+      customTip: tips,
+      discountedSubtotal: nextSubtotal,
+    });
+    if (selectedTip !== "other") setTips(nextTip);
     setTipAmount(nextTip);
 
-    if (deliveryMode === "delivery") {
-      const taxableAmount = nextSubtotal + effectiveDeliveryFee;
-      const nextTvq = roundMoney((taxableAmount * 9.975) / 100, 0);
-      const nextTps = roundMoney((taxableAmount * 5) / 100, 0);
-      setTvq(nextTvq);
-      setTps(nextTps);
-      const totalValueBeforeReferral = roundMoney(
-        effectiveDeliveryFee + nextSubtotal + nextTvq + nextTps + nextTip,
-        0
-      );
-      const nextReferralDiscount = Math.min(
-        toSafeNumber(user?.referralBalance, 0),
-        totalValueBeforeReferral
-      );
-      setReferralDiscountApplied(nextReferralDiscount);
-      setTotal(roundMoney(totalValueBeforeReferral - nextReferralDiscount, 0));
-    } else {
-      const nextTvq = roundMoney((nextSubtotal * 9.975) / 100, 0);
-      const nextTps = roundMoney((nextSubtotal * 5) / 100, 0);
-      setTvq(nextTvq);
-      setTps(nextTps);
-      const nextReferralDiscount = Math.min(
-        toSafeNumber(user?.referralBalance, 0),
-        roundMoney(nextSubtotal + nextTvq + nextTps + nextTip, 0)
-      );
-      setReferralDiscountApplied(nextReferralDiscount);
-      setTotal(
-        roundMoney(nextSubtotal + nextTvq + nextTps + nextTip - nextReferralDiscount, 0)
-      );
-    }
+    const totals = calculateCheckoutTotals({
+      deliveryMode,
+      discountedSubtotal: nextSubtotal,
+      effectiveDeliveryFee,
+      tipAmount: nextTip,
+      referralBalance: user?.referralBalance,
+    });
+    setTvq(totals.tvq);
+    setTps(totals.tps);
+    setReferralDiscountApplied(totals.referralDiscountApplied);
+    setTotal(totals.total);
   }, [
     deliveryMode,
     effectiveDeliveryFee,

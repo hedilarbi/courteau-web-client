@@ -4,66 +4,70 @@ import { useRouter } from "next/navigation";
 import Spinner from "@/components/spinner/Spinner";
 import Image from "next/image";
 import { sendSmsVerification } from "@/services/Verify";
+import TurnstileWidget from "@/components/TurnstileWidget";
+import { TURNSTILE_ERRORS, useTurnstileToken } from "@/hooks/useTurnstileToken";
+
+const SECURITY_CHECK_MESSAGES = {
+  [TURNSTILE_ERRORS.TIMEOUT]: "La vérification de sécurité prend trop de temps. Réessayez.",
+  [TURNSTILE_ERRORS.FAILED]: "Vérification de sécurité impossible. Réessayez dans un instant.",
+};
 
 export default function ConnexionPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isCheckingSecurity, setIsCheckingSecurity] = useState(false);
+  const { turnstileProps, waitForToken, consumeToken } = useTurnstileToken();
   const router = useRouter();
   const phoneNumberInput = useRef(null);
 
+  // Un clic arrivé avant la fin de la vérification Cloudflare attend le jeton. Pas de voile
+  // pendant l'attente : il cacherait la case à cocher si Cloudflare la demande.
+  const obtainSecurityToken = async () => {
+    setIsCheckingSecurity(true);
+    try {
+      return await waitForToken();
+    } catch (err) {
+      setError(SECURITY_CHECK_MESSAGES[err?.code] || SECURITY_CHECK_MESSAGES[TURNSTILE_ERRORS.FAILED]);
+      return null;
+    } finally {
+      setIsCheckingSecurity(false);
+    }
+  };
+
   const sendOtp = async () => {
     try {
-      if (phoneNumber.length <= 0) {
-        phoneNumberInput.current.setNativeProps({
-          style: {
-            borderColor: "red",
-            borderWidth: 2,
-          },
-        });
-        return null;
+      if (isCheckingSecurity || isLoading) return;
+      if (phoneNumber.trim().length <= 0) {
+        setError("Entrez votre numéro de téléphone.");
+        phoneNumberInput.current?.focus();
+        return;
       }
       setError("");
-      setIsLoading(true);
 
       const digits = phoneNumber.replace(/\D/g, "");
       const local = digits.startsWith("1") && digits.length === 11 ? digits.slice(1) : digits;
 
       if (local.length !== 10) {
         setError("Numéro de téléphone invalide (10 chiffres requis).");
-        setIsLoading(false);
         return;
       }
 
       const formattedValue = "+1" + local;
 
-      if (
-        local === "8196929494" ||
-        local === "4388094567" ||
-        local === "1231231212" ||
-        local === "1231231414" ||
-        local === "1231232222" ||
-        local === "1231232626"
-      ) {
-        router.push(`/otp?phoneNumber=${formattedValue}`);
-      } else {
-        sendSmsVerification(formattedValue)
-          .then((sent) => {
-            if (!sent) {
-              setError("Erreur lors de l'envoi du code de vérification");
-              setIsLoading(false);
-              return;
-            }
-            router.push(`/otp?phoneNumber=${formattedValue}`);
-          })
-          .then(() => setIsLoading(false))
-          .catch((err) => {
-            setIsLoading(false);
-          });
-      }
+      const turnstileToken = await obtainSecurityToken();
+      if (!turnstileToken) return;
 
-      // setIsLoading(false);
-      // router.push(`/otp?phoneNumber=${phoneNumber}`);
+      setIsLoading(true);
+      const result = await sendSmsVerification(formattedValue, turnstileToken);
+      consumeToken();
+      if (!result.success) {
+        setError(result.message || "Erreur lors de l'envoi du code de vérification");
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(false);
+      router.push(`/otp?phoneNumber=${encodeURIComponent(formattedValue)}`);
     } catch (err) {
       setIsLoading(false);
       setError("Une erreur s'est produite. Veuillez réessayer.");
@@ -133,12 +137,15 @@ export default function ConnexionPage() {
             </div>
           </div>
 
+          <TurnstileWidget {...turnstileProps} />
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
           <button
             onClick={sendOtp}
-            className="w-full bg-pr  text-black py-2 px-4 rounded font-bebas-neue text-2xl cursor-pointer"
+            disabled={isCheckingSecurity || isLoading}
+            aria-busy={isCheckingSecurity || isLoading}
+            className="w-full bg-pr  text-black py-2 px-4 rounded font-bebas-neue text-2xl cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
-            S&apos;inscrire
+            {isCheckingSecurity ? "Vérification de sécurité…" : "S'inscrire"}
           </button>
           <p className="mt-4 text-sm text-gray-600 text-center">
             En vous inscrivant, vous acceptez nos{" "}

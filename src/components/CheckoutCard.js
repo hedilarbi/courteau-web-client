@@ -25,6 +25,7 @@ import {
 } from "@/services/FoodServices";
 
 import { calculateDistance, hasValidCoords } from "@/utils/locationHandlers";
+import { getOrderedBasketItems, sumSmartOfferGifts } from "@/utils/checkoutPricing";
 import { getScheduleValidationError } from "@/utils/dateHandlers";
 import {
   calculatePromoDiscountAmountForPromo,
@@ -424,8 +425,16 @@ export default function CheckoutCard({
     const orderItems = [];
     const orderOffers = [];
     const orderRewards = [];
+    const promoCodeApplied = Boolean(resolvedPromoCodeData);
+    const orderedBasketItems = getOrderedBasketItems({
+      basketItems: basket.items,
+      promoCodeApplied,
+    });
+    const orderSubtotal = promoCodeApplied
+      ? Math.max(0, toSafeNumber(basket.subtotal, 0) - sumSmartOfferGifts(basket.items))
+      : basket.subtotal;
 
-    basket.items.forEach((item) => {
+    orderedBasketItems.forEach((item) => {
       const customizations = item.customization
         ? item.customization.map((customizationItem) => customizationItem._id)
         : [];
@@ -507,7 +516,7 @@ export default function CheckoutCard({
       detailedAddress: buildDetailedAddressPayload(),
       restaurant: selectedRestaurant._id,
       order: {
-        subTotal: roundMoney(basket.subtotal, 0),
+        subTotal: roundMoney(orderSubtotal, 0),
         user_id: user._id,
         orderItems,
         offers: orderOffers,

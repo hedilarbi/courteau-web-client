@@ -1,9 +1,15 @@
 import axios from "axios";
+import { getToken } from "@/app/actions";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const getAuthHeaders = async () => {
+  const token = await getToken();
+  return token?.value ? { Authorization: `Bearer ${token.value}` } : {};
+};
 
 const getActiveOffer = async (userId) => {
   try {
-    const response = await axios.get(`${API_URL}/personalized-offers/active/${userId}`);
+    const response = await axios.get(`${API_URL}/personalized-offers/active/${userId}`, { headers: await getAuthHeaders() });
     if (response?.status === 200) {
       return { status: true, data: response?.data };
     }
@@ -15,7 +21,7 @@ const getActiveOffer = async (userId) => {
 
 const getLastExpiredOffer = async (userId) => {
   try {
-    const response = await axios.get(`${API_URL}/personalized-offers/last-expired/${userId}`);
+    const response = await axios.get(`${API_URL}/personalized-offers/last-expired/${userId}`, { headers: await getAuthHeaders() });
     if (response?.status === 200) {
       return { status: true, data: response?.data };
     }

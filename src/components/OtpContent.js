@@ -1,12 +1,27 @@
 "use client";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import BackButton from "./BackButton";
 import OTPInput from "react-otp-input";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import { create } from "@/app/actions";
 import { createUserService } from "@/services/UserServices";
-import { checkVerification } from "@/services/Verify";
+import { checkVerification, sendSmsVerification } from "@/services/Verify";
+import TurnstileWidget from "./TurnstileWidget";
+import { TURNSTILE_ERRORS, useTurnstileToken } from "@/hooks/useTurnstileToken";
+
+const OTP_LENGTH = 6;
+const LOGIN_FAILED_MESSAGE = "Connexion impossible pour le moment. Réessayez.";
+const SECURITY_CHECK_MESSAGES = {
+  [TURNSTILE_ERRORS.TIMEOUT]: "La vérification de sécurité prend trop de temps. Réessayez.",
+  [TURNSTILE_ERRORS.FAILED]: "Vérification de sécurité impossible. Réessayez dans un instant.",
+};
+// Refus du serveur (401) : la preuve ne servira plus, il faut un nouveau code.
+const PROOF_REJECTED_ERRORS = [
+  "PHONE_NOT_VERIFIED",
+  "PHONE_MISMATCH",
+  "PHONE_VERIFICATION_USED",
+];
 
 const OtpContent = ({ phoneNumber }) => {
   const [error, setError] = useState("");
@@ -16,73 +31,82 @@ const OtpContent = ({ phoneNumber }) => {
   const [resending, setResending] = useState(false);
   const [resendError, setResendError] = useState("");
   const [ressendSuccess, setResendSuccess] = useState(false);
+  const { turnstileProps, waitForToken, consumeToken } = useTurnstileToken();
   const router = useRouter();
   const { createUser } = useUser();
-  const verifyCode = async () => {
-    setIsLoading(true);
+  // Preuve SMS obtenue mais pas encore échangée contre une session : Twilio refuse de
+  // revérifier un code déjà validé, un nouvel essai réutilise donc cette preuve.
+  const pendingProof = useRef(null);
+  const canVerify = !isLoading && otp.length === OTP_LENGTH;
 
-    try {
-      if (otp === "000000") {
-        const response = await createUserService(phoneNumber);
+  const obtainProof = async () => {
+    if (pendingProof.current) return pendingProof.current;
+    const result = await checkVerification(phoneNumber, otp);
+    if (result.error === "OTP_INVALID") {
+      setInvalidCode(true);
+      return null;
+    }
+    if (!result.success) {
+      setError(result.message);
+      return null;
+    }
+    pendingProof.current = result.phoneVerificationToken;
+    return pendingProof.current;
+  };
 
-        if (response.status) {
-          await create(response.data.token);
-          createUser(response.data.user);
-          setIsLoading(false);
-
-          if (response.data.user.is_profile_setup) {
-            router.push("/");
-          } else {
-            router.push("/completer-profil");
-          }
-        } else {
-          setError("Erreur lors de la création de l'utilisateur");
-          setIsLoading(false);
-        }
-        setIsLoading(false);
-      } else {
-        const success = await checkVerification(phoneNumber, otp);
-        if (!success) {
-          setInvalidCode(true);
-          setIsLoading(false);
-        } else {
-          const response = await createUserService(phoneNumber);
-          if (response.status) {
-            await create(response.data.token);
-            createUser(response.data.user);
-            setIsLoading(false);
-            if (response.data.user.is_profile_setup) {
-              router.push("/");
-            } else {
-              router.push("/completer-profil");
-            }
-          }
-        }
+  const signIn = async (proof) => {
+    const response = await createUserService(phoneNumber, proof);
+    if (!response.status) {
+      if (PROOF_REJECTED_ERRORS.includes(response.error)) {
+        pendingProof.current = null;
       }
+      setError(response.message || LOGIN_FAILED_MESSAGE);
+      return;
+    }
+    pendingProof.current = null;
+    await create(response.data.token);
+    createUser(response.data.user);
+    router.push(response.data.user.is_profile_setup ? "/" : "/completer-profil");
+  };
+
+  const verifyCode = async () => {
+    if (!canVerify) return;
+    setIsLoading(true);
+    setInvalidCode(false);
+    setError("");
+    try {
+      const proof = await obtainProof();
+      if (proof) await signIn(proof);
     } catch (err) {
       console.error("Erreur lors de la vérification du code :", err);
       setError("Une erreur s'est produite. Veuillez réessayer.");
-      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
   };
 
   const resendCode = async () => {
-    setResendError(false);
-    sendSmsVerification(phoneNumber)
-      .then(() => {
-        setResending(false);
-        setResendError(false);
-        setResendSuccess(true);
-      })
-      .catch((err) => {
-        console.error("Erreur lors du renvoi du code :", err);
-        setResendError(
-          "Une erreur s'est produite lors de l'envoi du code. Veuillez réessayer.",
-        );
-        setResending(false);
-      });
+    if (resending) return;
+    setResendSuccess(false);
+    setResendError("");
+    setResending(true);
+    let turnstileToken;
+    try {
+      // Un clic avant la fin de la vérification Cloudflare attend le jeton au lieu d'échouer.
+      turnstileToken = await waitForToken();
+    } catch (err) {
+      setResending(false);
+      setResendError(SECURITY_CHECK_MESSAGES[err?.code] || SECURITY_CHECK_MESSAGES[TURNSTILE_ERRORS.FAILED]);
+      return;
+    }
+    const result = await sendSmsVerification(phoneNumber, turnstileToken);
+    consumeToken();
+    setResending(false);
+    if (result.success) {
+      setResendSuccess(true);
+    } else {
+      setResendError(result.message);
+    }
   };
   return (
     <div className="bg-[#EBEBEB] h-screen py-8 px-4 md:px-12 flex flex-col ">
@@ -116,22 +140,24 @@ const OtpContent = ({ phoneNumber }) => {
         )}
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         <button
-          className="bg-pr  text-black px-6 py-2 font-bebas-neue text-lg rounded mt-8"
+          className="bg-pr  text-black px-6 py-2 font-bebas-neue text-lg rounded mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={verifyCode}
-          disabled={isLoading}
+          disabled={!canVerify}
+          aria-busy={isLoading}
         >
           {isLoading ? "Vérification..." : "Vérifier"}
         </button>
         <div className="flex items-center mt-6 flex-wrap ">
           <p className="text-center md:text-left">
             Vous n&apos;avez pas reçu le code ?{" "}
-            <span
-              className="text-pr cursor-pointer"
+            <button
+              type="button"
+              className="text-pr cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={resendCode}
               disabled={resending}
             >
               {resending ? "Envoi en cours..." : "Renvoyer le code"}
-            </span>
+            </button>
           </p>
         </div>
         {ressendSuccess && (
@@ -140,11 +166,9 @@ const OtpContent = ({ phoneNumber }) => {
           </p>
         )}
         {resendError && (
-          <p className="text-red-500 text-sm mt-2">
-            Une erreur s&apos;est produite lors de l&apos;envoi du code.
-            Veuillez réessayer.
-          </p>
+          <p className="text-red-500 text-sm mt-2">{resendError}</p>
         )}
+        <TurnstileWidget {...turnstileProps} />
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ export const metadata = {
       "Livraison à Trois-Rivières | Pizza et poutine | Casse-Croûte Courteau",
   },
   description:
-    "Commandez pizza, poutine et autres classiques du Casse-Croûte Courteau en livraison à Trois-Rivières. Vérifiez votre adresse et commandez en ligne.",
+    "Faites-vous livrer vos classiques du restaurant Casse-Croûte Courteau à Trois-Rivières et dans les environs. Le service de livraison est disponible depuis toutes nos succursales; la disponibilité dépend de votre adresse exacte et de la succursale la plus proche.",
   alternates: {
     canonical: "https://www.lecourteau.com/livraison",
   },
@@ -58,11 +58,30 @@ export default function LivraisonPage() {
           Livraison de pizza et poutine à Trois-Rivières
         </h1>
 
+        <section aria-labelledby="livraison-restaurant-title" className="mt-4">
+          <h2
+            id="livraison-restaurant-title"
+            className="font-inter md:text-2xl text-xl font-bold mb-3 text-black"
+          >
+            Livraison de restaurant à Trois-Rivières
+          </h2>
+          <p className="font-inter text-base leading-relaxed text-gray-700 mb-3">
+            Le Casse-Croûte Courteau propose un service de livraison à
+            Trois-Rivières et dans plusieurs secteurs environnants, notamment
+            Cap-de-la-Madeleine. Selon votre adresse, votre commande est prise
+            en charge par la succursale Courteau la plus proche.
+          </p>
+          <p className="font-inter text-base leading-relaxed text-gray-700">
+            Envie de pizza ou de poutine en livraison? Consultez notre menu et
+            vérifiez la disponibilité pour votre adresse.
+          </p>
+        </section>
+
         <p className="mt-4 font-inter text-base leading-relaxed text-gray-700 md:text-lg font-semibold">
-          Faites-vous livrer vos classiques Courteau à Trois-Rivières. La
-          livraison est disponible à partir de toutes nos succursales. La
-          disponibilité dépend de votre adresse exacte et de la succursale la
-          plus proche.
+          Faites-vous livrer vos classiques du restaurant Casse-Croûte Courteau
+          à Trois-Rivières et dans les environs. La livraison est offerte depuis
+          toutes nos succursales; la disponibilité dépend de votre adresse
+          exacte et de la succursale la plus proche.
         </p>
 
         <h2 className="mt-8 font-inter md:text-2xl text-xl font-bold mb-3 text-black">
@@ -109,7 +128,7 @@ export default function LivraisonPage() {
               href="/succursales/des-prairies-trois-rivieres"
               className="font-semibold text-black hover:underline"
             >
-              Des Prairies
+              Des Prairies – Cap-de-la-Madeleine
             </Link>
           </li>
           <li>

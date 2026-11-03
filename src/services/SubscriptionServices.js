@@ -1,6 +1,12 @@
 import axios from "axios";
+import { getToken } from "@/app/actions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const getAuthHeaders = async () => {
+  const token = await getToken();
+  return token?.value ? { Authorization: `Bearer ${token.value}` } : {};
+};
 axios.defaults.timeout = 15000;
 
 const mapSuccessResponse = (response) => ({
@@ -37,6 +43,7 @@ const getUserSubscription = async (userId) => {
   try {
     const response = await axios.get(`${API_URL}/subscriptions/user/${userId}`, {
       timeout: 15000,
+      headers: await getAuthHeaders(),
     });
     return mapSuccessResponse(response);
   } catch (error) {
@@ -57,6 +64,7 @@ const createUserSubscription = async (userId, paymentMethodId) => {
       },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     return mapSuccessResponse(response);
@@ -82,6 +90,7 @@ const confirmUserSubscriptionPayment = async (
       },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     return mapSuccessResponse(response);
@@ -103,6 +112,7 @@ const cancelUserSubscription = async (userId, immediate = false) => {
       },
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     return mapSuccessResponse(response);
@@ -118,6 +128,7 @@ const refreshUserSubscription = async (userId) => {
       {},
       {
         timeout: 15000,
+        headers: await getAuthHeaders(),
       }
     );
     return mapSuccessResponse(response);

@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 
 import { MdOutlineRestaurantMenu, MdDeliveryDining } from "react-icons/md";
 import { GiTrophyCup } from "react-icons/gi";
@@ -34,6 +35,12 @@ const OrderOnlineSection = () => {
             Recevez votre commande chaude et délicieuse avec notre service de
             livraison rapide.
           </p>
+          <Link
+            href="/livraison"
+            className="font-inter font-semibold md:text-base text-sm text-center mt-3 text-pr hover:underline"
+          >
+            Voir la livraison →
+          </Link>
         </div>
         <div className="flex flex-col">
           <div className="bg-[#312107] rounded-full h-16 w-16 text-pr flex justify-center items-center mx-auto">

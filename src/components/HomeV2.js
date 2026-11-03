@@ -165,7 +165,7 @@ export default async function HomeV2() {
             </Link>
           </div>
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs font-semibold text-[#8a8175]">
-            <span>Poutine généreuse à Trois-Rivières</span><span>Livraison Trois-Rivières</span><span>Ouvert 7 jours</span>
+            <span>Poutine généreuse à Trois-Rivières</span><Link href="/livraison" className="hover:text-pr hover:underline">Livraison Trois-Rivières</Link><span>Ouvert 7 jours</span>
           </div>
         </div>
         <div className="relative mx-3 mt-4 md:mx-0">
@@ -292,7 +292,7 @@ export default async function HomeV2() {
           <SectionEyebrow>Depuis 2020</SectionEyebrow>
           <h2 className="home-section-heading">Fièrement d’ici.</h2>
           <p className="mt-6 max-w-2xl leading-[1.75] text-[#6e6659]">
-            Fondé à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : proposer une restauration rapide fraîche, généreuse et originale, dans l’esprit du casse-croûte québécois. Aujourd’hui, nos cinq succursales gardent ce même esprit de proximité.
+            Fondé à Trois-Rivières, Courteau a grandi autour d’une idée toute simple : proposer une restauration rapide fraîche, généreuse et originale, dans l’esprit du casse-croûte québécois. Pour ceux qui cherchent un fast food local ou un restaurant rapide à Trois-Rivières, nos cinq succursales gardent ce même esprit de proximité.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-2">
             {[['Frais', 'Préparé avec soin'], ['Généreux', 'Des vraies portions'], ['Local', 'Fier de la Mauricie']].map(([title, copy]) => (
